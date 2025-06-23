@@ -115,6 +115,8 @@ import store from './StateManagement/store.js';
 import Branches from './Pages/Branch/Branches.jsx';
 import BranchWiseEmployee from './Pages/Branch/BranchWiseEmployee.jsx';
 import Stock_Transfer from './Pages/Inventory/Stock-Transfer.jsx';
+import Logout from './components/LogOut.jsx';
+import ProtectedRoute from './components/ProtectedRoute.jsx';
 function App() {
   return (
     <div className="w-full h-full m-0 p-0">
@@ -122,77 +124,115 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path='/' element={<Login />} />
+          <Route path="/logout" element={<Logout />} />
+
+
+           <Route element={<ProtectedRoute />}>
           <Route path='/pos' element={<Pos />} />
           <Route path='/dashboard' element={<Body />} >
-            <Route path='manage'>
-              <Route path='item_type' element={<List_item_Type />} />
-              <Route path='jewellery_type' element={<Jewellery_Type />} />
-              <Route path='category' element={<Category />} />
-              <Route path='subcategory' element={<SubCategory />} />
-              <Route path='brand' element={<Brand />} />
-              <Route path='color' element={<Color />} />
-              <Route path='list_return_Type' element={<List_return_Type />} />
-              <Route path='product_size' element={<Product_Size />} />
-              <Route path='gender' element={<Gender/>} />
-              <Route path='diamond_type' element={<Diamond_Type/>} />
-              <Route path='stonetype' element={<StoneType/>} />
-              <Route path='occasion' element={<Occasion/>} />
-              <Route path='stock-point' element={<Stock_point/>} />
-              <Route path='style' element={<Style/>} />
-              <Route path='design' element={<Design/>} />
-              <Route path='country' element={<Country/>} />
-              <Route path='city' element={<City/>} />
-              <Route path='adresstype' element={<Adress_Type/>} />
-            </Route>
-            <Route path='supplier'>
-              <Route path='controllaccount' element={<ControllAccount/>} />
-              <Route path='group' element={<Group/>} />
-              <Route path='tax' element={<Tax/>} />
-              <Route path='list_supplier' element={<List_supplier/>} />
-              <Route path='Create_supplier' element={<CreateSupplier/>} />
-            </Route>
-            <Route path='employees'>
-              <Route path='departments' element={<Departments/>} />
-              <Route path='positions' element={<Positions/>} />
-              <Route path='paymentmethodes' element={<PaymentMethodes/>} />
-              <Route path='gender' element={<Genders/>} />
-              <Route path='employeelist' element={<EmployeeList/>} />
-              <Route path='payslip' element={<PaySlip/>} />
-            </Route>
-            <Route path='customers'>
-              <Route path='customerslist' element={<CustomersList/>} />
-            </Route>
-            <Route path='branch'>
-              <Route path='branches' element={<Branches/>} />
-              <Route path='branchwiseemployee' element={<BranchWiseEmployee/>} />
-            </Route>
-            <Route path='inventory'>
-              <Route path='item' element={<Item/>} />
-              <Route path='createItem' element={<CreateItem/>} />
-              <Route path='stock-transfer' element={<Stock_Transfer/>} />
-              <Route path='gold'>
+             <Route path='' element={<DashBoard/>}/>
+          {/* basic configuration */}
+                <Route path='country' element={<Country/>} />
+                <Route path='city' element={<City/>} />
+                <Route path='address_type' element={<Adress_Type/>} />
+                <Route path='stock_point' element={<Stock_point/>} />
+                <Route path='return_type' element={<List_return_Type />} />
+
+          {/*  product management */}
+                <Route path='item_type' element={<List_item_Type />} />
+                <Route path='category' element={<Category />} />
+                <Route path='subcategory' element={<SubCategory />} />
+                <Route path='brand' element={<Brand />} />
+                <Route path='design' element={<Design/>} />
+                <Route path='product_gender' element={<Gender/>} />
+                <Route path='product_size' element={<Product_Size />} />
+
+                {/* jewellery specs */}
+                <Route path='jewellery_type' element={<Jewellery_Type />} />
+                 <Route path='diamond_type' element={<Diamond_Type/>} />
+                 <Route path='stone_type' element={<StoneType/>} />
+                 <Route path='color' element={<Color />} />
+                 <Route path='occasion' element={<Occasion/>} />
+
+
+                 {/* suppliers */}
+                 <Route path='control_account' element={<ControllAccount/>} />
+                 <Route path='supplier_group' element={<Group/>} />
+                 <Route path='tax_category' element={<Tax/>} />
+                 <Route path='supplier' element={<List_supplier/>} />
+
+
+                 {/* Employees */}
+                 <Route path='department' element={<Departments/>} />
+                 <Route path='role' element={<Positions/>} />
+                 <Route path='payment_method' element={<PaymentMethodes/>} />
+                 <Route path='gender' element={<Genders/>} />
+                 <Route path='employeelist' element={<EmployeeList/>} />
+
+                 {/* customers */}
+               
+                 <Route path='customers' element={<CustomersList/>} />
+                 {/* inventory Operations -submenu*/}
+                 {/* inventory Operations -gold*/}
+
+                <Route path='item' element={<Item/>} />
                 <Route path='purchase' element={<Purchase/>} />
-                <Route path='purchaseFix' element={<PurchaseFix/>} />
+                <Route path='list_purchase_fix' element={<PurchaseFix/>} />
                 <Route path='ListPurchase' element={<ListPurchase/>} />
                 <Route path='creategoldpurchase' element={<CreateGoldPurchase/>} />
                 <Route path='createnewpurchase' element={<CreateNewPurchase/>} />
                 <Route path='viewpurchase' element={<ViewPurchase/>} />
                 <Route path='updatepurchase' element={<UpdateGoldPurchase/>} />
                 <Route path='updateitem' element={<UpdateItem/>} />
-              </Route>
-              <Route path='diamond'>
+
+                {/* inventory Operations -diamond*/}
                 <Route path='purchasediamond' element={<DiamondPurchhase/>} />
                 <Route path='createDiamondPurchase' element={<CreateDiamondPurchase/>} />
                 <Route path='itemDetials' element={<ItemDetials/>} />
+
+                {/* settings */}
+                <Route path='tax' element={<SettingsTax/>} />
+                <Route path='currency' element={<Currency/>} />
+                <Route path='uom' element={<UnitOfMeasures/>} />
+                <Route path='term_payment' element={<TermsOfPayment/>} />
+
+                 {/* Groups & Permissions */}
+                <Route path='group_permission' element={<GroupAndPermission/>} />
+                <Route path='permission' element={<ManagePermissions/>} />
+
+
+
+            <Route path='manage'>
+                <Route path='payslip' element={<PaySlip/>} />
+                <Route path='style' element={<Style/>} />
+            </Route>
+
+            <Route path='supplier'>
+              <Route path='Create_supplier' element={<CreateSupplier/>} />
+            </Route>
+ 
+            <Route path='employees'>
+            </Route>
+            <Route path='customers'>
+            </Route>
+            <Route path='branch'>
+              <Route path='branches' element={<Branches/>} />
+              <Route path='branchwiseemployee' element={<BranchWiseEmployee/>} />
+            </Route>
+            <Route path='inventory'>
+              <Route path='createItem' element={<CreateItem/>} />
+              <Route path='stock-transfer' element={<Stock_Transfer/>} />
+              <Route path='gold'>
+              
+              </Route>
+              <Route path='diamond'>
+                
               
               </Route>
             </Route>
             <Route path='settings'>
               <Route path='tradesettings'>
-                <Route path='tax' element={<SettingsTax/>} />
-                <Route path='currency' element={<Currency/>} />
-                <Route path='uom' element={<UnitOfMeasures/>} />
-                <Route path='termsofpayment' element={<TermsOfPayment/>} />
+               
               </Route>
               <Route path='groupandpermissions'>
                 <Route path='group' element={<GroupAndPermission/>} />
@@ -200,6 +240,7 @@ function App() {
                 
               </Route>
             </Route>
+          </Route>
           </Route>
         </Routes>
       </BrowserRouter>

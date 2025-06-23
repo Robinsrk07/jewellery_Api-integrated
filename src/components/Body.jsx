@@ -12,7 +12,7 @@ const Body = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    navigate('/');
+    navigate('/logout');
   };
 
   useEffect(() => {
@@ -53,22 +53,22 @@ const Body = () => {
         
         {/* Conditionally render Card component based on window width */}
         {(windowWidth > 1100 || showCard ) && (
-          <div className="h-full " style={{ marginLeft: '25px', marginTop: '30px' }}>
+          <div className="h-full " style={{padding:'15px 24px'}} >
             <Card />
           </div>
         )}
         <div
           className="flex-1 overflow-hidden  rounded-2xl"
           style={{
-            marginLeft: windowWidth > 1100 ? '25px' : '10px', // Adjust margin based on window width
-            marginRight: windowWidth > 1100 ? '10px' : '10px', // Adjust margin based on window width
-            paddingTop: '30px',
-            paddingBottom: '40px',
+            marginLeft: windowWidth > 1100 ? '0px' : '10px', // Adjust margin based on window width
+            marginRight: windowWidth > 1100 ? '19px' : '10px', // Adjust margin based on window width
+            paddingTop: '00px',
+            paddingBottom: '00px',
             paddingRight: '0px',
           }}
         >
 
-        <div className=" top-4 left-4 text-white font-semibold  text-[15px] h-[10vh]" >
+        <div className=" h-[100px]" >
             <BreadCrump />
           </div>       
 
