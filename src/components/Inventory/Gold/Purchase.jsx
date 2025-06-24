@@ -126,7 +126,7 @@
                               minWidth: '100%' // Ensures it matches table width
                               }}
                           >
-                              <Link to="/dashboard/inventory/gold/creategoldpurchase">
+                              <Link to="/creategoldpurchase">
                         <button
                           className="text-xs font-bold"
                           style={{

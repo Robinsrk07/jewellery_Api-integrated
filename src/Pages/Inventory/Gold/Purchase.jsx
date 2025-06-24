@@ -118,7 +118,7 @@
                    >
                     
                                  
-                              <Link to="/dashboard/inventory/gold/creategoldpurchase">
+                              <Link to="/dashboard/creategoldpurchase">
                               <CreateButton
                                 buttoncontent="+ Purchase"
                   

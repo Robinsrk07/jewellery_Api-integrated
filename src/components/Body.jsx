@@ -3,33 +3,30 @@ import Card from './Card';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import BreadCrump from './BreadCrump';
+import CardMoblie from './CardMoblie';
+
 
 const Body = () => {
   const [showSettings, setShowSettings] = useState(false);
-  const [showCard, setShowCard] = useState(true);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const panelRef = useRef();
   const navigate = useNavigate();
-
   const handleLogout = () => {
     navigate('/logout');
   };
-
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (panelRef.current && !panelRef.current.contains(event.target)) {
         setShowSettings(false);
       }
     };
-
     const handleResize = () => {
       setWindowWidth(window.innerWidth);
     };
-
     if (showSettings) {
       document.addEventListener('mousedown', handleClickOutside);
     }
-
     window.addEventListener('resize', handleResize);
 
     return () => {
@@ -40,19 +37,27 @@ const Body = () => {
 
   return (
     <div className="h-screen overflow-hidden  w-full bg-[linear-gradient(to_bottom,#5e72e4_45%,#EFF2F3_45%)]">
-
-  {/* <button
-    className="btn btn-primary w-[10vw] justify-center"
-    onClick={() => setShowCard(!showCard)}
-  >
-    button
-  </button> */}
-
-
       <div className="flex h-full">
         
         {/* Conditionally render Card component based on window width */}
-        {(windowWidth > 1100 || showCard ) && (
+
+       {windowWidth < 770 && showMobileMenu && (
+      <div className="h-full w-full fixed top-0 left-0 z-50">
+        <CardMoblie onClose={() => setShowMobileMenu(false)} />
+      </div>
+      )}
+
+      {windowWidth < 770 && !showMobileMenu && (
+        <button
+          className="absolute top-5 left-4 z-50 text-white  px-4 py-2 rounded"
+          onClick={() => setShowMobileMenu(true)}
+        >
+          ☰ Menu
+        </button>
+      )}
+
+
+        {(windowWidth > 770) && (
           <div className="h-full " style={{padding:'15px 24px'}} >
             <Card />
           </div>
@@ -60,19 +65,31 @@ const Body = () => {
         <div
           className="flex-1 overflow-hidden  rounded-2xl"
           style={{
-            marginLeft: windowWidth > 1100 ? '0px' : '10px', // Adjust margin based on window width
-            marginRight: windowWidth > 1100 ? '19px' : '10px', // Adjust margin based on window width
-            paddingTop: '00px',
-            paddingBottom: '00px',
-            paddingRight: '0px',
+            marginLeft: windowWidth > 1100 ? '0px' : '10px', 
+            marginRight: windowWidth > 1100 ? '25px' : '10px', 
+           
           }}
         >
 
-        <div className=" h-[100px]" >
-            <BreadCrump />
-          </div>       
+         {windowWidth > 770 ? (
+  <>
+    <div className="h-[100px]" style={{ paddingTop: '20px', paddingLeft: '10px' }}>
+      <BreadCrump />
+    </div>
+    <Outlet />
+    </>
+) : (
+   <>
+   <div className="h-[70px]" style={{ paddingTop: '20px', paddingLeft: '100px' }}>
+   
+      
+    </div>
+    
+    <Outlet />
+ </>
+  
+)}
 
-        <Outlet />
         </div>
 
         <div className="relative">

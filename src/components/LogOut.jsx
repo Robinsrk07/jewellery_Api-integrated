@@ -12,7 +12,7 @@ const Logout = () => {
   useEffect(() => {
     clearTokens();
     dispatch(logout()); // create this action in your authSlice
-    navigate('/');
+    navigate('/login', { replace: true }); // redirect to login page
   }, [dispatch, navigate]);
 
   return null;

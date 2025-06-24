@@ -34,9 +34,19 @@ const Login = () => {
       const response = await AuthModel.login(userCredentials.email,userCredentials.password,userCredentials.ip_address);
       console.log(response.data);
       
-       const { access, refresh } = response.data
-    setToken({ access, refresh });
-      dispatch(setLogin(response.data.data)); // assumes response.data has correct fields
+       const { access, refresh ,data} = response.data
+       setToken({ access, refresh });
+      dispatch(setLogin({
+      login_type: data.login_type, 
+      login_id: data.login_id,
+      manage_user_type: data.manage_user_type,
+      can_manage_user_types: data.can_manage_user_types || {},
+      user_permissions: data.user_permissions || [],
+      first_name: data.first_name || '',
+      last_name: data.last_name || '',
+      refresh: refresh, // Using the refresh token from response
+      is_superadmin: data.is_superadmin
+    }));
       navigate('/dashboard'); // redirect after successful login
     } catch (err) {
       const errorMsg = err?.response?.data?.message || 'Login failed. Please try again.';

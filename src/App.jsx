@@ -111,7 +111,6 @@ import ItemDetials from './Pages/Inventory/Diamond/ItemDetials.jsx';
 import PaySlip from './Pages/Employees/PaySlip.jsx';
 import Pos from './Pages/Pos.jsx';
 import { Provider } from 'react-redux';
-import store from './StateManagement/store.js';
 import Branches from './Pages/Branch/Branches.jsx';
 import BranchWiseEmployee from './Pages/Branch/BranchWiseEmployee.jsx';
 import Stock_Transfer from './Pages/Inventory/Stock-Transfer.jsx';
@@ -120,10 +119,9 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 function App() {
   return (
     <div className="w-full h-full m-0 p-0">
-      <Provider store={store}>
       <BrowserRouter>
         <Routes>
-          <Route path='/' element={<Login />} />
+          <Route path='/login' element={<Login />} />
           <Route path="/logout" element={<Logout />} />
 
 
@@ -167,7 +165,7 @@ function App() {
                  <Route path='role' element={<Positions/>} />
                  <Route path='payment_method' element={<PaymentMethodes/>} />
                  <Route path='gender' element={<Genders/>} />
-                 <Route path='employeelist' element={<EmployeeList/>} />
+                 <Route path='employee_list' element={<EmployeeList/>} />
 
                  {/* customers */}
                
@@ -244,7 +242,6 @@ function App() {
           </Route>
         </Routes>
       </BrowserRouter>
-      </Provider>
     </div>
   );
 }

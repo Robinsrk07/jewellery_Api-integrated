@@ -1,70 +1,91 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import CustomScrollbar from "../../components/CustomScrollbar";
+import EditButton from '../../components/EditButton';
+import DeleteButton from '../../components/DeleteButton';
+import CreateButton from '../../components/CreateButton';
+import Pagination from '../../components/Pagination';
+import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+import { useSelector } from "react-redux";
+import GoldItemModel from '../../models/GoldItem';
+const  Item = () => {
 
-    
-    
-     import { useState } from "react";
-     import { Link } from "react-router";
-     import CustomScrollbar from "../../components/CustomScrollbar";
-     import EditButton from '../../components/EditButton';
-     import DeleteButton from '../../components/DeleteButton';
-     import CreateButton from '../../components/CreateButton';
-     import Pagination from '../../components/Pagination';
-    import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
-     const  Item = () => {
-     
-          
-            const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
+const [items, setItems] = useState(10);
+const auth= useSelector((state) => state.auth);
+const {login_type,login_id} =auth
+const [limit, setLimit] = useState(10);
+const [page, setPage] = useState(1);
+const [search, setSearch] = useState('');
+const [status, setStatus] = useState('');
+const [goldItemData, setGoldItemData] = useState([]);
 
-                    const inventoryData = [
-    {
-      id: 1,
-      code: "BRD-NKL-22K-001",
-      uniqueId: "BRD-NKL00001",
-      name: "22K Gold Bridal Necklace",
-      itemType: "Gold",
-      uom: "Gram",
-      category: "Bridal Jewellery",
-      jewelleryType: "Necklace",
-      makingCalculationOn: "gross_weight",
-      status: "ACTIVE"
-    },
-    {
-      id: 2,
-      code: "EVD-PND-18K-002",
-      uniqueId: "EVD-PND00002",
-      name: "18K Gold Everyday Wear Pendant",
-      itemType: "Gold",
-      uom: "Gram",
-      category: "Everyday Wear",
-      jewelleryType: "Necklace",
-      makingCalculationOn: "net_weight",
-      status: "ACTIVE"
-    },
-    {
-      id: 3,
-      code: "LUX-RNG-14K-003",
-      uniqueId: "LUX-RNG00003",
-      name: "14K Gold Designer Cocktail Ring",
-      itemType: "Gold",
-      uom: "Gram",
-      category: "Luxury & Designer Jewellery",
-      jewelleryType: "Ring",
-      makingCalculationOn: "gross_weight",
-      status: "ACTIVE"
-    },
-    {
-      id: 4,
-      code: "GOLD-BAR-001",
-      uniqueId: "GOLD_BAR00004",
-      name: "Gold Bar",
-      itemType: "Gold",
-      uom: "Gram",
-      category: "Gold",
-      jewelleryType: "Gold Bar",
-      makingCalculationOn: "gross_weight",
-      status: "ACTIVE"
-    }
-  ];
+const FetchGoldItemData =async()=>{
+  try{
+    const response = await GoldItemModel.getGoldItem(login_type,login_id,limit,page,search,status)
+    setGoldItemData(response.data.data);
+  }catch(error){
+    console.error("Error fetching gold item data:", error);
+  }
+}
+console.log(goldItemData);
+
+useEffect(() => {
+  FetchGoldItemData(); 
+ }, [limit, page, search, status]);
+
+// 1
+const inventoryData = [
+{
+  id: 1,
+  code: "BRD-NKL-22K-001",
+  uniqueId: "BRD-NKL00001",
+  name: "22K Gold Bridal Necklace",
+  itemType: "Gold",
+  uom: "Gram",
+  category: "Bridal Jewellery",
+  jewelleryType: "Necklace",
+  makingCalculationOn: "gross_weight",
+  status: "ACTIVE"
+},
+{
+  id: 2,
+  code: "EVD-PND-18K-002",
+  uniqueId: "EVD-PND00002",
+  name: "18K Gold Everyday Wear Pendant",
+  itemType: "Gold",
+  uom: "Gram",
+  category: "Everyday Wear",
+  jewelleryType: "Necklace",
+  makingCalculationOn: "net_weight",
+  status: "ACTIVE"
+},
+{
+  id: 3,
+  code: "LUX-RNG-14K-003",
+  uniqueId: "LUX-RNG00003",
+  name: "14K Gold Designer Cocktail Ring",
+  itemType: "Gold",
+  uom: "Gram",
+  category: "Luxury & Designer Jewellery",
+  jewelleryType: "Ring",
+  makingCalculationOn: "gross_weight",
+  status: "ACTIVE"
+},
+{
+  id: 4,
+  code: "GOLD-BAR-001",
+  uniqueId: "GOLD_BAR00004",
+  name: "Gold Bar",
+  itemType: "Gold",
+  uom: "Gram",
+  category: "Gold",
+  jewelleryType: "Gold Bar",
+  makingCalculationOn: "gross_weight",
+  status: "ACTIVE"
+}
+];
+
+
                  
                    return (
                      
@@ -133,60 +154,68 @@
                        
                  
                         <table 
-      className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[2200px]" 
-      style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}
-    >
-      <thead className="text-xs text-gray-400 uppercase bg-white">
-        <tr>
-          <th className="px-6 py-3" style={{paddingLeft:'20px', width:'150px'}}>SL NO</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>CODE</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>UNIQUE ID</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>NAME</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>ITEM TYPE</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>UOM</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>CATEGORY</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>JEWELLERY TYPE</th>
-          <th className="px-6 py-3" style={{width:'250px'}}>MAKING CALCULATION ON</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>STATUS</th>
-          <th className="px-6 py-3" style={{width:'150px'}}>ACTION</th>
-        </tr>
-      </thead>
-      <tbody>
-        {inventoryData.map((item) => (
-          <tr key={item.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-            <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>
-              {item.id}
-            </td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.code}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uniqueId}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.itemType}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uom}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.category}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewelleryType}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.makingCalculationOn}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">
-              <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>
-                {item.status}
-              </span>
-            </td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                <Link to='/dashboard/inventory/gold/updateitem'>
-                   <EditButton
-        
-                   />
-                </Link>
-                <DeleteButton 
-                buttonText="Delete Item" 
-                modalId="my_modal_8" 
-               />
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+                            className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[2200px]" 
+                            style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}
+                          >
+                            <thead className="text-xs text-gray-400 uppercase bg-white">
+                              <tr>
+                                <th className="px-6 py-3" style={{paddingLeft:'20px', width:'150px'}}>SL NO</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>CODE</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>UNIQUE ID</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>NAME</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>ITEM TYPE</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>UOM</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>CATEGORY</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>JEWELLERY TYPE</th>
+                                <th className="px-6 py-3" style={{width:'200px'}}>MAKING CALCULATION ON</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>STATUS</th>
+                                <th className="px-6 py-3" style={{width:'130px'}}>ACTION</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {goldItemData.slice().reverse().map((item) => (
+                                <tr key={item.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>
+                                    {item.id}
+                                  </td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.code}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.id}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uom}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.category}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.making_calculation_on}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                                   <span
+                                    className={`font-bold text-[10px] px-2 py-0.5 rounded ${
+                                      item.status
+                                        ? 'bg-green-300 text-green-700'
+                                        : 'bg-red-300 text-red-700'
+                                    }`}
+                                    style={{ padding: '2px 6px' }}
+                                  >
+                                    {item.status ? 'Active' : 'Inactive'}
+                                  </span>
+
+                                  </td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                      <Link to='/dashboard/inventory/gold/updateitem'>
+                                        <EditButton
+                              
+                                        />
+                                      </Link>
+                                      <DeleteButton 
+                                      buttonText="Delete Item" 
+                                      modalId="my_modal_8" 
+                                    />
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                        
                  
                        {/* Pagination */}
@@ -245,10 +274,10 @@
                           </button>
                         </div>
                       </div>
-                    </dialog>
+                       </dialog>
       
       
-                  <dialog id="my_modal_cancel" className="modal">
+                      <dialog id="my_modal_cancel" className="modal">
                   <div className="modal-box text-center py-10 px-8 w-[90vw] bg-white max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
                       onClick={() => {
                       document.getElementById('my_modal_cancel').close();
@@ -271,7 +300,7 @@
                       <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Item is safe</p>
                       <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
                   </div>
-                  </dialog>
+                      </dialog>
                       </div>
       
                      
