@@ -10,6 +10,7 @@ const initialState = {
   first_name: '',
   last_name: '',
   refresh: null,
+  is_account_active:null,
   is_superadmin:null
 };
 
@@ -27,7 +28,8 @@ const authSlice = createSlice({
         first_name,
         last_name,
         refresh,
-        is_superadmin
+        is_superadmin,
+        is_account_active
       } = action.payload;
 
       state.login_type = login_type;
@@ -39,6 +41,7 @@ const authSlice = createSlice({
       state.last_name = last_name;
       state.refresh = refresh;
       state.is_superadmin = is_superadmin;
+      state.is_account_active = is_account_active;
     },
 
     logout: (state) => {

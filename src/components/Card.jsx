@@ -46,20 +46,19 @@ const DynamicSidebar = () => {
   };
 
   const renderMenuItems = (items, level = 0, parentIndex = '') => {
-    console.log(items)
     return items.map((item, index) => {
-          console.log(item.url)
 
       const hasChildren = item.sub_menu?.length || item.gold_menu?.length || item.diamond_menu?.length;
       const uniqueKey = `${parentIndex}-${index}`;
       const isItemActive = isActive(item.url);
       const isExpanded = expandedMenus[uniqueKey];
+      const textSizeClass = level > 0 ? 'text-[12px]' : 'text-[14px]';
 
       return (
         <div key={uniqueKey} style={{ marginLeft: level > 0 ? '2px' : '0' }}>
           <div 
             className={`flex items-center justify-between py-2 px-3 rounded-lg transition-colors
-              ${isItemActive ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100 text-gray-700'}
+              ${isItemActive ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100 text-gray-400'}
             `}
             
           >
@@ -80,7 +79,7 @@ const DynamicSidebar = () => {
             ) : (
              <Link 
               to={`${item.url}`} 
-              className="flex items-center w-full text-[14px] text-gray-400"
+              className={`flex items-center w-full text-[14px] ${textSizeClass} text-gray-400`}
             >
               {item.menu_name || item.main_menu}
             </Link>
@@ -95,20 +94,30 @@ const DynamicSidebar = () => {
                 </div>
               )}
               
-              {item.gold_menu?.length > 0 && (
-                <div style={{ marginTop: '8px' }}>
-                  <div className="text-[10px] font-semibold text-[#67748e] uppercase tracking-wider px-3 py-1">
-                    Gold
-                  </div>
-                  <div style={{ borderLeft: '2px solid #e5e7eb', paddingLeft: '8px' }}>
+            {item.gold_menu?.length > 0 && (
+              <div style={{ marginTop: '8px' }}>
+                <button
+                  className="flex items-center w-full gap-2 text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wide hover:text-blue-600 transition"
+                  onClick={() => toggleMenu(`${uniqueKey}-gold`)}
+                  style={{ paddingLeft: '31px' }}
+                >
+                  <span>Gold</span>
+                  <span className="text-[8px] ml-auto">
+                    {expandedMenus[`${uniqueKey}-gold`] ? '▲' : '▼'}
+                  </span>
+                </button>
+                {expandedMenus[`${uniqueKey}-gold`] && (
+                  <div className=" flex flex-col gap-2 " style={{ paddingLeft: '30px'  }}>
                     {renderMenuItems(item.gold_menu, level + 1, `${uniqueKey}-gold`)}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
+
               
               {item.diamond_menu?.length > 0 && (
                 <div style={{ marginTop: '8px' }}>
-                  <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider px-3 py-1">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-1">
                     Diamond
                   </div>
                   <div style={{ borderLeft: '2px solid #e5e7eb', paddingLeft: '8px' }}>
@@ -126,7 +135,7 @@ const DynamicSidebar = () => {
   return (
     <div className="bg-white rounded-2xl w-[250px] h-full flex flex-col shadow-sm" 
          style={{ fontFamily: 'Open Sans', overflow: 'hidden' }}>
-      <div style={{ padding: '25px 0 25px 30px' }} className="flex items-center gap-2 font-semibold text-[14px] text-gray-500">
+      <div style={{ padding: '25px 0 25px 30px' }} className="flex items-center gap-2 font-semibold text-[14px] text-gray-400">
         <img src={Logo} alt="Logo" className="w-[30px] h-[30px]" />
         <Link to={'/dashboard'}>
         <span>Dashboard</span>
@@ -134,14 +143,14 @@ const DynamicSidebar = () => {
       </div>
 
       <div style={{ padding:"0px 35px",paddingBottom:'30px' }}>
-        <hr className="border-gray-200" />
+        <hr className="border-gray-300" />
       </div>
 
       <div style={{ paddingLeft:'35px', paddingRight:'18px', flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '36px' }}>
         {menuData.length > 0 ? (
           renderMenuItems(menuData)
         ) : (
-          <div style={{ padding: '16px 0', textAlign: 'center' }} className="text-gray-500">
+          <div style={{ padding: '16px 0', textAlign: 'center' }} className="text-gray-400">
             Loading menu...
           </div>
         )}

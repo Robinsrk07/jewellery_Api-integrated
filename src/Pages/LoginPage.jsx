@@ -45,7 +45,8 @@ const Login = () => {
       first_name: data.first_name || '',
       last_name: data.last_name || '',
       refresh: refresh, // Using the refresh token from response
-      is_superadmin: data.is_superadmin
+      is_superadmin: data.is_superadmin,
+      is_account_active: data.is_account_active
     }));
       navigate('/dashboard'); // redirect after successful login
     } catch (err) {

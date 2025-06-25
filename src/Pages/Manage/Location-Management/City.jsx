@@ -7,7 +7,6 @@ import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 const City=()=>{
    
- const  [isHovered, setIsHovered] = useState(false);
                     const [items, setItems] = useState(10);
                     const [formData, setFormData] = useState({
                       code:'',
@@ -15,14 +14,9 @@ const City=()=>{
                       country:'',
                       status:'',
                     });
-                    const [errors, setErrors] = useState({});
                      // handle change 
                   
-                        const handleChange = (e) => {
-                          const { name, value } = e.target;
-                          setFormData((prev) => ({ ...prev, [name]: value }));
-                          setErrors((prev) => ({ ...prev, [name]: '' })); 
-                        };
+                       
        
                      const [modal, setModal] = useState(false)   
                      const [editModal,setEditModal]= useState(false)

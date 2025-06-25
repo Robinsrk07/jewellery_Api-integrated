@@ -27,162 +27,72 @@ const FetchGoldItemData =async()=>{
     console.error("Error fetching gold item data:", error);
   }
 }
-console.log(goldItemData);
 
 useEffect(() => {
   FetchGoldItemData(); 
  }, [limit, page, search, status]);
 
-// 1
-const inventoryData = [
-{
-  id: 1,
-  code: "BRD-NKL-22K-001",
-  uniqueId: "BRD-NKL00001",
-  name: "22K Gold Bridal Necklace",
-  itemType: "Gold",
-  uom: "Gram",
-  category: "Bridal Jewellery",
-  jewelleryType: "Necklace",
-  makingCalculationOn: "gross_weight",
-  status: "ACTIVE"
-},
-{
-  id: 2,
-  code: "EVD-PND-18K-002",
-  uniqueId: "EVD-PND00002",
-  name: "18K Gold Everyday Wear Pendant",
-  itemType: "Gold",
-  uom: "Gram",
-  category: "Everyday Wear",
-  jewelleryType: "Necklace",
-  makingCalculationOn: "net_weight",
-  status: "ACTIVE"
-},
-{
-  id: 3,
-  code: "LUX-RNG-14K-003",
-  uniqueId: "LUX-RNG00003",
-  name: "14K Gold Designer Cocktail Ring",
-  itemType: "Gold",
-  uom: "Gram",
-  category: "Luxury & Designer Jewellery",
-  jewelleryType: "Ring",
-  makingCalculationOn: "gross_weight",
-  status: "ACTIVE"
-},
-{
-  id: 4,
-  code: "GOLD-BAR-001",
-  uniqueId: "GOLD_BAR00004",
-  name: "Gold Bar",
-  itemType: "Gold",
-  uom: "Gram",
-  category: "Gold",
-  jewelleryType: "Gold Bar",
-  makingCalculationOn: "gross_weight",
-  status: "ACTIVE"
-}
-];
+
 
 
                  
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
+                < CustomScrollbar/>
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
                     2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
+                    h-auto max-h-[80vh] 
                     rounded-xl px-4 md:px-8 lg:px-12
                     mx-auto overflow-auto  custom-scrollbar"
                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                    >
                     
-                                  <div
-                              style={{
-                              position: 'sticky',
-                              left: 0,
-                              top: 0,
-                              zIndex: 10,
-                              backgroundColor: 'white',
-                              padding: '1.5rem',
-                              boxSizing: 'border-box',
-                              display: 'flex',
-                              justifyContent: 'flex-end',
-                              width: 'fit-content', // Changed from 100%
-                              minWidth: '100%' // Ensures it matches table width
-                              }}
-                          >
+                                  
                               <Link to="/dashboard/inventory/createItem">
                        <CreateButton
                         buttoncontent="+ Create New Item"
                         />                 
                       </Link>
-                          </div>
+                          
                  
                         <ItemsPerPageSelector items={items} setItems={setItems} />
                  
                        
                  
-                        <table 
-                            className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[2200px]" 
-                            style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}
-                          >
-                            <thead className="text-xs text-gray-400 uppercase bg-white">
+                          <table 
+                              className="table w-full text-sm text-left text-gray-500 border-collapse"
+                              style={{ tableLayout: 'fixed' }}
+                            >
+
+                            <thead className="text-xs text-gray-400 uppercase bg-white h-[50px]">
                               <tr>
-                                <th className="px-6 py-3" style={{paddingLeft:'20px', width:'150px'}}>SL NO</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>CODE</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>UNIQUE ID</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>NAME</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>ITEM TYPE</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>UOM</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>CATEGORY</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>JEWELLERY TYPE</th>
-                                <th className="px-6 py-3" style={{width:'200px'}}>MAKING CALCULATION ON</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>STATUS</th>
-                                <th className="px-6 py-3" style={{width:'130px'}}>ACTION</th>
+                                <th  style={{width:'70px ', padding:'0px 20px'}} >SL NO</th>
+                                <th style={{width:'130px ', padding:'0px 20px' }}>CODE</th>
+                                <th style={{width:'110px ', padding:'0px 20px' }}>UNIQUE ID</th>
+                                <th style={{width:'210px ', padding:'0px 0px' }}>NAME</th>
+                                <th style={{width:'100px ', padding:'0px 0px' }}>ITEM TYPE</th>
+                                <th style={{width:'80px ', padding:'0px 0px' }}>UOM</th>
+                                <th style={{width:'120px ', padding:'0px 0px' }}>CATEGORY</th>
+                                <th style={{width:'130px ', padding:'0px 0px' }}>JEWELLERY TYPE</th>
+                                <th style={{width:'180px ', padding:'0px 0px' }}>MAKING CALCULATION ON</th>
+                                <th style={{width:'130px ', padding:'0px 0px' }}>STATUS</th>
+                                <th style={{width:'130px ', padding:'0px 0px' }}>ACTION</th>
                               </tr>
                             </thead>
                             <tbody>
                               {goldItemData.slice().reverse().map((item) => (
-                                <tr key={item.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>
+                                <tr key={item.id} className="bg-white hover:bg-gray-50 h-[50px] text-gray-400" >
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
                                     {item.id}
                                   </td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.code}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.id}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
+                                  <td className=" border-b border-gray-200  text-xs" style={{ paddingLeft: '20px' }} >{item.code}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200  text-xs" style={{ paddingLeft: '30px' }}>{item.id}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200  text-xs">{item.name}</td>
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uom}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200  text-xs">{item.uom}</td>
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.category}</td>
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.making_calculation_on}</td>

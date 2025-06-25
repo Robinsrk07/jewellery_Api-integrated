@@ -80,7 +80,7 @@ const BreadCrumb = () => {
   }, [location, menuData]);
 
   return (
-    <div className="breadcrumb-container " style={{ fontFamily: 'Open Sans'}}>
+    <div className="breadcrumb-container text-white " style={{ fontFamily: 'Open Sans'}}>
       {breadcrumbs.map((crumb, index) => (
         <span key={index}>
           {index > 0 && <span className="separator"> / </span>}

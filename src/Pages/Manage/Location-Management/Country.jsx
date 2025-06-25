@@ -1,94 +1,94 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+import  CountryModel from '../../../models/countryModel';
+import { useSelector } from "react-redux";
 
 
 const Country =()=>{
    
                     const [items, setItems] = useState(10);
-                    const [formData, setFormData] = useState({
-                      code:'',
-                      name: '',
-                      description: '',
-                      status:'',
-                    });
-                    const [errors, setErrors] = useState({});
-                     // handle change 
-                  
-                        const handleChange = (e) => {
-                          const { name, value } = e.target;
-                          setFormData((prev) => ({ ...prev, [name]: value }));
-                          setErrors((prev) => ({ ...prev, [name]: '' })); 
-                        };
-       
-                     const [modal, setModal] = useState(false)   
-                     const [editModal,setEditModal]= useState(false)
-                  
-                    //validation 
-                    const countryData = [
-                              {
-                                id: 1,
-                                slNo: 1,
-                                code: "+91",
-                                name: "INDIA",
-                                status: "ACTIVE"
-                              },
-                              {
-                                id: 2,
-                                slNo: 2,
-                                code: "+971",
-                                name: "United Arab Emirates",
-                                status: "ACTIVE"
-                              }
-                            ];
-                    const validate = () => {
-                      const newErrors = {};
-                      if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                      if (!formData.code.trim()) newErrors.code = 'Please Enter code';
-                      if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                      if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                      return newErrors;
-                    };    
-                  
-                    //handle submit
-                  
-                    const handleSubmit = (e) => {
-                      e.preventDefault();
-                      const validationErrors = validate();
-                      if (Object.keys(validationErrors).length > 0) {
-                        setErrors(validationErrors);
-                        return;
-                      }
-                  
-                      // Submit form
-                      console.log('Form submitted:', formData);
-                  
-                      // Reset form and close modal - Fixed to include all fields
-                      setFormData({
-                        code:'',
-                        name: '',
-                        description: '',
-                        status: '',
+                    const [modal, setModal] = useState(false)   
+                    const [editModal,setEditModal]= useState(false)
+                    const [countryData, setCountryData] = useState([]);
+                     const auth= useSelector((state) => state.auth);
+                     const { login_id ,can_manage_user_types,} = auth;    
+                     const[limit,setLimit]=useState(10);  
+                     const[page,setPage]=useState(1);  
+                     const[search,setSearch]=useState('');
+                     const[status,setStatus]=useState('');
+                     const [addCountryData, setaddCountryData] = useState({
+                      code: '',
+                      name: ''
                       });
-                      setErrors({});
-                      setModal(false);
-                    };
+                     const [succes,setSuccess] = useState(false);
+                     const user_id = login_id;
+                     const user_types = Object.keys(can_manage_user_types).join(','); 
+                   
+                        console.log(countryData)
+                const FetchCountry = async () => {
+                  try {
+                    const response = await CountryModel.getCountries(
+                      user_id,          
+                      user_types,          
+                      limit,
+                      page,
+                      search,
+                      status               
+                    );
+
+                    if (response.data && response.data.data) {
+                       setCountryData(response.data.data);
+                    }
+                  } catch (error) {
+                    console.error("Error fetching country data:", error);
+                  }
+                };
+
+                  const handleChange = (e) => {
+                        const { name, value } = e.target;
+                        setaddCountryData(prev => ({ ...prev, [name]: value }));
+                      };
+
+                  const handleSubmit = async () => {
+                    const formData = new FormData();
+                    formData.append('code', addCountryData.code);
+                    formData.append('name', addCountryData.name);
+                  try {
+                    const response = await CountryModel.CreateCountry(formData);
+                     if(response.status === 201) {
+                      setSuccess(true)
+                                    }
+                      handleCloseModal(); 
+                  } catch (error) {
+                    console.error("Error creating country:", error);
+                  } 
+                };
+
                    
                     // Handle close modal
-                    const handleCloseModal = () => {
+                   const handleCloseModal = () => {
+                      setaddCountryData({
+                        code: '',
+                        name: '',
+                        // reset other fields as needed
+                      });
                       setModal(false);
                     };
+
                   
                     const handleEditCloseModal = () => {
                       setEditModal(false)
                     };
                   
                   
-                  
+                  useEffect(() => {
+                    FetchCountry(); 
+                  },[])
                   
                   
                     return (
@@ -113,25 +113,35 @@ const Country =()=>{
                         
                   
                       <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
-        style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '800px' }}>
+                        style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '800px' }}>
                       <thead className="text-xs text-gray-400 uppercase bg-white">
                         <tr>
-                          <th className="py-3" style={{ width: '80px', paddingLeft: '20px' }}>SL NO</th>
-                          <th className="py-3" style={{ width: '100px' }}>CODE</th>
-                          <th className="py-3" style={{ width: '130px' }}>NAME</th>
-                          <th className="py-3" style={{ width: '130px' }}>STATUS</th>
-                          <th className="py-3" style={{ width: '130px' }}>ACTION</th>
+                          <th  style={{ width: '80px', paddingLeft: '20px' }}>SL NO</th>
+                          <th  style={{ width: '100px' }}>CODE</th>
+                          <th  style={{ width: '130px' }}>NAME</th>
+                          <th  style={{ width: '130px' }}>STATUS</th>
+                          <th  style={{ width: '130px' }}>ACTION</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {countryData.map((country) => (
-                          <tr key={country.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                            <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
-                              {country.slNo}
+                        {countryData.map((country,index) => (
+                          <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                            <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                              {index+1}
                             </td>
                             <td className="py-4 border-b border-gray-200 text-xs">{country.code}</td>
                             <td className="py-4 border-b border-gray-200 text-xs">{country.name}</td>
-                            <td className="py-4 border-b border-gray-200 text-xs">{country.status}</td>
+                            <td className="py-4 border-b border-gray-200 text-xs">
+                              {country.status ? (
+                                <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                  INACTIVE
+                                </span>
+                              )}
+                            </td>
                             <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                               <div className="flex gap-2.5 items-center">
                                  <EditButton
@@ -214,7 +224,7 @@ const Country =()=>{
                      </dialog>
        
        
-          <dialog id="my_modal_cancel" className="modal">
+      <dialog id="my_modal_cancel" className="modal">
        
        
          <div className="modal-box bg-white text-center py-10 px-8 relative font-[Open Sans]  max-w-[90vw] aspect-[3/3]      /* Mobile: 4:3 ratio */
@@ -253,96 +263,70 @@ const Country =()=>{
          </div>
        </dialog>   
                        
-                       </div>
+      </div>
        
-                        {modal && (
+      {modal && (
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[400px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                          Create Country                     </h3>
                                     <hr className=" border-gray-300"/>
-      
                                     <div className="flex flex-col flex-grow gap-4"> {/* Added flex-grow */}
-                                   
-                                      
-                                      <label 
-                                       
+                                      <label      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Code:
                                       </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                        style={{paddingLeft:'12px'}}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name=""
+                                      <input
+                                        type="text"
+                                        placeholder="Type here"
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                        style={{ paddingLeft: '12px' }}
+                                        name="code"
+                                        value={addCountryData.code}
+                                        onChange={handleChange}
                                       />
-
-                                       <label 
-                                       
+                                       <label                                      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Name:
                                       </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                        style={{paddingLeft:'12px'}}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      
-                                      
-
-                                   
-                            
-                                           
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[80%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{paddingLeft:'12px'}}
-                                                //value={formData.status}
-                                                name=''
-                                               // onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                            </div> 
-                                            {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
-                                                >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
+                                     <input
+                                      type="text"
+                                      placeholder="Type here"
+                                      className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                      style={{ paddingLeft: '12px' }}
+                                      name="name"
+                                      value={addCountryData.name}
+                                      onChange={handleChange}
+                                    />
+                                   </div> 
+                                   <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
+                                        >
+                                     <button
+                                       type="button"
+                                       className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                       style={{ backgroundColor: '#8392ab' }}
                                                // onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                         )}
+                                      >
+                                             close
+                                      </button>
+                                         <button
+                                           type="button"
+                                           className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                           style={{ backgroundColor: '#5E72E4' }}
+                                           onClick={handleSubmit}
+                                          >
+                                          Create
+                                           </button>
+
+                                          </div>
+                                    </div>
+                                 </div>
+       )}
        
-                       {editModal &&(
+      {editModal &&(
                         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
                                   <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
@@ -425,7 +409,7 @@ const Country =()=>{
                                             </button>
                                             </div>
                                         </div>
-                        </div>)}
+     </div>)}
        
                           
                      </>)

@@ -116,19 +116,22 @@ import BranchWiseEmployee from './Pages/Branch/BranchWiseEmployee.jsx';
 import Stock_Transfer from './Pages/Inventory/Stock-Transfer.jsx';
 import Logout from './components/LogOut.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import AuthRedirect from './components/AuthRedirect';
+
 function App() {
   return (
     <div className="w-full h-full m-0 p-0">
       <BrowserRouter>
         <Routes>
+           <Route path="/" element={<AuthRedirect />} />
           <Route path='/login' element={<Login />} />
           <Route path="/logout" element={<Logout />} />
 
 
-           <Route element={<ProtectedRoute />}>
+          <Route element={<ProtectedRoute />}>
           <Route path='/pos' element={<Pos />} />
           <Route path='/dashboard' element={<Body />} >
-             <Route path='' element={<DashBoard/>}/>
+                <Route path='' element={<DashBoard/>}/>
           {/* basic configuration */}
                 <Route path='country' element={<Country/>} />
                 <Route path='city' element={<City/>} />
