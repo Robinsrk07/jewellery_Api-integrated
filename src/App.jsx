@@ -117,10 +117,13 @@ import Stock_Transfer from './Pages/Inventory/Stock-Transfer.jsx';
 import Logout from './components/LogOut.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AuthRedirect from './components/AuthRedirect';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
     <div className="w-full h-full m-0 p-0">
+      <ToastContainer position="top-right" autoClose={3000} />
       <BrowserRouter>
         <Routes>
            <Route path="/" element={<AuthRedirect />} />
@@ -178,13 +181,13 @@ function App() {
 
                 <Route path='item' element={<Item/>} />
                 <Route path='purchase' element={<Purchase/>} />
-                <Route path='list_purchase_fix' element={<PurchaseFix/>} />
-                <Route path='ListPurchase' element={<ListPurchase/>} />
+                <Route path='list_purchase_fix' element={<ListPurchase/>} />
+                <Route path='ListPurchase' element={<PurchaseFix/>} />
                 <Route path='creategoldpurchase' element={<CreateGoldPurchase/>} />
-                <Route path='createnewpurchase' element={<CreateNewPurchase/>} />
-                <Route path='viewpurchase' element={<ViewPurchase/>} />
-                <Route path='updatepurchase' element={<UpdateGoldPurchase/>} />
-                <Route path='updateitem' element={<UpdateItem/>} />
+                <Route path='createnewpurchase/:id' element={<CreateNewPurchase/>} />
+                <Route path='viewpurchase/:id' element={<ViewPurchase/>} />
+                <Route path='updatepurchase/:itemId/:id' element={<UpdateGoldPurchase/>} />
+                <Route path='updateitem/:id' element={<UpdateItem/>} />
 
                 {/* inventory Operations -diamond*/}
                 <Route path='purchasediamond' element={<DiamondPurchhase/>} />

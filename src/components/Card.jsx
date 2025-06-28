@@ -15,6 +15,8 @@ const DynamicSidebar = () => {
 
   useEffect(() => {
     const fetchMenuData = async () => {
+      console.log("called");
+      
       try {
         const response = await MenuListModel.getMenuList();
         setMenuData(response.data.data);
@@ -99,7 +101,7 @@ const DynamicSidebar = () => {
                 <button
                   className="flex items-center w-full gap-2 text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wide hover:text-blue-600 transition"
                   onClick={() => toggleMenu(`${uniqueKey}-gold`)}
-                  style={{ paddingLeft: '31px' }}
+                  style={{ paddingLeft: '31px',paddingBottom:'10px' }}
                 >
                   <span>Gold</span>
                   <span className="text-[8px] ml-auto">

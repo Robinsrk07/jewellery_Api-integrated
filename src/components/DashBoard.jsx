@@ -39,7 +39,7 @@ const Dashboard = () => {
        
        <div className="flex flex-col lg:flex-row  w-full justify-center gap-[27px]  h-auto">
   {/* Card 1 - GOLD */}
-        <div className="w-[100%] md:[60%] lg:w-[240px] h-[142px] rounded-2xl bg-white shadow-md flex justify-between " style={{padding:'18px'}}>
+        <div className="w-[100%]  lg:w-[240px] xl:w-[260px] h-[142px] rounded-2xl bg-white shadow-md flex justify-between " style={{padding:'18px'}}>
           <div className="flex flex-col justify-between">
             <div className="text-[14px] text-gray-500 font-semibold">GOLD</div>
             <div className="text-[20px] font-bold text-gray-800">₹ 52,000</div>
@@ -54,7 +54,7 @@ const Dashboard = () => {
         </div>
 
         {/* Card 2 - DIAMOND */}
-        <div className="w-[100%] md:[60%] lg:w-[240px] h-[142px] rounded-2xl bg-white shadow-md flex justify-between p-4"style={{padding:'18px'}}>
+        <div className="w-[100%]  lg:w-[240px] xl:w-[260px]  h-[142px] rounded-2xl bg-white shadow-md flex justify-between p-4"style={{padding:'18px'}}>
           <div className="flex flex-col justify-between">
             <div className="text-[14px] text-gray-500 font-semibold">DIAMOND</div>
             <div className="text-[20px] font-bold text-gray-800">₹ 72,500</div>
@@ -66,7 +66,7 @@ const Dashboard = () => {
         </div>
 
         {/* Card 3 - NEW BRANCH */}
-        <div className="w-[100%] md:[60%] lg:w-[240px] h-[142px] rounded-2xl bg-white shadow-md flex justify-between p-4" style={{padding:'18px'}}>
+        <div className="w-[100%]  lg:w-[240px] xl:w-[260px]  h-[142px] rounded-2xl bg-white shadow-md flex justify-between p-4" style={{padding:'18px'}}>
           <div className="flex flex-col justify-between">
             <div className="text-[14px] text-gray-500 font-semibold">NEW BRANCH</div>
             <div className="text-[20px] font-bold text-gray-800">+1000</div>
@@ -78,7 +78,7 @@ const Dashboard = () => {
         </div>
 
         {/* Card 4 - SALES */}
-        <div className="w-[100%] md:[60%] lg:w-[240px] h-[142px] rounded-2xl bg-white shadow-md flex justify-between "style={{padding:'18px'}}>
+        <div className="w-[100%] lg:w-[240px] xl:w-[260px]  h-[142px] rounded-2xl bg-white shadow-md flex justify-between "style={{padding:'18px'}}>
           <div className="flex flex-col justify-between">
             <div className="text-[14px] text-gray-500 font-semibold">SALES</div>
             <div className="text-[20px] font-bold text-gray-800">₹ 1,03,4300</div>

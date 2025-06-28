@@ -123,7 +123,7 @@ const Login = () => {
                 <input
                   type="checkbox"
                   defaultChecked
-                  className="toggle checked:bg-blue-500 bg-gray-200"
+                  className="toggle border-gray-100 bg-gray-400 checked:bg-blue-500 bg-gray-200"
                   style={{ width: '40px', height: '20px' }}
                 />
                 <span className="text-gray-500 text-[1rem]" style={{ fontFamily: "Open Sans" }}>Remember me</span>
@@ -133,7 +133,7 @@ const Login = () => {
 
           <div className="flex justify-center">
             <button
-              className="btn btn-primary bg-blue-500 rounded-lg"
+              className="btn btn-primary  bg-[#5E72E4] rounded-lg"
               style={{ marginTop: '20px', height: '50px', width: '300px', fontFamily: "Open Sans" }}
               onClick={handleSignIn}
             >
@@ -147,7 +147,7 @@ const Login = () => {
               style={{ paddingTop: '23px', marginBottom: '30px', fontFamily: "Open Sans" }}
             >
               Don't have an account?{' '}
-              <span className="text-blue-500 font-medium cursor-pointer">Sign up</span>
+              <span className="text-blue-500 font-semibold cursor-pointer">Sign up</span>
             </p>
           </div>
         </div>

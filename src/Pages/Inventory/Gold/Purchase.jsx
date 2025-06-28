@@ -2,7 +2,7 @@
 
     
     
-     import { useState } from "react";
+     import { useEffect, useState } from "react";
      import { Link } from "react-router";
      import CustomScrollbar from "../../../components/CustomScrollbar";
       import EditButton from '../../../components/EditButton';
@@ -10,73 +10,34 @@
       import CreateButton from '../../../components/CreateButton';
       import Pagination from '../../../components/Pagination';
       import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+      import PurchaseModel from '../../../models/PurchaseModel';
+       import { useSelector } from "react-redux";
+
      const  Purchase = () => {
-     
           
-      const  [isHovered, setIsHovered] = useState(false);
                    const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     email:'',
-                     status:'',
-                     phone:'',
-                     address:'',
-                     gender:''
-                   });
-                   const [errors, setErrors] = useState({});
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.gender.trim()) newErrors.gender = 'Please Enter Name';
-                     if (!formData.phone.trim()) newErrors.phone = 'Please Enter Name';
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.address.trim()) newErrors.address = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                      name: '',
-                      email:'',
-                      status:'',
-                      phone:'',
-                      address:'',
-                      gender:''
-                     });
-                     setErrors({});
-                   };
-                  
-                   
-                 
-                 
-                 
-                 
-                 
+                   const auth= useSelector((state) => state.auth);
+                   const {login_type,login_id} =auth
+                   const [limit, setLimit] = useState(10);
+                   const [page, setPage] = useState(1);
+                   const [search, setSearch] = useState('');
+                   const [status, setStatus] = useState('');
+                   const [purchaseData, setPurchaseData] = useState([]);
+                   console.log(purchaseData);
+                      
+                  const FetchPurchaseData =async()=>{
+                    try{
+                      const response = await PurchaseModel.getPurchases(login_id,login_type,limit,page,search,status)
+                      setPurchaseData(response.data.data);
+                    }catch(error){
+                      console.error("Error fetching purchase data:", error);
+                    }
+                  }
+
+                  useEffect(() => {
+                    FetchPurchaseData(); 
+                  }, [limit, page, search, status]);
+
                    return (
                      
                  <>
@@ -111,19 +72,53 @@
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
                     2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
+                    h-auto max-h-[80vh] 
                     rounded-xl px-4 md:px-8 lg:px-12
                     mx-auto overflow-auto  custom-scrollbar"
                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                    >
-                    
-                                 
+                     
+                               
                               <Link to="/dashboard/creategoldpurchase">
                               <CreateButton
                                 buttoncontent="+ Purchase"
-                  
+                                
                                   />
                               </Link>
+
+                              <div
+      style={{
+        position: 'sticky',
+        left: 0,
+        top: 0,
+        zIndex: 10,
+        backgroundColor: 'white',
+        padding: '1rem',
+        boxSizing: 'border-box',
+        display: 'flex',
+        justifyContent: 'flex-end',
+        width: 'fit-content',
+        minWidth: '100%',
+      }}
+    >
+      <Link to="/dashboard/ListPurchase">
+      <button
+        className="text-xs font-bold"
+        style={{
+          width: '160px',
+          height: '33px',
+          borderRadius: '8px',
+          background: 'linear-gradient(to right, #7F60E4, #6170E4)',
+          color: 'white',
+          transition: 'background-color 0.3s ease',
+          cursor: 'pointer',
+        }}
+          
+      >
+        Purchase Fix
+      </button></Link>
+    </div>
+                            
                          
                  
                        <ItemsPerPageSelector items={items} setItems={setItems} />
@@ -131,64 +126,52 @@
                        
                  
                        <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[2500px]
-                       " style={{ borderSpacing: '0 12px', borderCollapse: 'separate', }}>
+                       " >
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3 " style={{paddingLeft:'20px'}} >SL NO</th>
-                             <th className="px-6 py-3 "  >INVOICE NO </th>
-                             <th className="px-6 py-3  "  > SUPPLIER</th>
-                             <th className="px-6 py-3   "  >TOTAL STONE WEIGHT</th>
-                             <th className="px-6 py-3  " >TOTAL GROSS WEIGHT</th>
-                             <th className="px-6 py-3 "  >TOTAL ACTUAL PURITY</th>
-                             <th className="px-6 py-3 "  >TOTAL MAKING RATE</th>
-                             <th className="px-6 py-3 "  > TOTAL STONE RATE</th>
-                             <th className="px-6 py-3 "  >  TOTAL TAX AMOUNT</th>
-                             <th className="px-6 py-3 "  >BALANCE AMOUNT</th>
-                             <th className="px-6 py-3 "  >TOTAL ITEM PURCHASED</th>
-                             <th className="px-6 py-3 " >CREATED  DATE</th>
-                             <th className="px-6 py-3 " >ACTION</th>
+                             <th className="" style={{paddingLeft:'20px'}} >SL NO</th>
+                             <th className=" "  >INVOICE NO </th>
+                             <th className="  "  > SUPPLIER</th>
+                             <th className="   "  >TOTAL STONE WEIGHT</th>
+                             <th className="  " >TOTAL GROSS WEIGHT</th>
+                             <th className=" "  >TOTAL ACTUAL PURITY</th>
+                             <th className=" "  >TOTAL MAKING RATE</th>
+                             <th className=" "  > TOTAL STONE RATE</th>
+                             <th className=" "  >  TOTAL TAX AMOUNT</th>
+                             <th className=" "  >BALANCE AMOUNT</th>
+                             <th className=" "  >TOTAL ITEM PURCHASED</th>
+                             <th className=" " >CREATED  DATE</th>
+                             <th className=" " >ACTION</th>
                            </tr>
                          </thead>
-                         <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">INV-000001 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">GOLD_SUPPLIER_DUBAI </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">20.000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">50.00 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">916.00 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">None %</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">$ 200.000000000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">$ 180.00 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">$ 1800.00</td>
-                                 <td className="px-6 py-5 border-b border-gray-200 text-xs">1</td>
-                                 <td className="px-6 py-5 border-b border-gray-200 text-xs">April 9, 2025, 12:35 p.m.</td>
-      
-                                <td className=" border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div className="flex flex-row ">
-                                      <Link to="/dashboard/inventory/gold/createnewpurchase">
-                                      <CreateButton
-                                        buttoncontent=" New Purchase"
-                                        
-                                        /> </Link>
-                                      <Link to="/dashboard/inventory/gold/viewpurchase">
-                                       <CreateButton
-                                        buttoncontent="View Purchase"
-                                        
-                                        /> </Link>
-                                  </div>
-                                  </td>
-                             </tr>
-                            
-                            
-                             
-                             
-                             
-                             
-                            
+                      <tbody>
+                  {purchaseData.map((item, index) => (
+                    <tr key={item.id} className="bg-white hover:bg-gray-50 h-[30px] text-gray-400">
+                      <td className=" border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.invoice_no}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.supplier_name}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_stone_weight}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_gross_weight}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_actual_purity}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.adjusted_total_making_rate} </td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.adjusted_total_stone_rate}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.adjusted_total_tax_amount}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.adjusted_total_price}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_items_purchased}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{new Date(item.created_at).toLocaleString()}</td>
+
+                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                        <div className="flex flex-row gap-2">
                           
-                         </tbody>
+                          <Link to={`/dashboard/viewpurchase/${item.id}`}>
+                            <CreateButton buttoncontent="View Purchase" />
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+
                        </table>
                        
                  

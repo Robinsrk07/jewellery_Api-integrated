@@ -120,14 +120,14 @@ const City=()=>{
                                 <tbody>
                                   {locationData.map((location) => (
                                     <tr key={location.id} className="bg-white hover:bg-gray-50 h-[30px] text-gray-400">
-                                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '20px', paddingTop: '20px', paddingBottom: '20px' }}>
+                                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '20px', paddingTop: '20px', paddingBottom: '10px' }}>
                                         {location.slNo}
                                       </td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '20px 24px' }}>{location.code}</td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '20px 24px' }}>{location.name}</td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '20px 24px' }}>{location.country}</td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '20px 24px' }}>{location.status}</td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '20px 10px 20px 24px' }}>
+                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '0px 0px' }}>{location.code}</td>
+                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '0px 24px' }}>{location.name}</td>
+                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '0px 24px' }}>{location.country}</td>
+                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '0px 24px' }}>{location.status}</td>
+                                      <td className="border-b border-gray-200 text-xs" style={{ padding: '0px 24px ' }}>
                                         <div className="flex gap-2.5 items-center">
                                           <EditButton
                                           onClick={()=>setEditModal(true)}

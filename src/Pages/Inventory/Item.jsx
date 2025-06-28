@@ -71,7 +71,7 @@ useEffect(() => {
                               <tr>
                                 <th  style={{width:'70px ', padding:'0px 20px'}} >SL NO</th>
                                 <th style={{width:'130px ', padding:'0px 20px' }}>CODE</th>
-                                <th style={{width:'110px ', padding:'0px 20px' }}>UNIQUE ID</th>
+                                <th style={{width:'200px ', padding:'0px 20px' }}>UNIQUE ID</th>
                                 <th style={{width:'210px ', padding:'0px 0px' }}>NAME</th>
                                 <th style={{width:'100px ', padding:'0px 0px' }}>ITEM TYPE</th>
                                 <th style={{width:'80px ', padding:'0px 0px' }}>UOM</th>
@@ -89,7 +89,7 @@ useEffect(() => {
                                     {item.id}
                                   </td>
                                   <td className=" border-b border-gray-200  text-xs" style={{ paddingLeft: '20px' }} >{item.code}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200  text-xs" style={{ paddingLeft: '30px' }}>{item.id}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200  text-xs" style={{ paddingLeft: '30px' }}>{item.unique_id}</td>
                                   <td className="px-6 py-5 border-b border-gray-200  text-xs">{item.name}</td>
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
                                   <td className="px-6 py-5 border-b border-gray-200  text-xs">{item.uom}</td>
@@ -111,10 +111,8 @@ useEffect(() => {
                                   </td>
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <Link to='/dashboard/inventory/gold/updateitem'>
-                                        <EditButton
-                              
-                                        />
+                                      <Link to={`/dashboard/updateitem/${item.id}`}>
+                                        <EditButton />
                                       </Link>
                                       <DeleteButton 
                                       buttonText="Delete Item" 

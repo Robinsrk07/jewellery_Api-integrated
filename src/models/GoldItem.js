@@ -1,3 +1,4 @@
+import CreateButton from "../components/CreateButton";
 import axiosInstance from "../Data/server/axiosinstance";
 
 
@@ -13,7 +14,14 @@ const GoldItemModel={
 
 
        return axiosInstance.get(`/gold-items/?${params.toString()}`);
-    }
+    },
+    CreateGoldItem: (goldItemData) => {
+        return axiosInstance.post('/create-items-gold/', goldItemData);
+    },
+    updateGoldItem: (data, id) => {
+     return axiosInstance.put(`/update-items-gold/${id}/`, data);
+}
+
 }
 
 export default GoldItemModel;
