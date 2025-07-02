@@ -5,10 +5,14 @@ const DeleteButton = ({
   buttonText = "Delete",
   modalId = "my_modal_8",
   onConfirmDelete = () => {},
+  onOpenModal = () => {},
+  item = null
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
   const handleClick = () => {
+    onOpenModal();
     const modal = document.getElementById(modalId);
     if (modal) modal.showModal();
     else console.warn(`Modal with id '${modalId}' not found.`);
@@ -18,10 +22,12 @@ const DeleteButton = ({
     try {
       setIsDeleting(true);
       await onConfirmDelete();
-      toast.success('Country deleted successfully!');
+       document.getElementById(modalId).close();
+
     } catch (error) {
       console.error("Delete error:", error);
-      toast.error('Failed to delete country!');
+       document.getElementById(modalId).close();
+
     } finally {
       setIsDeleting(false);
     }
@@ -119,7 +125,7 @@ const DeleteButton = ({
        
            {/* Title & Message */}
            <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-           <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Item safe</p>
+           <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your {item} is  safe</p>
            <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
        
            

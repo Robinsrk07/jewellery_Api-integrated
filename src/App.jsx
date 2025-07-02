@@ -117,6 +117,9 @@ import Stock_Transfer from './Pages/Inventory/Stock-Transfer.jsx';
 import Logout from './components/LogOut.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AuthRedirect from './components/AuthRedirect';
+import EditDiamondItem from './Pages/Inventory/Diamond/EditDiamondItem.jsx';
+import ListDiamond from './Pages/Inventory/Diamond/ListDiamond.jsx';
+import CreateDiamond from './Pages/Inventory/Diamond/CreateDiamond.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -189,10 +192,13 @@ function App() {
                 <Route path='updatepurchase/:itemId/:id' element={<UpdateGoldPurchase/>} />
                 <Route path='updateitem/:id' element={<UpdateItem/>} />
 
-                {/* inventory Operations -diamond*/}
-                <Route path='purchasediamond' element={<DiamondPurchhase/>} />
+''                <Route path='diamond-items' element={<DiamondPurchhase/>} />
                 <Route path='createDiamondPurchase' element={<CreateDiamondPurchase/>} />
                 <Route path='itemDetials' element={<ItemDetials/>} />
+                <Route path='editDiamondItems' element={<EditDiamondItem/>} />
+                <Route path='listDiamond/:uuid' element={<ListDiamond/>}/>
+                <Route path='createDiamond' element={<CreateDiamond/>}/>
+
 
                 {/* settings */}
                 <Route path='tax' element={<SettingsTax/>} />

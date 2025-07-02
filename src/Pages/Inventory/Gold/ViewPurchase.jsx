@@ -35,6 +35,7 @@ const ViewPurchase = () => {
   }
 
   useEffect(() => {
+    
     FetchPurchaseData(); 
   }, [limit, page, search, status]);
 

@@ -48,12 +48,13 @@ const validateForm = () => {
   const requiredFields = [
     'code',
     'item_type',
-    'uom',
+      'uom',
     'category',
     'subcategory',
     'jewellery_type',
     'making_calculation_on',
-    'is_serialized'
+    'is_serialized',
+    'status',
   ];
 
   requiredFields.forEach(field => {
@@ -67,6 +68,15 @@ const validateForm = () => {
   return Object.keys(newErrors).length === 0;
 };
 
+ const cleanData = (obj) => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(
+      ([_, value]) => value !== '' && value !== null
+    )
+  );
+};
+
+const cleanedData = cleanData(data);
 
 
  const getUtilsData = (key) => {
@@ -99,13 +109,13 @@ const handleSubmit = async (e) => {
   e.preventDefault(); // Prevent default form submission behavior
   
   if (!validateForm()) {
-    toast.error("Please fix form errors");
+    toast.error("Please Fill All Required Feild");
     return;
   }
-
+console.log(data)
 
   try {
-    const response = await GoldItemModel.CreateGoldItem(data);
+    const response = await GoldItemModel.CreateGoldItem(cleanedData);
     
     if (response.data) {
       toast.success(response.data.message || "Item created successfully!");
@@ -165,7 +175,8 @@ const handleSubmit = async (e) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10" style={{padding:'30px'}}>
         {/* code */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Code</label>
+          <label className="text-xs font-bold text-[#344767]">Code    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <input
             type="text"
             name='code'
@@ -195,7 +206,8 @@ const handleSubmit = async (e) => {
 
         {/* item type */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Item Type</label>
+          <label className="text-xs font-bold text-[#344767]">Item Type    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <select  
             name="item_type"
             onChange={handleChange}
@@ -219,7 +231,8 @@ const handleSubmit = async (e) => {
 
         {/* uom */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">UOM</label>
+          <label className="text-xs font-bold text-[#344767]">UOM    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <select
             name="uom"
             onChange={handleChange}
@@ -240,7 +253,8 @@ const handleSubmit = async (e) => {
 
         {/* category */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Category</label>
+          <label className="text-xs font-bold text-[#344767]">Category    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <select
             name="category"
             onChange={handleChange}
@@ -263,7 +277,8 @@ const handleSubmit = async (e) => {
 
         {/* sub Category */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Sub Category</label>
+          <label className="text-xs font-bold text-[#344767]">Sub Category    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <select
             name="subcategory"
             value={data.subcategory}
@@ -282,7 +297,8 @@ const handleSubmit = async (e) => {
 
         {/* jewellery type */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Jewellery Type</label>
+          <label className="text-xs font-bold text-[#344767]">Jewellery Type    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <select
             name="jewellery_type"
             value={data.jewellery_type}
@@ -322,7 +338,7 @@ const handleSubmit = async (e) => {
 
         {/* making calculation on */}
         <div className="w-full flex flex-col gap-2">
-          <label className="text-xs font-bold text-[#344767]">Making Calculation On</label>
+          <label className="text-xs font-bold text-[#344767]">Making Calculation On    <span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="making_calculation_on"
             value={data.making_calculation_on}
@@ -359,7 +375,8 @@ const handleSubmit = async (e) => {
 
         {/* is serialized */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Is Serialized</label>
+          <label className="text-xs font-bold text-[#344767]">Is Serialized    <span className="text-red-500 text-[14px]">*</span>
+</label>
           <select
             name="is_serialized"
             value={data.is_serialized}
@@ -424,6 +441,8 @@ const handleSubmit = async (e) => {
           </select>
         </div>
 
+        {/* item image */}
+       
         {/* item image */}
         <div className="w-full flex flex-col gap-2"> 
           <label className="text-xs font-bold text-[#344767]">Item Image</label>
@@ -605,7 +624,7 @@ const handleSubmit = async (e) => {
             </div>
 
             <div className="w-full flex flex-col gap-2"> 
-              <label className="text-xs font-bold text-[#344767]">Status</label>
+              <label className="text-xs font-bold text-[#344767]">Status  <span className="text-red-500 text-[14px]">*</span></label>
               <select
                 name="status"
                 value={data.status}

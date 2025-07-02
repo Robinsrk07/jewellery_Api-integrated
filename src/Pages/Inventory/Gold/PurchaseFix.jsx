@@ -21,7 +21,7 @@ const [data,setData]=useState({
   settlement_weight:''
 })
 
-const [balanceWeight, setBalanceWeight] = useState('');
+const [balance_weight, setBalanceWeight] = useState('');
 
 
 
@@ -116,8 +116,9 @@ const fetchPurchaseBalanceWeight = async() => {
       return;
     }
     const response = await PurchaseFixModel.getBalancedGoldWeight(data.supplier);
-    if (response.data && response.data.balance_weight) {
-      setBalanceWeight(response.data.balance_weight);
+    console.log(response)
+    if (response.data && response.data.data.balance_weight) {
+      setBalanceWeight(response.data.data.balance_weight);
     } else {
       setBalanceWeight('0'); 
     }
@@ -174,7 +175,7 @@ useEffect(() => {
           <label className="text-xs font-bold text-[#344767]">Balance Gold Weight</label>
           <input
               type="text"
-              value={balanceWeight}
+              value={balance_weight}
               readOnly
               style={{paddingLeft:'12px'}}
 
@@ -320,16 +321,7 @@ useEffect(() => {
                            </tr>
                          </thead>
                          <tbody>
-                           
-                         
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
+ 
                          </tbody>
                        </table>
                        </div>

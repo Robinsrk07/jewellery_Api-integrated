@@ -29,7 +29,7 @@ import { useSelector } from "react-redux";
                     const [page, setPage] = useState(1);
                     const [search, setSearch] = useState('');
                     const [status, setStatus] = useState('');   
-                    
+                    const [purchaseData,setPurchaseData] =useState([])
                   const [utils, setUtils] = useState({
                     uom: [],
                     terms_of_payment: [],
@@ -105,17 +105,24 @@ import { useSelector } from "react-redux";
                   }
                 };  
 
-                const fetchPurchaseFix =async(login_id,login_type,limit,page,search,status,supplier_id)=>{
+                const fetchPurchaseFix =async()=>{
 
-                  if(!login_id||!login_type||!limit||!page||!search||!status||!supplier_id )return
+                
                   try{
-                      const response = await PurchaseFixModel.getListPurchseFix(login_id,login_type,limit,page,search,status)
+                    if(!supplier_id) toast.error("supplier id not recived")
+                     
+                      const response = await PurchaseFixModel.getListPurchseFix(login_id,login_type,limit,page,search,status,supplier_id)
                       console.log(response);
                       
-                      if(response.status==200){
-                        toast.success("data retrived ")
+                      if(response.data.data){
+                        setPurchaseData(response.data.data)
                       }
+                      
+                        toast.success("data retrived ")
+                      
                   }catch(error){
+                                          console.log(error);
+
                        toast.error(" faild to load data")
                   }
 
@@ -125,9 +132,11 @@ import { useSelector } from "react-redux";
                     fetchPurchaseUtils();
                   }, []);
   
-                  useEffect(()=>{
-                    fetchPurchaseFix(login_id,login_type,limit,page,search,status,supplier_id)
-                  },[])
+                 useEffect(() => {
+                  if (!supplier_id) return;
+                  fetchPurchaseFix();
+                }, [supplier_id]); // 👈 now runs whenever supplier_id changes
+
                    return (
                      
                  <>
@@ -144,7 +153,7 @@ import { useSelector } from "react-redux";
                     <div className="flex flex-row justify-between items-center" style={{padding: '20px'}}>
   
                   <div className="flex flex-row gap-4"> {/* Changed from justify-between to gap */}
-<select 
+               <select 
             name="supplier" 
             value={getDisplayValue('supplier', data.supplier)}
             onChange={handleChange}
@@ -194,125 +203,28 @@ import { useSelector } from "react-redux";
                              <th className="px-6 py-3 "  >REFERENCE NUMBER</th>
                            </tr>
                          </thead>
-                         <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>2</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>3</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>4</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>5</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>6</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>7</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>8</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>9</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">COD</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1 GRAM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USED </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> $ 23 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">NEED TO CLRIFY </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">#000737 </td>
-                               
-      
-                               
-                             </tr>
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
+                       <tbody>
+                            {purchaseData.length > 0 ? (
+                              purchaseData.map((item, index) => (
+                                <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                                    {index + 1}
+                                  </td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.payment_type}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.gold_weight_gram} GRAM</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uom}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">${item.metal_rate}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.notes}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">#{item.reference_no}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan="7" className="text-center py-5 text-gray-400">No data available</td>
+                              </tr>
+                            )}
+                          </tbody>
+
                        </table>
                        
                  

@@ -83,10 +83,10 @@ useEffect(() => {
                               </tr>
                             </thead>
                             <tbody>
-                              {goldItemData.slice().reverse().map((item) => (
-                                <tr key={item.id} className="bg-white hover:bg-gray-50 h-[50px] text-gray-400" >
+                              {goldItemData.slice().reverse().map((item,index) => (
+                                <tr key={index} className="bg-white hover:bg-gray-50 h-[50px] text-gray-400" >
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
-                                    {item.id}
+                                    {index+1}
                                   </td>
                                   <td className=" border-b border-gray-200  text-xs" style={{ paddingLeft: '20px' }} >{item.code}</td>
                                   <td className="px-6 py-5 border-b border-gray-200  text-xs" style={{ paddingLeft: '30px' }}>{item.unique_id}</td>

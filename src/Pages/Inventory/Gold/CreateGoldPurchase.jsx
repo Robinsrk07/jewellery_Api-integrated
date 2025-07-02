@@ -5,44 +5,54 @@ import PurchaseModel from "../../../models/PurchaseModel";
 const CreateGoldPurchase = () => {
   const [data, setData] = useState({
     purchase_type: '',
-    items: "",
-    design: '',
-    brand: '',
-    made_in: '',
-    size: '',  
-    style: '',
-    occasion: '',
-    metal_color: '',
-    gender: '',
-    stone_type: '',
-    multi_stone_rate: '',
-    gross_weight: '',
-    discount: '',
-    tag_line_1: '',
-    tag_line_2: '',
-    tag_line_3: '',
-    tag_line_4: '',
-    tag_defenition: '',
-    alias: '',
-    status: '',
-    description: '',
-    item_type: '',
-    default_currency: '',
-    terms_of_payment: '',
-    due_date: '',
-    supplier: '',
-    reference_no: '',
-    stock_point: '',
-    supplier_currency: 1,
-    buyer_currency: '',
-    document_currency: 1,
-    making_rate: '',
-    stone_rate: '',
-    stone_weight: '',
-    multi_stone_weight: '',
+    items: "",//
+    design: '',//
+    brand: '',//
+    made_in: '',//
+    size: '',  //
+    style: '',//
+    occasion: '',//
+    metal_color: '',//
+    gender: '',//
+    stone_type: '',//
+    multi_stone_rate: '',//
+    gross_weight: '',//
+    discount: '',//
+    tagline_1: '',//
+    tagline_2: '',//
+    tagline_3: '',//
+    tagline_4: '',//
+    tag_defenition: '',//
+    alias: '',//
+    status: '',//
+    description: '',//
+    item_type: '',//
+    default_currency: '',// not in UI dont know about it
+    terms_of_payment: '',//
+    due_date: '',//
+    supplier: '',//
+    reference_no: '',//
+    stock_point: '',//
+    supplier_currency: "",// dont know about it 
+    buyer_currency: '',//
+    document_currency: 1,//
+    making_rate: '',//
+    stone_rate: '',//
+    stone_weight: '',//
+    multi_stone_weight: '',//
     address: '',
     
   });
+
+  const cleanData = (obj) => {
+  return Object.fromEntries(
+    Object.entries(obj).filter(
+      ([_, value]) => value !== '' && value !== null
+    )
+  );
+};
+
+const cleanedData = cleanData(data);
 
   const [errors, setErrors] = useState({});
   const [UtilsData, setUtilsData] = useState([]);
@@ -107,7 +117,7 @@ const validateForm = () => {
     return;
   }
   try{
-    const response = await PurchaseModel.createPurchase(data);
+    const response = await PurchaseModel.createPurchase(cleanedData);
     if (response.status === 201) {
       toast.success("Purchase created successfully!");
     }
@@ -161,7 +171,7 @@ const validateForm = () => {
 
         {/* Document Currency */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Document Currency</label>
+          <label className="text-xs font-bold text-[#344767]">Document Currency<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="document_currency"
             value={data.document_currency}
@@ -230,7 +240,7 @@ const validateForm = () => {
 
         {/* Supplier */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Supplier</label>
+          <label className="text-xs font-bold text-[#344767]">Supplier<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="supplier"
             value={data.supplier}
@@ -268,7 +278,7 @@ const validateForm = () => {
 
         {/* Stock Point */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stock Point</label>
+          <label className="text-xs font-bold text-[#344767]">Stock Point<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="stock_point"
             value={data.stock_point}
@@ -369,7 +379,7 @@ const validateForm = () => {
 
         {/* Items */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Items</label>
+          <label className="text-xs font-bold text-[#344767]">Items<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="items"
             value={data.items}
@@ -561,7 +571,7 @@ const validateForm = () => {
 
         {/* Making Rate */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Making Rate</label>
+          <label className="text-xs font-bold text-[#344767]">Making Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="making_rate"
@@ -576,7 +586,7 @@ const validateForm = () => {
 
         {/* Stone Rate */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stone Rate</label>
+          <label className="text-xs font-bold text-[#344767]">Stone Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="stone_rate"
@@ -606,7 +616,7 @@ const validateForm = () => {
 
         {/* Stone Weight */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stone Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Stone Weight<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="stone_weight"
@@ -636,7 +646,7 @@ const validateForm = () => {
 
         {/* Gross Weight */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Gross Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Gross Weight<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="gross_weight"

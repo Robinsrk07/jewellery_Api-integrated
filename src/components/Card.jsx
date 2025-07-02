@@ -115,18 +115,27 @@ const DynamicSidebar = () => {
                 )}
               </div>
             )}
-
-              
-              {item.diamond_menu?.length > 0 && (
-                <div style={{ marginTop: '8px' }}>
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-3 py-1">
-                    Diamond
-                  </div>
-                  <div style={{ borderLeft: '2px solid #e5e7eb', paddingLeft: '8px' }}>
+            {item.diamond_menu?.length > 0 && (
+              <div style={{ marginTop: '8px' }}>
+                <button
+                  className="flex items-center w-full gap-2 text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wide hover:text-blue-600 transition"
+                  onClick={() => toggleMenu(`${uniqueKey}-diamond`)}
+                  style={{ paddingLeft: '31px',paddingBottom:'10px' }}
+                >
+                  <span>Diamond</span>
+                  <span className=" ml-auto">
+                    {expandedMenus[`${uniqueKey}-diamond`] ? '▲' : '▼'}
+                  </span>
+                </button>
+                {expandedMenus[`${uniqueKey}-diamond`] && (
+                  <div className=" flex flex-col gap-2 text-[10px] " style={{ paddingLeft: '30px'  }}>
                     {renderMenuItems(item.diamond_menu, level + 1, `${uniqueKey}-diamond`)}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+            )}
+              
+             
             </div>
           )}
         </div>

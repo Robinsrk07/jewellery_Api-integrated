@@ -10,7 +10,8 @@ const GoldItemModel={
             limit: limit,
             page: page,
             search: search,
-            status: status})
+            status: status
+        })
 
 
        return axiosInstance.get(`/gold-items/?${params.toString()}`);

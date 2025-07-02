@@ -1,20 +1,16 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router";
+import CustomScrollbar from "../../../components/CustomScrollbar";
+import EditButton from '../../../components/EditButton';
+import DeleteButton from '../../../components/DeleteButton';
+import CreateButton from '../../../components/CreateButton';
+import Pagination from '../../../components/Pagination';
+import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+import PurchaseModel from '../../../models/PurchaseModel';
+import { useSelector } from "react-redux";
 
-
-    
-    
-     import { useEffect, useState } from "react";
-     import { Link } from "react-router";
-     import CustomScrollbar from "../../../components/CustomScrollbar";
-      import EditButton from '../../../components/EditButton';
-      import DeleteButton from '../../../components/DeleteButton';
-      import CreateButton from '../../../components/CreateButton';
-      import Pagination from '../../../components/Pagination';
-      import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
-      import PurchaseModel from '../../../models/PurchaseModel';
-       import { useSelector } from "react-redux";
-
-     const  Purchase = () => {
-          
+const  Purchase = () => {
+     
                    const [items, setItems] = useState(10);
                    const auth= useSelector((state) => state.auth);
                    const {login_type,login_id} =auth
@@ -68,6 +64,10 @@
                      scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
                    }
                  `}</style>
+
+                 {/* Sticky buttons container - outside scrollable area */}
+                
+
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
@@ -84,9 +84,9 @@
                                 buttoncontent="+ Purchase"
                                 
                                   />
-                              </Link>
+                              </Link> 
 
-                              <div
+                               <div
       style={{
         position: 'sticky',
         left: 0,
@@ -117,7 +117,7 @@
       >
         Purchase Fix
       </button></Link>
-    </div>
+    </div> 
                             
                          
                  
@@ -148,7 +148,7 @@
                   {purchaseData.map((item, index) => (
                     <tr key={item.id} className="bg-white hover:bg-gray-50 h-[30px] text-gray-400">
                       <td className=" border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
-                      <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.invoice_no}</td>
+                      <td className="px-6 py-5 border-b border-gray-200 text-xs hover:text-blue-300"> <Link to={`/dashboard/viewpurchase/${item.id}`}>{item.invoice_no}</Link></td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.supplier_name}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_stone_weight}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_gross_weight}</td>

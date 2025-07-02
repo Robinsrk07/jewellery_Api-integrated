@@ -1,9 +1,37 @@
 import { useState } from "react";
 import DiamondModel from "../../../models/DiamondModel";
+import { useLocation } from "react-router";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router";
-const CreateDiamondPurchase = () => {
-const navigate = useNavigate()
+const EditDiamondItem = () => {
+
+    const location = useLocation();
+    const {item}= location.state || {}
+
+
+    const [data, setData] = useState({
+        item_type: item?.item_type || '',
+        supplier: item?.supplier || '',
+        terms_of_payment: item?.terms_of_payment || '',
+        stock_point: item?.stock_point || '',
+        default_tax: item?.default_tax || '',
+        item_name: item?.item_name || '',
+        sale_markup: item?.sale_markup || '',
+        reference_no: item?.reference_no || '',
+        reference_date: item?.reference_date || '',
+        no_of_pieces: item?.no_of_pieces || '',
+        total_amount: item?.total_amount || '',
+        net_amount: item?.net_amount || '',
+        notes: item?.notes || '',
+        prefix: item?.prefix || '',
+        id_start_from: item?.id_start_from || '',
+        id_length: item?.id_length || '',
+        branch: item?.branch || '',
+        item_code: item?.item_code || ''
+    });
+
+    
+    
+    
 const utils = [
             {
             'item_type':[{'id':12,'name':'Gold'},{'id':14,'name':'Diamond'}]
@@ -14,33 +42,13 @@ const utils = [
             },{
             'terms_of_payment':[{'id':1,'name':'bhjbhj'},{'id':2,'name':'FGSGS'}]
             },{
-            'stock_point':[{'id':1,'name':"Reserved Stock"},{'id':22,'name':'Back room/reverse stock'},{'id':18,'name':'Warehouse Stock'},{'id':19,'name':'In-Store Stock'},{'id':20,'name':'Transit Stock'},]
+            'stock_point':[{'id':18,'name':"Reserved Stock"},{'id':19,'name':'Low Stock Alert'},{'id':20,'name':'Warehouse Stock'},{'id':21,'name':'In-Store Stock'},{'id':22,'name':'Transit Stock'},]
             },{
            ' branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
             }
             ]
 
-            const[data,setData]=useState({
-              item_type:'',
-              supplier:'',
-              terms_of_payment:'',
-              stock_point:'',
-              default_tax:'',
-              item_name:'',
-              sale_markup:'',
-              reference_no:'',
-              reference_date:'',
-              no_of_pieces:'',
-              total_amount:'',
-              net_amount:'',
-              notes:'',
-              prefix:'',
-              id_start_from:'',
-              id_length:'',
-              branch:'',
-              item_code:''
-
-            })     
+           
 
            const handleChange = (e) => {
               const { name, value } = e.target;
@@ -50,6 +58,7 @@ const utils = [
               }));
             };
            const handleSubmit = async() => {
+            console.log(data)
             // Filter out empty strings, null, and undefined values
             const validData = Object.fromEntries(
               Object.entries(data).filter(([key, value]) => 
@@ -57,9 +66,8 @@ const utils = [
               )
             );
             try{
-            const response = await DiamondModel.CreateDiamondItems(validData)
-            toast.success("Diamond Item Created Succesfully")
-            navigate('/dashboard/diamond-items')
+            const response = await DiamondModel.EditDiamondItem(validData,item.uuid)
+            toast.success("Diamond Updated  Succesfully")
 
             }catch(error){
                 toast.error('Please Try Again,failed to Create Diamond Item')
@@ -255,7 +263,7 @@ const utils = [
             <label className="text-xs font-bold text-[#344767]"> Pre Fix <span className="text-red-500 text-[14px]">*</span></label>
             <input
             type="text"
-            placeholder="prefix"
+            placeholder="total amount"
              name='prefix'
             value={data.prefix}
              onChange={handleChange}
@@ -271,7 +279,7 @@ const utils = [
             <input
             type="number"
             min="0"
-            placeholder="id start from"
+            placeholder="total amount"
              onChange={handleChange}
              name='id_start_from'
              value={data.id_start_from}
@@ -309,7 +317,7 @@ const utils = [
             <label className="text-xs font-bold text-[#344767]"> Item code <span className="text-red-500 text-[14px]">*</span></label>
             <input
             type="text"
-            placeholder="Item code"
+            placeholder="total amount"
             style={{paddingLeft:'12px'}}
              onChange={handleChange}
              name='item_code'
@@ -364,14 +372,14 @@ const utils = [
         </div>
         <div className="flex  w-full justify-end " style={{padding:'20px'}}>  {/* Container div */}
         <button onClick={handleSubmit} className="btn border-none bg-[#666DE4] text-white font-semibold   w-full lg:w-[150px]  rounded-lg">
-          Save
+        Update Changes
         </button>
          </div>
       </div>
         );
   };
   
-  export default CreateDiamondPurchase
+  export default EditDiamondItem
 
 
 

@@ -16,4 +16,4 @@ createRoot(document.getElementById('root')).render(
  
 );
 
-// i disabled Strict mode make it strict mode if you want to use it
+// i disabled Strict mode make it strict mode if you want to use it  

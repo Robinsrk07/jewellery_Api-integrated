@@ -13,7 +13,7 @@ const PurchaseFixModel = {
     return axiosInstance.post(`purchase-fix/`,data)
   },
   getListPurchseFix:(user_id,user_types,limit,page,search,status,supplier_id)=>{
-   const params = URLSearchParams({
+   const params =new URLSearchParams({
     user_id,
     user_types,
     limit,
@@ -23,7 +23,7 @@ const PurchaseFixModel = {
     supplier_id
    }) 
 
-    return axiosInstance.get(`get-purchase-fix/${params.toString()}`)
+    return axiosInstance.get(`get-purchase-fix/?${params.toString()}`)
   }
 }
 

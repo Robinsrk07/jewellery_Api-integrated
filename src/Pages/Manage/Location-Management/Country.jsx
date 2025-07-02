@@ -134,61 +134,61 @@ const Country =()=>{
                   }
                 };
 
-  const validateForm = () => {
-  let valid = true;
-  const newErrors = { code: '', name: '' };
+              const validateForm = () => {
+              let valid = true;
+              const newErrors = { code: '', name: '' };
 
-  // Updated country code validation
-  if (!addCountryData.code) {
-    newErrors.code = 'Country code is required';
-    valid = false;
-  } else if (!/^(\+?\d{1,3}|[A-Za-z]{2,3})$/.test(addCountryData.code)) {
-    newErrors.code = 'Must be 2-3 letters or valid country code (e.g. +34, +1)';
-    valid = false;
-  }
+              // Updated country code validation
+              if (!addCountryData.code) {
+                newErrors.code = 'Country code is required';
+                valid = false;
+              } else if (!/^(\+?\d{1,3}|[A-Za-z]{2,3})$/.test(addCountryData.code)) {
+                newErrors.code = 'Must be 2-3 letters or valid country code (e.g. +34, +1)';
+                valid = false;
+              }
 
-  // Name validation remains same
-  if (!addCountryData.name) {
-    newErrors.name = 'Country name is required';
-    valid = false;
-  } else if (addCountryData.name.length < 2) {
-    newErrors.name = 'Must be at least 2 characters';
-    valid = false;
-  }
+              // Name validation remains same
+              if (!addCountryData.name) {
+                newErrors.name = 'Country name is required';
+                valid = false;
+              } else if (addCountryData.name.length < 2) {
+                newErrors.name = 'Must be at least 2 characters';
+                valid = false;
+              }
 
-  setErrors(newErrors);
-  return valid;
-};
+              setErrors(newErrors);
+              return valid;
+            };
 
-const validateEditForm = () => {
-  let valid = true;
-  const newErrors = { code: '', name: '', status: '' };
+            const validateEditForm = () => {
+              let valid = true;
+              const newErrors = { code: '', name: '', status: '' };
 
-  // Updated country code validation
-  if (!editingCountry?.code) {
-    newErrors.code = 'Country code is required';
-    valid = false;
-  } else if (!/^(\+?\d{1,3}|[A-Za-z]{2,3})$/.test(editingCountry.code)) {
-    newErrors.code = 'Must be 2-3 letters or valid country code (e.g. +34, +1)';
-    valid = false;
-  }
+              // Updated country code validation
+              if (!editingCountry?.code) {
+                newErrors.code = 'Country code is required';
+                valid = false;
+              } else if (!/^(\+?\d{1,3}|[A-Za-z]{2,3})$/.test(editingCountry.code)) {
+                newErrors.code = 'Must be 2-3 letters or valid country code (e.g. +34, +1)';
+                valid = false;
+              }
 
-  if (!editingCountry?.name) {
-    newErrors.name = 'Country name is required';
-    valid = false;
-  } else if (editingCountry.name.length < 2) {
-    newErrors.name = 'Must be at least 2 characters';
-    valid = false;
-  }
+              if (!editingCountry?.name) {
+                newErrors.name = 'Country name is required';
+                valid = false;
+              } else if (editingCountry.name.length < 2) {
+                newErrors.name = 'Must be at least 2 characters';
+                valid = false;
+              }
 
-  if (editingCountry?.status === undefined) {
-    newErrors.status = 'Status is required';
-    valid = false;
-  }
+              if (editingCountry?.status === undefined) {
+                newErrors.status = 'Status is required';
+                valid = false;
+              }
 
-  setErrors(newErrors);
-  return valid;
-};
+              setErrors(newErrors);
+              return valid;
+            };
 
             const handleDeleteCountry = async (id) => {
               console.log("Deleting country with ID:", id);
