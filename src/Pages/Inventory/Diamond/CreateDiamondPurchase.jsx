@@ -11,7 +11,7 @@ const CreateDiamondPurchase = () => {
 const navigate = useNavigate()
 const utils = [
             {
-            'item_type':[{'id':12,'name':'Gold'},{'id':14,'name':'Diamond'}]
+            'item_type':[{'id':14,'name':'Diamond'}]
             },{
             'default_tax':[{'id':1,'name':'Gold- default-Input-Tax:1.000000% -output_tax:1.00000%'},{'id':2,'name':'Gold- default-Input-Tax:1.000000% -output_tax:1.00000%'}]
             },{

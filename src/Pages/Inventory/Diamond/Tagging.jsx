@@ -693,7 +693,22 @@ const Tagging = () => {
                         <option value="False">No</option>
                     </select>
                 </div>
-             <div className="flex flex-col gap-2">
+                   <div className="flex flex-col gap-2">
+                    <label className="text-gray-400 font-semibold text-[11px] mb-1">
+                          Consider Mark Up</label>
+                          <input 
+                            type="number" 
+                            value={data.mark_up}
+                            onChange={handleChange}
+                            min='0'
+                            step='.1'
+                            name="mark_up"
+                            style={{paddingLeft:'12px'}}
+                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                        />
+                </div>
+
+             {/* <div className="flex flex-col gap-2">
                     <label className="text-gray-400 font-semibold text-[11px] mb-1">
                           Net Amount</label>
                           <input 
@@ -720,7 +735,7 @@ const Tagging = () => {
                             style={{paddingLeft:'12px'}}
                             className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
-                </div>
+                </div> */}
 
                     </div>
 

@@ -50,13 +50,19 @@ const ItemDetails = () => {
             supplier:'',
             total_amount:'',
             net_amount:"",
-            items :''
+            items :'',
+            total:'',
+            total_pieces:''
 
 
           });
           console.log(data)
           const [count,setCount] = useState(1)
           const [rows, setRows] = useState([{ id: 1, type: 'Main' }]);
+          const [totalCarat, setTotalCarat] = useState(0);
+          const [totalPieces, setTotalPieces] = useState(0);
+          console.log(totalCarat)
+          console.log(totalPieces)
           
           const [allUtils,setAllUtils]=useState([])
           console.log(data)
@@ -183,7 +189,13 @@ const ItemDetails = () => {
 
  const handleSubmit = async () => {
   const cleaned = cleanData(data);        // remove empty/null fields
-  if(items.length>0) cleaned.items =items 
+   if(items.length>0) cleaned.items =items 
+   if (totalCarat > 0) {
+    cleaned.total = totalCarat;
+  }
+   if (totalPieces > 0) {
+    cleaned.total_pieces = totalPieces;
+  }
   console.log(cleaned)
   const formData = objectToFormData(cleaned); // convert to FormData
 
@@ -251,7 +263,16 @@ const ItemDetails = () => {
     ...prev,
     tag_price: tag.toFixed(2),
   }));
-}, [data.cost_price, data.additional_charge, data.discount, data.consider_profit_margin]);
+          }, [data.cost_price, data.additional_charge, data.discount, data.consider_profit_margin]);
+
+
+              useEffect(() => {
+            const caratSum = items.reduce((sum, item) => sum + (parseFloat(item.carat) || 0), 0);
+            const piecesSum = items.reduce((sum, item) => sum + (parseInt(item.no_of_pieces) || 0), 0);
+
+            setTotalCarat(caratSum.toFixed(2));
+            setTotalPieces(piecesSum);
+          }, [items]);
 
 
     return (
@@ -285,13 +306,15 @@ const ItemDetails = () => {
                     </label>
                     <input 
                         type="text" 
-                        className="border w-[200px] rounded-sm h-[30px] bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                        value={"Diamond"}
+                        style={{paddingLeft:'12px'}}
+                        className="border w-[200px] text-xs rounded-sm h-[30px] bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                     />
                 </div>
                 
                 <div className="flex flex-col gap-2">
                     <label className="text-gray-400 font-semibold text-[11px] mb-1 sm:mb-0 sm:w-48">
-                        Consider Mark Up<span className="text-red-500 text-[14px]">*</span>
+                        Consider Profit Margin<span className="text-red-500 text-[14px]">*</span>
                     </label>
                     <select
                         onChange={handleChange}
@@ -661,7 +684,7 @@ const ItemDetails = () => {
                         <option value="False">No</option>
                     </select>
                 </div>
-             <div className="flex flex-col gap-2">
+             {/* <div className="flex flex-col gap-2">
                     <label className="text-gray-400 font-semibold text-[11px] mb-1">
                           Net Amount</label>
                           <input 
@@ -688,6 +711,20 @@ const ItemDetails = () => {
                             style={{paddingLeft:'12px'}}
                             className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                </div> */}
+             <div className="flex flex-col gap-2">
+                    <label className="text-gray-400 font-semibold text-[11px] mb-1">
+                          Consider Mark Up</label>
+                          <input 
+                            type="number" 
+                            value={data.mark_up}
+                            onChange={handleChange}
+                            min='0'
+                            step='.1'
+                             name="mark_up"
+                            style={{paddingLeft:'12px'}}
+                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                        />
                 </div>
 
                     </div>
@@ -711,11 +748,12 @@ const ItemDetails = () => {
             <th className="   text-center align-middle" style={{width:'200px'}}>Carat</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>PCS</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>Clarity</th>
+            <th className=" text-center align-middle" style={{width:'200px'}}>Purchase</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>Cut</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>Type</th>
+            <th className=" text-center align-middle" style={{width:'200px'}}>Branch</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>color</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>Cert.No</th>
-            <th className=" text-center align-middle" style={{width:'200px'}}>Item</th>
           </tr>
         </thead>
        {rows.map((row, rowIndex) => (
@@ -729,6 +767,9 @@ const ItemDetails = () => {
       <td className="rounded-sm border border-gray-200">
         <input
           type="number"
+          min='0'
+          step='.1'
+          style={{paddingLeft:'12px'}}
           value={items[rowIndex]?.carat || ''}
           onChange={(e) => handleCellChange(rowIndex, 'carat', e.target.value)}
           className="w-full px-2 py-1 border-none focus:outline-none"
@@ -739,8 +780,10 @@ const ItemDetails = () => {
       <td className="rounded-sm border border-gray-200">
         <input
           type="number"
-          value={items[rowIndex]?.pcs || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'pcs', e.target.value)}
+           style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.no_of_pieces || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'no_of_pieces', e.target.value)}
           className="w-full px-2 py-1 border-none focus:outline-none"
         />
       </td>
@@ -748,52 +791,88 @@ const ItemDetails = () => {
       {/* Clarity */}
       <td className="rounded-sm border border-gray-200">
         <input
-          type="text"
-          value={items[rowIndex]?.clarity || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'clarity', e.target.value)}
+          type="number"
+                     style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.item_clarity || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_clarity', e.target.value)}
           className="w-full px-2 py-1 border-none focus:outline-none"
         />
       </td>
       <td className="rounded-sm border border-gray-200">
         <input
           type="text"
-          value={items[rowIndex]?.cut || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'cut', e.target.value)}
+                     style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.diamond_purchase || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'diamond_purchase', e.target.value)}
           className="w-full px-2 py-1 border-none focus:outline-none"
         />
       </td>
       <td className="rounded-sm border border-gray-200">
         <input
+          type="number"
+                     style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.item_cut || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_cut', e.target.value)}
+          className="w-full px-2 py-1 border-none focus:outline-none"
+        />
+      </td>
+      
+      <td className="rounded-sm border border-gray-200">
+        <select
+          value={items[rowIndex]?.item_type || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_type', e.target.value)}
+          style={{paddingLeft:'12px'}}
+          className="w-full py-1 pl-[12px] border-none focus:outline-none text-gray-400 text-xs bg-white"
+        >
+          <option value="">Select Item Type</option>
+          {item_type.map((option) => (
+            <option key={option.id} value={option.name}>
+              {option.name}
+            </option>
+          ))}
+        </select>
+      </td>
+
+      <td className="rounded-sm border border-gray-200">
+        <input
           type="text"
-          value={items[rowIndex]?.type || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'type', e.target.value)}
+                     style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.branch || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'branch', e.target.value)}
           className="w-full px-2 py-1 border-none focus:outline-none"
         />
       </td>
       <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-          value={items[rowIndex]?.color || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'color', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
-      </td>
+  <select
+    value={items[rowIndex]?.item_color || ''}
+    onChange={(e) => handleCellChange(rowIndex, 'item_color', e.target.value)}
+    style={{paddingLeft:'12px'}}
+    className="w-full py-1 pl-[12px] border-none focus:outline-none text-xs text-gray-500 bg-white"
+  >
+    <option value="">--Select Color--</option>
+    {color.map((option) => (
+      <option key={option.id} value={option.name}>
+        {option.name}
+      </option>
+    ))}
+  </select>
+</td>
+
       <td className="rounded-sm border border-gray-200">
         <input
           type="text"
+                     style={{paddingLeft:'12px'}}
+
           value={items[rowIndex]?.cert_no || ''}
           onChange={(e) => handleCellChange(rowIndex, 'cert_no', e.target.value)}
           className="w-full px-2 py-1 border-none focus:outline-none"
         />
       </td>
-      <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-          value={items[rowIndex]?.clarity || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'item', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
-      </td>
+      
                 <td className="rounded-sm  border border-gray-200">
                   <button 
                     onClick={addRow}
@@ -821,8 +900,10 @@ const ItemDetails = () => {
         <tbody className="bg-white border border-gray-200">
           <tr>
             <td className=" bg-blue-100 flex justify-end text-blue-600 font-semibold"> Total</td>
-            <td className=" rounded-sm  border border-gray-200 h-[0px]"></td>
-            <td className=" rounded-sm  border border-gray-200"></td>
+            <td className=" rounded-sm  border border-gray-200 h-[0px]"                      style={{paddingLeft:'12px'}}
+>{totalCarat}</td>
+            <td className=" rounded-sm  border border-gray-200"                      style={{paddingLeft:'12px'}}
+>{totalPieces}</td>
             
             
           </tr>
@@ -876,7 +957,7 @@ const ItemDetails = () => {
     </label>
      <input 
       type="number" 
-      name="discount"
+      name="mark_up"
       value={data.discount}
       min='0'
       onChange={handleChange}
