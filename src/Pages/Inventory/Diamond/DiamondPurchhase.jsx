@@ -10,6 +10,8 @@ import DiamondModel from "../../../models/DiamondModel";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import TableSkelton from "../../../components/tableSkelton";
+import PurchaseUtils from "../../../models/PurchaseUtils";
+import UtilsGetModel from "../../../models/Utils_getModel";
 
 
 const DiamondPurchhase = () => {
@@ -62,7 +64,7 @@ const DiamondPurchhase = () => {
             },{
             'stock_point':[{'id':18,'name':"Reserved Stock"},{'id':19,'name':'Low Stock Alert'},{'id':20,'name':'Warehouse Stock'},{'id':21,'name':'In-Store Stock'},{'id':22,'name':'Transit Stock'},]
             },{
-           ' branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
+           'branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
             }
             ]
            
@@ -168,7 +170,8 @@ const DiamondPurchhase = () => {
         {getNameFromId('supplier', item.supplier)}
       </td>
       <td className="px-4 py-3 border-b border-gray-200 text-xs">
-        {item.branch || 'N/A'}
+       
+          {getNameFromId('branch', item.branch)}
       </td>
       <td className="px-4 py-3 border-b border-gray-200 text-xs text-center">
         {getNameFromId('stock_point', item.stock_point)}

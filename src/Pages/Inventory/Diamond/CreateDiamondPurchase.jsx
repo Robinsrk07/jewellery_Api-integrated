@@ -1,7 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DiamondModel from "../../../models/DiamondModel";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
+import { useParams } from "react-router";
+import PurchaseUtils from "../../../models/PurchaseUtils";
+import UtilsGetModel from "../../../models/Utils_getModel";
+import TaxModel from "../../../models/TaxModel";
+import { useSelector } from "react-redux";
 const CreateDiamondPurchase = () => {
 const navigate = useNavigate()
 const utils = [
@@ -19,6 +24,16 @@ const utils = [
            ' branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
             }
             ]
+             const [purchaseUtils,setPurchaseUtils] =useState([])
+             const [goldUtils,setGoldUtils] =useState([])
+             const [allUtils,setAllUtils]=useState([])
+             const[tax,setTax] = useState([])
+             const auth = useSelector((state) => state.auth);
+             const { login_id  } = auth
+             const user_id = login_id;
+             console.log(tax)
+             console.log(allUtils)
+
 
             const[data,setData]=useState({
               item_type:'',
@@ -41,6 +56,14 @@ const utils = [
               item_code:''
 
             })     
+             const item_type =  allUtils.find(item=>item.item_type)?.item_type || []
+             console.log(item_type)
+             const supplier =  allUtils.find(item=>item.supplier_list)?.supplier_list || []
+             const terms_of_payment =  allUtils.find(item=>item.terms_of_payment)?.terms_of_payment || []
+             const stock_point =  allUtils.find(item=>item.stock_point)?.stock_point || []
+             console.log(supplier)
+             console.log(terms_of_payment)
+             console.log(stock_point)
 
            const handleChange = (e) => {
               const { name, value } = e.target;
@@ -68,6 +91,53 @@ const utils = [
 
 
           };
+            const fetchPurchaseUtils = async()=>{
+                                try{
+                                  const response = await PurchaseUtils.getPurchaseUtils()
+                                  if(response){
+                                    setPurchaseUtils(response?.data?.data)
+                                  }
+                                }catch(error){
+                                   console.error(error)
+                                }
+                              }
+          
+                     const fetchGoldUtils =async ()=>{
+                             try{
+                                  const response = await UtilsGetModel.getUtilsData()
+                                   if(response){
+                                   setGoldUtils(response?.data?.data)
+                                   }
+                                }catch(error){
+                                   console.error(error)
+                                }
+                              }
+          
+                        const fetchTax = async()=>{
+          
+                        try{
+                        const response = await TaxModel.getTax(user_id)
+                          if(response){
+                            setTax(response.data.data)
+                          }
+                        }catch(error){
+                         console.error(error)
+                        }
+          
+          
+                     }         
+                 useEffect(()=>{
+                       fetchTax()
+                       fetchGoldUtils()
+                       fetchPurchaseUtils()
+                                    
+                       },[])
+          
+                   useEffect(() => {
+                    if (purchaseUtils.length && goldUtils.length) {
+                      setAllUtils([...purchaseUtils, ...goldUtils]);
+                       }
+                    }, [purchaseUtils, goldUtils]);
 
     return (
       <div 
@@ -111,13 +181,11 @@ const utils = [
               <select style={{paddingLeft:'10px'}} name="default_tax" value={data.default_tax}  onChange={handleChange} className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
                 <option disabled selected>Default Input Tax</option>
 
-                {
-                  (utils.find(item => item.default_tax)?.default_tax || []).map(option => (
-                    <option key={option.id} value={option.id} className="text-black">
-                      {option.name}
-                    </option>
-                  ))
-                }
+                {tax.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.tax_name}
+                          </option>
+                        ))}
               </select>
             </div>
 
@@ -135,26 +203,22 @@ const utils = [
     className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
   >
     <option disabled selected>------</option>
-    {
-      (utils.find(item => item.supplier)?.supplier || []).map(option => (
-        <option key={option.id} value={option.id} className="text-xs text-gray-500">
-          {option.name}
-        </option>
-      ))
-    }
+     {supplier.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
   </select>
 </div>
 <div className="w-full">
   <label className="text-xs font-bold text-[#344767]">Terms Of Payment</label>
   <select style={{paddingLeft:'12px'}} name="terms_of_payment" value={data.terms_of_payment}  onChange={handleChange} className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
     <option disabled selected>------</option>
-    {
-      (utils.find(item => item.terms_of_payment)?.terms_of_payment || []).map(option => (
-        <option key={option.id} value={option.id} className="text-xs text-gray-500">
-          {option.name}
-        </option>
-      ))
-    }
+    {terms_of_payment.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
   </select>
 </div>
 
@@ -165,13 +229,11 @@ const utils = [
       <label className="text-xs font-bold text-[#344767]">Stock Point </label>
       <select style={{paddingLeft:'12px'}} name="stock_point"  value={data.stock_point} onChange={handleChange} className="select text-xs select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
         <option disabled selected>------</option>
-        {
-          (utils.find(item => item.stock_point)?.stock_point || []).map(option => (
-            <option key={option.id} value={option.id} className="text-xs  text-gray-500">
-              {option.name}
-            </option>
-          ))
-        }
+       {stock_point.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {item.name}
+                          </option>
+                        ))}
       </select>
     </div>
 

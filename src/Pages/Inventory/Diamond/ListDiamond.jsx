@@ -5,12 +5,16 @@ import DeleteButton from "../../../components/DeleteButton";
 import Pagination from "../../../components/Pagination";
 import ItemsPerPageSelector from "../../../components/ItemsPerPageSelector";
 import CreateButton from "../../../components/CreateButton";
+import UtilsGetModel from "../../../models/Utils_getModel";
+
 import { Link, useParams } from "react-router";
 import { toast } from "react-toastify";
 import DiamondModel from "../../../models/DiamondModel";
 import { useSelector } from "react-redux";
 const ListDiamond = () => {
 const [diamondList, setDiamondList] = useState([]);
+ const [goldUtils,setGoldUtils] =useState([])
+
 const {uuid} =useParams()
 const auth = useSelector((state) => state.auth);
 const { login_id, can_manage_user_types } = auth
@@ -21,8 +25,15 @@ const [status, setStatus] = useState('');
 const user_id = login_id;
 const user_types = Object.keys(can_manage_user_types).join(',');
 
+const commonDiamondItemId =
+  diamondList.length > 0 &&
+  diamondList.every(item => item.diamond_item_id === diamondList[0].diamond_item_id)
+    ? diamondList[0].diamond_item_id
+    : null;
+
 
 console.log("check",diamondList);
+console.log("check",goldUtils);
 
  const fetchDiamond = async () => {
         try {
@@ -43,11 +54,26 @@ console.log("check",diamondList);
            console.error(error)
         }
     }
+
+     const fetchGoldUtils =async ()=>{
+                try{
+                   const response = await UtilsGetModel.getUtilsData()
+                   if(response){
+                    setGoldUtils(response?.data?.data)
+                     }
+                }catch(error){
+                   console.error(error)
+                }
+              }
     useEffect(()=>{
 
         if(uuid){
             fetchDiamond()
         }
+    },[])
+
+    useEffect(()=>{
+      fetchGoldUtils()
     },[])
   return (
     <>
@@ -58,7 +84,7 @@ console.log("check",diamondList);
         style={{ fontFamily: "Open Sans" }}
       >
         {/* <Link to='/dashboard/createDiamond'> */}
-        <Link to="/dashboard/itemDetials">
+        <Link to={`/dashboard/itemDetials/${commonDiamondItemId}`}>
           <CreateButton buttoncontent="+ Create New Diamond" />
         </Link>
 
@@ -127,7 +153,7 @@ console.log("check",diamondList);
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-row gap-2">
-                    <Link to="/dashboard/editDiamondItem" state={{ item }}>
+                    <Link to={`/dashboard/editDiamond/${item.uuid}`} state={{ item }}>
                       <EditButton />
                     </Link>
                     

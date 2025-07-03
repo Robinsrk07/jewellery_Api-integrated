@@ -1,9 +1,13 @@
 
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DiamondModel from "../../../models/DiamondModel";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router";
+import PurchaseUtils from "../../../models/PurchaseUtils";
+import UtilsGetModel from "../../../models/Utils_getModel";
+import TaxModel from "../../../models/TaxModel";
+import { useSelector } from "react-redux";
 const CreateDiamond = () => {
 const navigate = useNavigate()
 const utils = [
@@ -18,10 +22,17 @@ const utils = [
             },{
             'stock_point':[{'id':1,'name':"Reserved Stock"},{'id':22,'name':'Back room/reverse stock'},{'id':18,'name':'Warehouse Stock'},{'id':19,'name':'In-Store Stock'},{'id':20,'name':'Transit Stock'},]
             },{
-           ' branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
+               'branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
             }
             ]
-
+              const [purchaseUtils,setPurchaseUtils] =useState([])
+              const [goldUtils,setGoldUtils] =useState([])
+              const [allUtils,setAllUtils]=useState([])
+              const[tax,setTax] = useState([])
+              const auth = useSelector((state) => state.auth);
+                  const { login_id  } = auth
+                  const user_id = login_id;
+             console.log(tax)
             const[data,setData]=useState({
               item_type:'',
               supplier:'',
@@ -43,6 +54,10 @@ const utils = [
               item_code:''
 
             })     
+           const item_type =  allUtils.find(item=>item.item_type)?.item_type || []
+           const supplier =  allUtils.find(item=>item.supplier_list)?.supplier_list || []
+           const terms_of_payment =  allUtils.find(item=>item.terms_of_payment)?.terms_of_payment || []
+           const stock_point =  allUtils.find(item=>item.stock_point)?.stock_point || []
 
            const handleChange = (e) => {
               const { name, value } = e.target;
@@ -66,10 +81,56 @@ const utils = [
             }catch(error){
                 toast.error('Please Try Again,failed to Create Diamond Item')
             }
-            
-
 
           };
+
+           const fetchPurchaseUtils = async()=>{
+                      try{
+                        const response = await PurchaseUtils.getPurchaseUtils()
+                        if(response){
+                          setPurchaseUtils(response?.data?.data)
+                        }
+                      }catch(error){
+                         console.error(error)
+                      }
+                    }
+
+           const fetchGoldUtils =async ()=>{
+                   try{
+                        const response = await UtilsGetModel.getUtilsData()
+                         if(response){
+                         setGoldUtils(response?.data?.data)
+                         }
+                      }catch(error){
+                         console.error(error)
+                      }
+                    }
+
+              const fetchTax = async()=>{
+
+              try{
+              const response = await TaxModel.getTax(user_id)
+                if(response){
+                  setTax(response.data.data)
+                }
+              }catch(error){
+               console.error(error)
+              }
+
+
+           }         
+                    useEffect(()=>{
+                            fetchTax()
+                          fetchGoldUtils()
+                          fetchPurchaseUtils()
+                          
+                        },[])
+
+                     useEffect(() => {
+                          if (purchaseUtils.length && goldUtils.length) {
+                            setAllUtils([...purchaseUtils, ...goldUtils]);
+                          }
+                          }, [purchaseUtils, goldUtils]);
 
     return (
       <div 

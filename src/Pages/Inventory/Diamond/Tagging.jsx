@@ -4,60 +4,59 @@ import PurchaseUtils from "../../../models/PurchaseUtils";
 import UtilsGetModel from "../../../models/Utils_getModel";
 import DiamondModel from "../../../models/DiamondModel";
 import { toast } from "react-toastify";
-import { useParams } from "react-router";
-const ItemDetails = () => {
+import { useLocation } from 'react-router-dom';
+
+const Tagging = () => {
    
           const [preview, setPreview] = useState(null);
           const [purchaseUtils,setPurchaseUtils] =useState([])
           const [goldUtils,setGoldUtils] =useState([])
           const [items, setItems] = useState([{}]);
-          console.log(items)
-          const newArray = [items]
-          const{id}  = useParams()
-          console.log(newArray)
-          const [data, setData] = useState({
-            uom: '',
-            jewellery_type: '',
-            brand: '',
+          const location = useLocation();
+          const item = location.state?.item;
+          console.log(item.uom)
+            console.log(item)
+            const [data, setData] = useState({
+            uom: item?.uom ||'', 
+            jewellery_type: item?.jewellery_type || '',
+            brand: item?.brand || '',
             item_type:14,
-            size: '',
-            metal_color: '',
-            made_in: '',
-            design: '',
-            gender: '',
-            occasion: '',
-            category: '',
-            subcategory: '',
-            style: '',
-            diamond_item:'', //hard coded because not present in api
-            diamond_image:'',
-            is_gift_item:'',
-            consider_profit_margin:"",
-            description:"",
-            gold_weight:'',
-            pearl_weight:'',
-            ruby_weight:"",
-            emerald_weight:'',
-            sapphire_weight:'',
-            other_stone_weight:'',
-            status:'True',
-            cost_price:'',
-            additional_charge:"",
-            mark_up:'',
-            tag_price:'',
-            branch:'',
-            discount:'',
-            supplier:'',
-            total_amount:'',
-            net_amount:"",
-            items :''
-
-
-          });
-          console.log(data)
+            size: item?.size || '',
+            metal_color: item?.metal_color || '',
+            made_in: item?.made_in || '',
+            design: item?.design || '',
+            gender: item?.gender || '',
+            occasion: item?.occasion || '',
+            category: item?.category || '',
+            subcategory: item?.subcategory || '',
+            style: item?.style || '',
+            diamond_item: item?.diamond_item_id || '',
+            diamond_image: item?.diamond_image || '',
+            is_gift_item: item?.is_gift_item || '',
+            consider_profit_margin: item?.consider_profit_margin || '',
+            description: item?.description || '',
+            gold_weight: item?.gold_weight || '',
+            pearl_weight: item?.pearl_weight || '',
+            ruby_weight: item?.ruby_weight || '',
+            emerald_weight: item?.emerald_weight || '',
+            sapphire_weight: item?.sapphire_weight || '',
+            other_stone_weight: item?.other_stone_weight || '',
+            status: item?.status || 'True',
+            cost_price: item?.cost_price || '',
+            additional_charge: item?.additional_charge || '',
+            mark_up: item?.mark_up || '',
+            tag_price: item?.tag_price || '',
+            branch: item?.branch || '',
+            discount: item?.discount || '',
+            supplier: item?.supplier || '',
+            total_amount: item?.total_amount || '',
+            net_amount: item?.net_amount || '',
+            items: item?.items || ''
+            });
+ console.log(data)
           const [count,setCount] = useState(1)
           const [rows, setRows] = useState([{ id: 1, type: 'Main' }]);
-          
+
           const [allUtils,setAllUtils]=useState([])
           console.log(data)
           console.log(purchaseUtils)
@@ -77,7 +76,42 @@ const ItemDetails = () => {
           const color =  purchaseUtils.find(item=>item.product_color)?.product_color || []
           const item_type =  goldUtils.find(item=>item.item_type)?.item_type || []
           const supplier =  allUtils.find(item=>item.supplier_list)?.supplier_list || []
+
+ const getId = (field, selectedValue) => {
+            const matchedGroup = allUtils.find(item => Object.keys(item)[0] === field);
+            const raw = matchedGroup?.[field];
+
+            const array = Array.isArray(raw) ? raw : raw ? [raw] : [];
+
+            console.log("matchedGroup:", matchedGroup);
+            console.log("normalized array:", array);
+
+            const matchedItem = array.find(
+              el => el.name === selectedValue || el.code === selectedValue
+            );
+
+            return matchedItem?.id || selectedValue;
+          };
+
+           const transformedData = {
+            ...data,
+            uom: getId('uom', data.uom),
+            jewellery_type: getId('jewelley_type', data.jewellery_type),
+            brand: getId('product_brand', data.brand),
+            item_type: getId('item_type', data.item_type),
+            size: getId('product_size', data.size),
+            metal_color: getId('product_color', data.metal_color),
+            made_in: getId('product_country', data.made_in),
+            design: getId('product_design', data.design),
+            gender: getId('product_gender', data.gender),
+            occasion: getId('occasion', data.occasion),
+            category: getId('categories', data.category),
+            subcategory: getId('subcategory', data.subcategory),
+            style: getId('product_style', data.style),
+            
+          };
           
+
           const handleImageChange = (e) => {
             const file = e.target.files[0];
             if (file) {
@@ -97,6 +131,17 @@ const ItemDetails = () => {
             }));
           };
 
+          // Helper function to find option by value or name
+          const findOptionValue = (options, searchValue, searchField = 'name') => {
+            if (!searchValue || !options) return '';
+            const option = options.find(opt => 
+              opt[searchField] === searchValue || 
+              opt.id === searchValue || 
+              opt.name === searchValue ||
+              opt.code === searchValue
+            );
+            return option?.id || searchValue;
+          };
 
           const fetchPurchaseUtils = async()=>{
             try{
@@ -141,7 +186,7 @@ const ItemDetails = () => {
      const getSubCategories = () => {
         if (!data.category) return [];
         const selectedCategory = Category.find(
-          cat => cat.category_id.toString() === data.category
+          cat => cat.category_id.toString() === data.category.toString()
         );
         return selectedCategory?.sub_cat || [];
       };
@@ -182,13 +227,15 @@ const ItemDetails = () => {
 };
 
  const handleSubmit = async () => {
-  const cleaned = cleanData(data);        // remove empty/null fields
+  const cleaned = cleanData(transformedData);   
+  
+  // remove empty/null fields
   if(items.length>0) cleaned.items =items 
   console.log(cleaned)
   const formData = objectToFormData(cleaned); // convert to FormData
 
   try {
-    const response = await DiamondModel.CreateDiamond(formData);
+    const response = await DiamondModel.UpdateDiamond(formData,item.uuid);
     if (response) {
       toast.success("Diamond Created Successfully");
     }
@@ -212,17 +259,6 @@ const ItemDetails = () => {
       setRows(prev => prev.filter(row => row.id !== id));
     }
   };
-
-  useEffect(() => {
-  if (id) {
-    setData((prev) => ({
-      ...prev,
-      diamond_item: Number(id) // ensures it's a number if required
-    }));
-  }
-}, [id]);
-
-
     useEffect(()=>{
 
       fetchGoldUtils()
@@ -236,23 +272,22 @@ const ItemDetails = () => {
       }
       }, [purchaseUtils, goldUtils]);
 
-      useEffect(() => {
-  const cost = parseFloat(data.cost_price) || 0;
-  const additional = parseFloat(data.additional_charge) || 0;
-  const discount = parseFloat(data.discount) || 0;
-
-  let tag = cost + additional;
-
-  if (data.consider_profit_margin === 'True' || data.consider_profit_margin === true) {
-    tag -= discount;
-  }
-
-  setData(prev => ({
-    ...prev,
-    tag_price: tag.toFixed(2),
-  }));
-}, [data.cost_price, data.additional_charge, data.discount, data.consider_profit_margin]);
-
+            useEffect(() => {
+        const cost = parseFloat(data.cost_price) || 0;
+        const additional = parseFloat(data.additional_charge) || 0;
+        const discount = parseFloat(data.discount) || 0;
+      
+        let tag = cost + additional;
+      
+        if (data.consider_profit_margin === 'True' || data.consider_profit_margin === true) {
+          tag -= discount;
+        }
+      
+        setData(prev => ({
+          ...prev,
+          tag_price: tag.toFixed(2),
+        }));
+      }, [data.cost_price, data.additional_charge, data.discount, data.consider_profit_margin]);
 
     return (
         <div className="w-full h-[84%] bg-white rounded-lg overflow-y-auto rounded-lg flex flex-col gap-4" style={{padding:'20px'}}>
@@ -268,10 +303,10 @@ const ItemDetails = () => {
                       <select
                         name="supplier"
                         onChange={handleChange}
-                        value={data.supplier}
+                        value={findOptionValue(supplier, data.supplier)}
                         className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                       >
-                        <option value="">- Select Jewellery Type -</option>
+                        <option value="">- Select Supplier -</option>
                         {supplier.map((item) => (
                           <option key={item.id} value={item.id}>
                             {item.name}
@@ -295,7 +330,7 @@ const ItemDetails = () => {
                     </label>
                     <select
                         onChange={handleChange}
-                        value={data.consider_profit_margin}
+                        value={data.consider_profit_margin === true || data.consider_profit_margin === 'true' ? 'True' : data.consider_profit_margin === false || data.consider_profit_margin === 'false' ? 'False' : ''}
                          className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                         name="consider_profit_margin"
                     >
@@ -339,7 +374,7 @@ const ItemDetails = () => {
                         <select
                           name="uom"
                           onChange={handleChange}
-                          value={data.uom}
+                          value={findOptionValue(uomArray, data.uom)}
                           className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                         >
                           <option value="">-- Select UOM --</option>
@@ -399,7 +434,7 @@ const ItemDetails = () => {
                         <select
                         name="design"
                         onChange={handleChange}
-                        value={data.design}
+                        value={findOptionValue(design, data.design)}
                         className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                       >
                         <option value="">-- Select Design Type --</option>
@@ -418,7 +453,7 @@ const ItemDetails = () => {
                       <select
                         name="jewellery_type"
                         onChange={handleChange}
-                        value={data.jewelleryType}
+                        value={findOptionValue(JewelleryType, data.jewellery_type)}
                         className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                       >
                         <option value="">-- Select Jewellery Type --</option>
@@ -488,7 +523,7 @@ const ItemDetails = () => {
 <select
   name="brand"
   onChange={handleChange}
-  value={data.brand}
+  value={findOptionValue(Brand, data.brand)}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Brand --</option>
@@ -505,7 +540,7 @@ const ItemDetails = () => {
 <select
   name="occasion"
   onChange={handleChange}
-  value={data.occasion}
+  value={findOptionValue(occasion, data.occasion)}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Occasion --</option>
@@ -521,7 +556,7 @@ const ItemDetails = () => {
 <select
   name="made_in"
   onChange={handleChange}
-  value={data.made_in}
+  value={findOptionValue(made_in, data.made_in)}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Country --</option>
@@ -549,8 +584,8 @@ const ItemDetails = () => {
     <select
       name="size"
       onChange={handleChange}
-      value={data.size}
-      className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500 appearance-none" // appearance-none removes default select styling
+      value={findOptionValue(size, data.size)}
+      className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500 appearance-none"
     >
       <option value="">-- Select Size --</option>
       {size.map((item) => (
@@ -562,21 +597,18 @@ const ItemDetails = () => {
     </div>
  <div className="flex flex-col  gap-2">
 
-
-
-
  <label className="text-gray-400 font-semibold text-[11px] mb-1">
   Style:
 </label>
 <select
   name="style"
   onChange={handleChange}
-  value={data.style}
+  value={findOptionValue(style, data.style)}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Style --</option>
   {style.map((item) => (
-    <option key={item.id} value={ item.id}>
+    <option key={item.id} value={item.id}>
       {item.name}
     </option>
   ))}
@@ -587,7 +619,7 @@ const ItemDetails = () => {
 <select
   name="item_type"
   onChange={handleChange}
-  value={data.item_type}
+  value={findOptionValue(item_type, data.item_type)}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Item Type --</option>
@@ -604,7 +636,7 @@ const ItemDetails = () => {
 <select
   name="gender"
   onChange={handleChange}
-  value={data.gender}
+  value={findOptionValue(gender, data.gender, 'name') || findOptionValue(gender, data.gender, 'code')}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Gender --</option>
@@ -621,7 +653,7 @@ const ItemDetails = () => {
                       <select
                         name="metal_color"
                         onChange={handleChange}
-                        value={data.metal_color}
+                        value={findOptionValue(color, data.metal_color, 'name') || findOptionValue(color, data.metal_color, 'code')}
                         className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500 appearance-none"
                       >
                         <option value="">-- Select Color --</option>
@@ -652,7 +684,7 @@ const ItemDetails = () => {
                     </label>
                     <select
                         onChange={handleChange}
-                        value={data.is_gift_item}
+                        value={data.is_gift_item === true || data.is_gift_item === 'true' ? 'True' : data.is_gift_item === false || data.is_gift_item === 'false' ? 'False' : ''}
                          className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                         name="is_gift_item"
                     >
@@ -903,7 +935,6 @@ const ItemDetails = () => {
       name="tag_price"
       value={data.tag_price}
       min='0'
-      onChange={handleChange}
      placeholder="0"
      style={{paddingLeft:'12px'}}
       className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
@@ -924,4 +955,4 @@ const ItemDetails = () => {
     ) 
 }
 
-export default ItemDetails
+export default Tagging

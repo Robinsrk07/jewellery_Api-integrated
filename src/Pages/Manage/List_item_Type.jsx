@@ -1,469 +1,574 @@
-import React, { useState } from 'react';
-import '@fontsource/open-sans'; // Default weight 400
-import '@fontsource/open-sans/600.css'; // Semi-bold
-import '@fontsource/open-sans/700.css'; // Bold
+import { useEffect, useState } from "react";
+import CustomScrollbar from "../../components/CustomScrollbar";
 import EditButton from '../../components/EditButton';
 import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
-    
-     const  List_item_Type = () => {
+import ItemTypeModel from "../../models/itemTypeModel";
+import { useSelector } from "react-redux";
+import SuccessToast from "../../components/SuccessToast";
+import { toast } from 'react-toastify';
 
 
-  
-          
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
+
+const ItemType =()=>{
+                    const [items, setItems] = useState(10);
                     const [modal, setModal] = useState(false)   
                     const [editModal,setEditModal]= useState(false)
-                    const tableData = [
-                          {
-                            id: 1,
-                            code: 'Gold',
-                            name: 'Gold',
-                            description: 'Gold',
-                            status: 'ACTIVE',
-                          },
-                          {
-                            id: 2,
-                            code: 'Diamond',
-                            name: 'Diamond',
-                            description: 'Diamond',
-                            status: 'ACTIVE',
-                          },
-                          // Add more as needed
-                        ];
+                    const [itemTypeData, setItemTypeData] = useState([]);
+                    const [deletingId, setDeletingId] = useState(null);
+                    const [itemToDelete, setItemToDelete] = useState(null);     
+                    const auth= useSelector((state) => state.auth);
+                    const { login_id ,can_manage_user_types,} = auth;    
+                    const[limit,setLimit]=useState(10);  
+                    const[page,setPage]=useState(1);  
+                    const[search,setSearch]=useState('');
+                    const[status,setStatus]=useState('');
+                    const [isSubmitting, setIsSubmitting] = useState(false);
+                    const [editingItemType, setEditingItemType] = useState(null);
+                    const [addItemTypeData, setaddItemTypeData] = useState({
+                      code: '',
+                      name: ''
+                      });
+                      const [errors, setErrors] = useState({
+                          code: '',
+                          name: '',
+                          description: '',
+                          status: ''
+                        });
+                     const user_id = login_id;
+                     const user_types = Object.keys(can_manage_user_types).join(',');
 
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
+                     const FetchItemType = async () => {
+                        try {
+                          const response = await ItemTypeModel.getItemTypes(
+                            user_id,          
+                            user_types,          
+                            limit,
+                            page,
+                            search,
+                            status               
+                          );
+
+                          if (response.data && response.data.data) {
+                            setItemTypeData(response.data.data);
+                          }
+                        } catch (error) {
+                          console.error("Error fetching item type data:", error);
+                        }
+                      };
+                    const handleChange = (e) => {
+                        const { name, value } = e.target;
+                        setaddItemTypeData(prev => ({ ...prev, [name]: value }));
+                      };
+                    const handleSubmit = async () => {
+                    // Validate before submission
+                    if (!validateForm()) {
+                      return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('code', addItemTypeData.code);
+                    formData.append('name', addItemTypeData.name);
+                    formData.append('description', addItemTypeData.description);
+
+                    try {
+                      const response = await ItemTypeModel.CreateItemType(formData);
+                      console.log("Update response:", response);  
+                      if (response.status === 201) {
+                        FetchItemType(); // Refresh the list
+                        handleCloseModal();    
+                        toast.success('Item type created successfully!');
+                      }
+                                        
+
+                    }catch (error) {
+
+                       toast.error('Failed to create item type!');
+                       handleCloseModal();    
+                      if (error.response?.data?.errors) {
+                        setErrors(prev => ({
+                          ...prev,
+                          ...error.response.data.errors
+                        }));
+                      }
+                    }
+                  };
+
+                const handleEditSubmit = async () => {
+                  if (!validateEditForm()) return;
                   
-                   // Handle close modal
+                  setIsSubmitting(true);
+                  try {
+                    const response = await ItemTypeModel.updateItemType(
+                      editingItemType.id,
+                      {
+                        code: editingItemType.code,
+                        name: editingItemType.name,
+                        description: editingItemType.description,
+                        status: editingItemType.status
+                      }
+                    );
+                    if (response.status === 200) {
+                      FetchItemType();
+                      toast.success('Item type updated successfully!');
+
+                      handleEditCloseModal();
+                    }
+                  } catch (error) {
+                      console.log(error);
+                      
+                       toast.error('Failed to update item type!');
+                    if (error.response?.data?.errors) {
+                      setErrors(prev => ({
+                        ...prev,
+                        ...error.response.data.errors
+                      }));
+                    }
+                  } finally {
+                    setIsSubmitting(false);
+                  }
+                };
+
+  const validateForm = () => {
+  let valid = true;
+  const newErrors = { code: '', name: '' };
+
+  // Updated country code validation
+  if (!addItemTypeData.code) {
+    newErrors.code = 'Item type code is required';
+    valid = false;
+  } else if (addItemTypeData.code.length < 2) {
+    newErrors.code = 'Must be 2-3 letters or valid item type code';
+    valid = false;
+  }
+
+  // Name validation remains same
+  if (!addItemTypeData.name) {
+    newErrors.name = 'Item type name is required';
+    valid = false;
+  } else if (addItemTypeData.name.length < 2) {
+    newErrors.name = 'Must be at least 2 characters';
+    valid = false;
+  }
+
+  setErrors(newErrors);
+  return valid;
+};
+
+const validateEditForm = () => {
+  let valid = true;
+  const newErrors = { code: '', name: '',description:'', status: '' };
+
+  // Updated country code validation
+  if (!editingItemType?.code) {
+    newErrors.code = 'Item type code is required';
+    valid = false;
+  } else if (editingItemType.code.length < 2) {
+    newErrors.code = 'Must be 2-3 letters or valid item type code ';
+    valid = false;
+  }
+
+  if (!editingItemType?.name) {
+    newErrors.name = 'Item type name is required';
+    valid = false;
+  } else if (editingItemType.name.length < 2) {
+    newErrors.name = 'Must be at least 2 characters';
+    valid = false;
+  }
+
+  if (!editingItemType?.description) {
+    newErrors.description = 'Item type description is required';
+    valid = false;
+  } else if (editingItemType.description.length < 2) {
+    newErrors.description = 'Must be at least 2 characters';
+    valid = false;
+  }
+
+  if (editingItemType?.status === undefined) {
+    newErrors.status = 'Status is required';
+    valid = false;
+  }
+
+  setErrors(newErrors);
+  return valid;
+};
+
+            const handleDeleteItemType = async (id) => {
+              if (!id) return toast.error("No item selected for deletion");
+              
+              try {
+                setDeletingId(id);
+                await ItemTypeModel.deleteItemType(id);
+                await FetchItemType(); // Refresh the list
+                toast.success("Item type deleted successfully");
+              } catch (error) {
+                console.error("Delete error:", error);
+                toast.error("Failed to delete item type");
+              } finally {
+                setDeletingId(null);
+                setItemToDelete(null);
+              }
+            };
+                   
+                    // Handle close modal
                    const handleCloseModal = () => {
-                     setModal(false);
-                     setEditModal(false)
-                   };
-                 
-                 
-                 
-                 
-                 
-                   return (
-                     
-                 <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
-                <div className="bg-white w-full
-                    max-w-[99vw] 
-                    xl:max-w-[90vw] 
-                    2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
-                    rounded-xl px-4 md:px-8 lg:px-12
-                    mx-auto overflow-auto  custom-scrollbar  "
-                 style={{ fontFamily: 'Open Sans',overflow:'auto'}}
-                   >
-                      <CreateButton
-                         buttoncontent="+ New Item Type"
-                         onClick={() => setModal(true)}  // This will now work!
-                      />                 
-                      <ItemsPerPageSelector items={items} setItems={setItems} />
-                 
-                       
-                 
-                       <table className="table w-full text-sm  text-gray-500 border-collapse min-w-[1200px]" style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}>
-                        <thead className="text-xs text-[#A8B2C4] uppercase bg-white">
-                          <tr>
-                            <th style={{ width: '90px', paddingLeft: '20px' }}>SL NO</th>
-                            <th className="w-[150px]">CODE</th>
-                            <th className="w-[150px]">NAME</th>
-                            <th className="w-[150px]">DESCRIPTION</th>
-                            <th className="w-[150px]">STATUS</th>
-                            <th className="w-[150px]">ACTION</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {tableData.map((item, index) => (
-                            <tr key={item.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                              <td className="text-xs border-b border-gray-200" style={{ paddingLeft: '20px' }}>{index + 1}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.code}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.description}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                      setaddItemTypeData({
+                        code: '',
+                        name: '',
+                        
+                      });
+                      setModal(false);
+                    };
+
+                  
+                    const handleEditCloseModal = () => {
+                      setEditModal(false)
+                    };
+                  
+                  
+                  useEffect(() => {
+                    FetchItemType(); 
+                  },[])
+                  
+                  
+                    return (
+                      
+                  <>
+                  <CustomScrollbar/>
+                 <div className="bg-white w-full
+                                  max-w-[95vw] 
+                                  xl:max-w-[90vw] 
+                                  2xl:max-w-[95vw] 
+                                  h-auto max-h-[70vh] 
+                                  rounded-xl px-4 md:px-8 lg:px-12
+                                  mx-auto overflow-auto  custom-scrollbar"
+                              style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+                                >
+                 <CreateButton
+                  buttoncontent="+ New Item Type"
+                  onClick={() => setModal(true)}  // This will now work!
+                 />                 
+                 <ItemsPerPageSelector items={items} setItems={setItems} />
+                  
+                        
+                     <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
+                        style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '800px' }}>
+                      <thead className="text-xs text-gray-400 uppercase bg-white">
+                        <tr>
+                          <th  style={{ width: '80px', paddingLeft: '20px' }}>SL NO</th>
+                          <th  style={{ width: '100px' }}>CODE</th>
+                          <th  style={{ width: '130px' }}>NAME</th>
+                          <th  style={{ width: '130px' }}>DESCRIPTION</th>
+                          <th  style={{ width: '130px' }}>STATUS</th>
+                          <th  style={{ width: '130px' }}>ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {itemTypeData.map((itemType,index) => (
+                          console.log(itemType),
+                          <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                            <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                              {index+1}
+                            </td>
+                            <td className="py-4 border-b border-gray-200 text-xs">{itemType.code}</td>
+                            <td className="py-4 border-b border-gray-200 text-xs">{itemType.name}</td>
+                            <td className="py-4 border-b border-gray-200 text-xs">{itemType.description}</td>
+                            <td className="py-4 border-b border-gray-200 text-xs">
+                              {itemType.status ? (
                                 <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                  {item.status}
+                                  Active
                                 </span>
-                              </td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                   <EditButton
-                                         onClick={()=>setEditModal(true)}
-                                       />                                                                  
-                                  <DeleteButton 
-                                     buttonText="Delete Item Type" 
-                                     modalId="my_modal_8" 
-                                  />
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-
-                       {/* Pagination */}
-                      <Pagination/>
-
-                 
-                       {/* Modal */}
-      
-      
-                       <dialog id="my_modal_8" className="modal">
-                       <div className="modal-box text-center py-8 px-6 rounded-xl bg-white relative font-[Open_Sans]
-                          w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                         
-                    "
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs bg-green-500 border-none font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 w-[90vw] max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Item Type is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
-                      </div>
-      
-                      {modal && (
-                                <div className="fixed text-black  inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                   <div className="bg-red-200 rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col gap-2 bg-white overflow-auto" style={{padding:'20px'}}>
-                                    <h3 className="font-bold text-[22px] text-[#344767]   "
-                                    
-                                        >
-                                         Create Type                       
-                                          </h3>
-                                    <hr className="my-4 border-gray-300" />
-      
-                                    <div className="flex flex-col gap-3  flex-grow items-center text-gray-600"> {/* Added flex-grow */}
-                                   
-                                      <label 
+                              ) : (
+                                <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                  INACTIVE
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                              <div className="flex gap-2.5 items-center">
+                                 <EditButton 
+                                  onClick={() => {
+                                    setEditingItemType(itemType);  // Set the itemType to edit
+                                    setEditModal(true);
+                                  }}
+                                />
+                              <DeleteButton 
+                                buttonText={deletingId === itemType.id ? 'Deleting...' : 'Delete'}
+                                onOpenModal={() => setItemToDelete(itemType)} // Set the correct item to delete
+                                onConfirmDelete={() => handleDeleteItemType(itemToDelete?.id)}
+                                disabled={deletingId === itemType.id}
+                              />
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                                         
-                                        className="block font-bold text-xs text-left   text-[#344767] w-[100%]"
+                  
+                        <Pagination/>                
+      </div>
+       
+      {modal && (
+                           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                    <h3 className="font-bold text-[22px] text-[#344767] "
+                                       >
+                                         Create Item Type                     </h3>
+                                    <hr className=" border-gray-300"/>
+                                    <div className="flex flex-col flex-grow gap-4"> {/* Added flex-grow */}
+                                      <div>
+                                      <label      
+                                        className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Code:
                                       </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] text-gray-300 rounded-lg focus:outline-none border-gray-300 bg-white  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                      <input
+                                        type="text"
+                                        placeholder="Type here"
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                        style={{ paddingLeft: '12px' }}
+                                        name="code"
+                                        value={addItemTypeData.code}
+                                        onChange={handleChange}
                                       />
-                                      <label 
-                                        
-                                        className="font-bold text-xs text-[#344767] w-[100%]"
+                                      {errors.code && (
+                                              <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+                                            )}
+                                      
+                                      
+                                      </div>
+                                      <div>
+                                       <label                                      
+                                        className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Name:
                                       </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg text-gray-300  border-gray-300 bg-white focus:outline-none   focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
- 
-                                      <label 
-                                       
+                                     <input
+                                      type="text"
+                                      placeholder="Type here"
+                                      className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                      style={{ paddingLeft: '12px' }}
+                                      name="name"
+                                      value={addItemTypeData.name}
+                                      onChange={handleChange}
+                                    />
+                                    {errors.name && (
+                                              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                                            )}
+                                    
+                                    </div>
+                                    <div>
+                                       <label 
+                                        
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] text-gray-300  border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
-                                        placeholder="Description" 
-                                        style={{padding:'12px'}}
-                                       
-                                        onChange={(e)=>handleChange(e)}
-                                        
-                                        name=""
+                                      <textarea
+                                        name="description"
+                                        value={addItemTypeData.description}
+                                        onChange={handleChange}
+                                        placeholder="Description"
+                                        className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                        style={{ paddingLeft: '12px', color: '#374151' }}
                                       ></textarea>
-                             
-                                            <label 
-                                               
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] border-gray-300 bg-white focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                     </div> 
-                                            {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col h-[20vh] md:flex-row gap-2 items-end justify-end  " 
-                                            
-                                                >
-                                            <button
-                                                type="button"
-                                                className="w-[100px] h-[30px] font-bold text-xs rounded-sm text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className=" w-[100px] h-[30px] font-bold text-xs rounded-sm text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                                )}      
-      
-      
-                      {editModal &&  (
-                                <div className="fixed text-black  inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                   <div className="bg-red-200 rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col gap-2 bg-white overflow-auto" style={{padding:'20px'}}>
-                                    <h3 className="font-bold text-[22px] text-[#344767]   "
-                                    
-                                        >
-                                         Edit Type                       
-                                          </h3>
-                                    <hr className="my-4 border-gray-300" />
-      
-                                    <div className="flex flex-col gap-3  flex-grow items-center text-gray-600"> {/* Added flex-grow */}
-                                   
-                                      <label 
-                                        
-                                        className="block font-bold text-xs text-left   text-[#344767] w-[100%]"
-                                      >
-                                       Code:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] text-gray-300 rounded-lg focus:outline-none border-gray-300 bg-white  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      <label 
-                                        
-                                        className="font-bold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Name:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg text-gray-300  border-gray-300 bg-white focus:outline-none   focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
- 
-                                      <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Description:
-                                      </label>
 
-                                      <textarea className="textarea w-[100%] text-gray-300  border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
-                                        placeholder="Description" 
-                                        style={{padding:'12px'}}
-                                       
-                                        onChange={(e)=>handleChange(e)}
-                                        
-                                        name=""
-                                      ></textarea>
-                             
-                                            <label 
-                                               
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] border-gray-300 bg-white focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                     </div> 
-                                            {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col h-[20vh] md:flex-row gap-2 items-end justify-end  " 
-                                            
-                                                >
-                                            <button
-                                                type="button"
-                                                className="w-[100px] h-[30px] font-bold text-xs rounded-sm text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className=" w-[100px] h-[30px] font-bold text-xs rounded-sm text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                                )}
+                                    {errors.description && (
+                                              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+                                            )}
+                                    
+                                    </div>
+                                    {/* <div>
+                                      <label className="font-semibold text-xs text-[#344767] w-[100%]">
+                                        Status:
+                                      </label>
+                                      <select
+                                        className={`select w-[100%] h-[35px] bg-white border ${
+                                          errors.status ? 'border-red-500' : 'border-gray-300'
+                                        } focus:outline-none rounded-lg focus:border-b-2 focus:border-blue-500`}
+                                        style={{paddingLeft:'12px'}}
+                                        value={editingItemType?.status ? 'Active' : 'Inactive'}  // Fixed from editingCountry to editingItemType
+                                        onChange={(e) => {
+                                          setEditingItemType({
+                                            ...editingItemType, 
+                                            status: e.target.value === 'Active'  // Convert back to boolean
+                                          });
+                                          if (errors.status) setErrors({...errors, status: ''});
+                                        }}
+                                      >
+                                        <option value="Active">Active</option>
+                                        <option value="Inactive">Inactive</option>
+                                      </select>
+                                      {errors.status && (
+                                        <p className="text-red-500 text-xs mt-1">{errors.status}</p>
+                                      )}
+                                    </div> */}
+
+
+                                   </div> 
+                                   <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
+                                        >
+                                     <button
+                                       type="button"
+                                       className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                       style={{ backgroundColor: '#8392ab' }}
+                                               onClick={handleCloseModal}
+                                      >
+                                             close
+                                      </button>
+                                         <button
+                                           type="button"
+                                           className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                           style={{ backgroundColor: '#5E72E4' }}
+                                           onClick={handleSubmit}
+                                          >
+                                          Create
+                                           </button>
+
+                                          </div>
+                                    </div>
+                                 </div>
+       )}
+       
+     {editModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+    <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+      <h3 className="font-bold text-[22px] text-[#344767]">
+        Edit Item Type
+      </h3>
+      <hr className="border-gray-300"/>
       
-                         
-                    </>)
-     }
-     
-     export default List_item_Type;
+      <div className="flex flex-col flex-grow gap-4">
+        {/* Code Field */}
+        <div>
+          <label className="font-semibold text-xs text-[#344767] w-[80%]">
+            Code:
+          </label>
+          <input
+            type="text"
+            placeholder="Type here"
+            className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${
+              errors.code ? 'border-red-500' : 'border-gray-300'
+            } focus:border-b-2 focus:border-blue-500`}
+            style={{paddingLeft:'12px'}}
+            name="code"
+          value={editingItemType?.code || ''}
+            onChange={(e) => {
+              setEditingItemType({...editingItemType, code: e.target.value});
+              if (errors.code) setErrors({...errors, code: ''});
+            }}
+          />
+          {errors.code && (
+            <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+          )}
+        </div>
+
+        {/* Name Field */}
+        <div>
+          <label className="font-semibold text-xs text-[#344767] w-[80%]">
+            Name:
+          </label>
+          <input
+            type="text"
+            placeholder="Type here"
+            className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${
+              errors.name ? 'border-red-500' : 'border-gray-300'
+            } focus:border-b-2 focus:border-blue-500`}
+            style={{paddingLeft:'12px'}}
+            name="name"
+           value={editingItemType?.name || ''}
+            onChange={(e) => {
+              setEditingItemType({...editingItemType, name: e.target.value});
+              if (errors.name) setErrors({...errors, name: ''});
+            }}
+          />
+          {errors.name && (
+            <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+          )}
+        </div>
+
+        <div>
+          <label 
+                                        
+          className="font-semibold text-xs text-[#344767] w-[100%]">
+            Description:
+            </label>
+            <textarea
+                name="description"
+                placeholder="Description"
+                className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                style={{ paddingLeft: '12px', color: '#374151' }}
+                value={editingItemType?.description || ''}
+            onChange={(e) => {
+              setEditingItemType({...editingItemType, description: e.target.value});
+              if (errors.description) setErrors({...errors, description: ''});
+            }}
+            ></textarea>
+              {errors.description && (
+                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+              )}
+                                    
+        </div>
+
+        {/* Status Field */}
+        <div>
+          <label className="font-semibold text-xs text-[#344767] w-[80%]">
+            Status:
+          </label>
+          <select
+            className={`select w-[100%] h-[35px] text-gray-500 bg-white border ${
+              errors.status ? 'border-red-500' : 'border-gray-300'
+            } focus:outline-none rounded-lg focus:border-b-2 focus:border-blue-500`}
+            style={{paddingLeft:'12px'}}
+            value={editingItemType?.status === true ? 'Active' : 
+                  editingItemType?.status === false ? 'Inactive' : ''}
+            onChange={(e) => {
+              setEditingItemType({
+                ...editingItemType, 
+                status: e.target.value === 'Active'  // Convert back to boolean
+              });
+              if (errors.status) setErrors({...errors, status: ''});
+            }}
+          >
+            <option value="">Select Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          {errors.status && (
+            <p className="text-red-500 text-xs mt-1">{errors.status}</p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
+        <button
+          type="button"
+          className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+          style={{ backgroundColor: '#8392ab' }}
+          onClick={handleEditCloseModal}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+          style={{ backgroundColor: '#5E72E4' }}
+          onClick={handleEditSubmit}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Updating...' : 'Update'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+       
+                          
+                     </>)
+}
+
+export default ItemType

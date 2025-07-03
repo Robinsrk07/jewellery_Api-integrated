@@ -39,6 +39,9 @@ const DiamondModel ={
 
         return axiosInstance.post(`manage-diamond/`,data)
 
+    },
+    UpdateDiamond:(data,uuid)=>{
+        return axiosInstance.put(`manage-diamond/${uuid}/`,data)
     }
     
 }
