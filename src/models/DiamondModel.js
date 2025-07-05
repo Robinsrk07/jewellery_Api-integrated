@@ -42,6 +42,9 @@ const DiamondModel ={
     },
     UpdateDiamond:(data,uuid)=>{
         return axiosInstance.put(`manage-diamond/${uuid}/`,data)
+    },
+    GetDiamondUtils:()=>{
+        return axiosInstance.get(`get-create-diamond-utils/`)
     }
     
 }

@@ -3,9 +3,10 @@ import {useDispatch,useSelector} from 'react-redux'
 import POSModel from "../models/PosModel";
 import { addCustomer } from "../StateManagement/CustomerSlice";
 import Loader from "./../components/Loader";
+import { data } from "react-router";
 import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManagement/posItemSlice";
 
-  const Pos = () => {
+const Pos = () => {
   const [mobileSearch, setMobileSearch] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddNewOpen, setIsAddNewOpen] = useState(false);
@@ -14,7 +15,6 @@ import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManag
   const [Loading,setLoading] =useState(false)
   const [itemData,setItemsData] = useState([])
   const [cart,setCart] =useState([])
-  const [selectedField, setSelectedField] = useState('');
   const cartItems = useSelector((state) => state.posItem?.itemData || []);
   console.log(cart)
   const [customerDetails, setCustomerDetails] = useState({
@@ -23,35 +23,6 @@ import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManag
       email: '',
       address: ''
     });
-
-    const fields = [
-  "making_rate",
-  "stone_rate",
-  "multi_stone_rate",
-  "wastage_rate",
-  "other_charges",
-  "gross_weight",
-  "net_weight",
-  "gross_amount",
-  "net_amount",
-  "taxable_amount",
-  "tax",
-  "total_with_tax",
-  "round_off",
-  "total_discount",
-  "final_amount",
-  "grand_total",
-  "gold_value",
-  "diamond_value",
-  "stone_value",
-  "silver_value",
-  "platinum_value",
-  "labour_charge",
-  "setting_charge",
-  "engraving_charge",
-  "shipping_charge"
-];
-
      const [params,setParams]=useState({
       code:'3366090',
       type:''
@@ -65,63 +36,7 @@ import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManag
       }));
     };
 
-
-const CreateCart = (cart) => {
-  const grouped = {};
-
-  cart.forEach((item) => {
-    if (!item.uuid) return;
-
-    if (grouped[item.uuid]) {
-      grouped[item.uuid].quantity += 1;
-    } else {
-      const baseData = {
-        item_type: item.item_type || "",
-        quantity: 1,
-        selling_price: Number(item.Net_Amount || item.tag_price || 0),
-        discount: Number(item.discount || 0),
-        message: item.description || "",
-        discount_on: item.discount_on || "",
-        final_discount: '',
-        final_amount: ''
-      };
-
-      if (item.item_type === "Gold") {
-        grouped[item.uuid] = {
-          gold_item: item.uuid,
-          ...baseData
-        };
-      } else if (item.item_type === "Diamond") {
-        grouped[item.uuid] = {
-          diamond_item: item.uuid,
-          ...baseData
-        };
-      }
-    }
-  });
-
-  return Object.values(grouped);
-};
-
-    const handleCheckout = async () => {
-      const payload = CreateCart(cart); 
-      console.log(payload)
-      const formData = new FormData();
-      formData.append("customer", 1);  
-      payload.forEach((item) => {
-        Object.entries(item).forEach(([key, value]) => {
-          formData.append(key, value);
-        });
-      });
-      try {
-        const response = await POSModel.CreateCart(formData);
-        console.log("Cart created successfully", response.data);
-      } catch (error) {
-        console.error("Cart creation failed:", error);
-      }
-    };
-
-
+console.log(itemData)
      const handleGetData =async()=>{
         try{
            const response = await POSModel.getItemDetails(params.code,params.type)
@@ -158,12 +73,8 @@ const CreateCart = (cart) => {
     };
 
 const handleAddToCart = (item) => {
-  const newItem = { ...item }; 
-  if (selectedField) newItem.discount_on = selectedField;
-  dispatch(addItemToCart(newItem));
-  setIsAddNewOpen(false);
+  dispatch(addItemToCart(item));
 };
-
 const handleRemove = (uuid) => {
   dispatch(removeItemFromCart(uuid));
 };
@@ -171,22 +82,6 @@ const handleClearCart = () => {
   dispatch(clearItemData());
 };
 
-const handleRemoveItem = (removeIndex) => {
-  const updatedCart = cart.filter((_, index) => index !== removeIndex);
-  setCart(updatedCart);
-};
-
-const groupedCart = cart.reduce((acc, item) => {
-  if (!item.uuid) return acc;
-
-  const existing = acc.find((i) => i.uuid === item.uuid);
-  if (existing) {
-    existing.quantity += 1;
-  } else {
-    acc.push({ ...item, quantity: 1 });
-  }
-  return acc;
-}, []);
 
 
   const handleViewMoreClick = () => {
@@ -195,15 +90,10 @@ const groupedCart = cart.reduce((acc, item) => {
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
-  }
-
- const total = cartItems.reduce((sum, item) => {
-  const value = item.Total_Amount ?? item.tag_price ?? 0;
-  return sum + parseFloat(value);
-}, 0);
+  };
 
   const totalsData = [
-    { label: "Totals", value: total},
+    { label: "Totals", value: "Value" },
     { label: "Sales", value: "Value" },
     { label: "Gross Wt.", value: "Value" },
     { label: "Pcs", value: "Value" },
@@ -217,12 +107,11 @@ const groupedCart = cart.reduce((acc, item) => {
     { label: "Amount", value: "Value" },
     { label: "Tax", value: "Value" },
     { label: "Net Amount", value: "Value" },
+    { label: "Active Windows", value: "Value" },
   ];
 // useEffect(()=>{
 // handleClearCart()
 // },[])
-
-
 
 
   useEffect(() => {
@@ -246,7 +135,7 @@ const groupedCart = cart.reduce((acc, item) => {
       <div className={`${isMenuOpen ? 'lg:w-[80%] w-full' : 'w-full'}  bg-[#F8F9FA] min-h-screen`} style={{fontFamily: 'Open Sans'}} >
         <div className="w-full min-h-[100px] bg-[#F8F9FA]" style={{ padding: '20px', fontFamily: 'Open Sans' }}>
           {/* Top Navigation Bar */}
-          <div className="flex flex-col sm:flex-row sm:justify-between gap-4" style={{marginBottom:'10px'}} >
+          <div className="flex flex-col sm:flex-row justify-between items-center w-full h-auto sm:h-[80px] bg-[#F8F9FA] flex-nowrap max-w-full gap-2">
             <button
               className="flex items-center w-[80px] h-[30px] bg-gray-800 text-white text-sm rounded-sm shadow hover:bg-gray-700"
               style={{ padding: '5px 10px' }}
@@ -265,7 +154,7 @@ const groupedCart = cart.reduce((acc, item) => {
               {isMenuOpen ? 'Close' : 'Menu'}
             </button>
 
-            <div className="flex flex-col sm:flex-row items-start gap-4 flex-nowrap w-full sm:max-w-[400px] max-w-full">
+            <div className="flex flex-col sm:flex-row items-center gap-2 flex-nowrap w-full sm:max-w-[400px] max-w-full">
               <label
                 htmlFor="search-mobile"
                 className="font-semibold text-sm text-gray-900 whitespace-nowrap"
@@ -281,14 +170,14 @@ const groupedCart = cart.reduce((acc, item) => {
                 onChange={(e) => setMobileSearch(e.target.value)}
               />
               <button
-                className="text-white w-full sm:w-[130px] h-[35px] text-[12px] bg-[#5E72E4] rounded hover:bg-blue-700"
+                className="text-white w-[90px] sm:w-[130px] h-[30px] text-[12px] bg-[#5E72E4] rounded hover:bg-blue-700"
                 onClick={() => setNewCustomer(true)} // Open Add New Customer modal
               >
                 + New Customer
               </button>
             </div>
             <button
-              className="text-white w-full sm:w-[120px] h-[35px] text-[12px] bg-[#5E72E4] rounded hover:bg-blue-700 mt-2 sm:mt-0"
+              className="text-white w-[100px] sm:w-[120px] h-[30px] text-[12px] bg-[#5E72E4] rounded hover:bg-blue-700 mt-2 sm:mt-0"
               onClick={() => setIsAddNewOpen(true)} // Open Item Details modal
             >
               Add New +
@@ -368,82 +257,45 @@ const groupedCart = cart.reduce((acc, item) => {
               <th className="px-4 py-2 border text-center">UOM</th>
               <th className="px-4 py-2 border text-center">Rate</th>
               <th className="px-4 py-2 border text-center">Amount</th>
-              <th className="px-4 py-2 border text-center">Quantity</th>
-              {/* <th className="px-4 py-2 border text-center">Remove</th> */}
             </tr>
           </thead>
           <tbody className="bg-white text-gray-700 text-xs">
-            {groupedCart.length > 0 ? (
-                groupedCart.map((item, index) => (
-                  <tr key={item.uuid || index} className="border-t h-[30px]">
-                    <td className="px-4 py-2 border text-center">{index + 1}</td>
-                    <td className="px-4 py-2 border text-center">{item.item_type || '-'}</td>
-                    <td className="px-4 py-2 border text-center">{item.serial_no || item.item_code}</td>
-                    <td className="px-4 py-2 border text-center">{item.description || '-'}</td>
-                    <td className="px-4 py-2 border text-center">{item.gold_weight || item.Gross_Weight || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">{item.uom || '-'}</td>
-                    <td className="px-4 py-2 border text-center">{item.cost_price || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">{item.tag_price || item.Total_Amount || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">
-                      {item.quantity}
-                    
-                    </td>
-                    {/* <td style={{paddingLeft:'60px'}} className="px-4 py-2 items-center border text-center">
-                      
-                       <button title="Remove Item"></button>
-                     <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      fill="none" 
-                      viewBox="0 0 24 24" 
-                      strokeWidth={1.5} 
-                      stroke="currentColor" 
-                      className="w-4 h-4 text-red-500 hover:text-red-700 cursor-pointer"
-                    >
-                      <path 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        d="M6 18L18 6M6 6l12 12" 
-                      />
-                    </svg>
-
-                    
-                    </td> */}
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="9" className="text-center py-2 text-sm text-gray-500">
-                    No items in cart
-                  </td>
+            {cart.length > 0 ? (
+              cart.map((item, index) => (
+                <tr key={item.uuid || index} className="border-t h-[30px]">
+                  <td className="px-4 py-2 border text-center">{index + 1}</td>
+                  <td className="px-4 py-2 border text-center">{item.item_type || '-'}</td>
+                  <td className="px-4 py-2 border text-center">{item.serial_no || '-'}</td>
+                  <td className="px-4 py-2 border text-center">{item.description || '-'}</td>
+                  <td className="px-4 py-2 border text-center">{item.gold_weight || item.gross_weight || '0.00'}</td>
+                  <td className="px-4 py-2 border text-center">{item.uom || '-'}</td>
+                  <td className="px-4 py-2 border text-center">{item.cost_price || '0.00'}</td>
+                  <td className="px-4 py-2 border text-center">{item.tag_price || '0.00'}</td>
                 </tr>
-              )}
-
+              ))
+            ) : (
+              <tr>
+                <td colSpan="8" className="text-center py-2 text-sm text-gray-500">
+                  No items in cart
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
     </div>
 
           {/* Totals Section */}
-          <div className="w-full bg-[#FFFFFF] min-h-[150px] border border-gray-300 rounded-lg flex flex-col gap-4" style={{ marginTop: '30px', padding: '30px' }}
+          <div className="w-full bg-[#FFFFFF] min-h-[150px] border border-gray-300 rounded-lg" style={{ marginTop: '30px', padding: '30px' }}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
               {totalsData.map((item, index) => (
-                <div key={index} className="flex justify-start items-center p-2 gap-2 rounded-lg bg-white">
+                <div key={index} className="flex justify-between items-center p-2 rounded-lg bg-white">
                   <span className="text-sm font-medium text-gray-700">{item.label}:</span>
-                  <span className="text-sm font-bold text-gray-800">{item.value}</span>
+                  <span className="text-sm text-gray-700">{item.value}</span>
                 </div>
               ))}
             </div>
-           <div className="flex flex-row justify-end">
-  <button 
-    onClick={handleCheckout} 
-    className="text-white text-sm rounded-sm w-[180px] h-[30px] bg-[#5E72E4] hover:bg-blue-700"
-  >
-    Proceed To CheckOut
-  </button>
-</div>
-
-                
           </div>
         </div>
       </div>
@@ -520,7 +372,7 @@ const groupedCart = cart.reduce((acc, item) => {
       {/* Add New Item Modal (Matching the Image) */}
       {isAddNewOpen && (
        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto px-2" style={{fontFamily:'Open Sans'}}>
-          <div className="bg-white rounded-lg shadow-md w-full md:w-[90%] md:h-[90vh]  lg:w-[60%] " style={{padding:'20px'}}>
+          <div className="bg-white rounded-lg shadow-md  w-full md:w-[90%] md:h-[90vh]  lg:w-[60%] " style={{padding:'20px'}}>
                <h3 className="font-semibold text-[13px] text-[#344767] "
                 style={{marginBottom:'20px'}} >
                  Item Detials
@@ -528,46 +380,34 @@ const groupedCart = cart.reduce((acc, item) => {
                 <hr className="my-4 border-gray-300" />
 
                 <div className="flex flex-col  text-gray-400" >
-                      <div className="flex flex-col gap-7 md:flex-row  justify-between" style={{paddingTop:'20px'}} >
+                      <div className="flex flex-col gap-7 md:flex-row  justify-start" style={{paddingTop:'20px'}} >
                       <h3 className="text-[13px] text-gray-700">Barcode:</h3>
-                      <input placeholder="Enter Your  Serial Number/UniqueId" name="code" value={params.code} onChange={handleItemChange} style={{paddingLeft:'12px'}} className="w-full text-xs text-black  h-[30px] rounded-sm border border-gray-300 "/>
+                      <input placeholder="Enter Your  Serial Number/UniqueId" name="code" value={params.code} onChange={handleItemChange} style={{paddingLeft:'12px'}} className="w-full text-xs text-black md:w-[545px] h-[30px] rounded-sm border border-gray-300 "/>
                      </div>
                      <div className="flex flex-col gap-6 md:flex-row" style={{paddingTop:'20px'}} >
                         <h3 className="text-[13px] text-gray-700">Item Type:</h3>
-                          <select value={params.type} name="type" onChange={handleItemChange} style={{paddingLeft:'12px'}} className="w-full  text-xs h-[30px] rounded-sm border border-gray-300 text-sm">
+                          <select value={params.type} name="type" onChange={handleItemChange} style={{paddingLeft:'12px'}} className="w-full md:w-[60%] text-xs h-[30px] rounded-sm border border-gray-300 text-sm">
                             <option value="">Select Item Type</option>
                             <option value="Diamond">Diamond</option>
                             <option value="Gold">Gold</option>
                           </select>
-                        {/* <button className="bg-[#5E72E4] w-full h-[30px] md:w-[150px] rounded-sm text-white" onClick={handleGetData}>Search</button> */}
+                        <button className="bg-[#5E72E4] w-full h-[30px] md:w-[150px] rounded-sm text-white" onClick={handleGetData}>Search</button>
 
                      </div>
-                     <div className="flex justify-end">  <button className="bg-[#5E72E4] w-full h-[30px] md:w-[150px] rounded-sm text-white" onClick={handleGetData}>Search</button>
-                           </div>
+                        <div className="flex flex-col gap-12 md:flex-row" style={{paddingTop:'20px'}} >
+                        <h3 className="text-[13px] text-gray-700">Price:</h3>
+                        <input placeholder="Gold Price Per Gram" style={{paddingLeft:'12px'}}  className="w-full text-xs text-black  h-[30px] rounded-sm border border-gray-300"/>
+                        <input placeholder="Stone Price Per Gram" style={{paddingLeft:'12px'}} className="w-full text-xs text-black   h-[30px] rounded-sm border border-gray-300"/>
+                        <input placeholder="Multi Stone Price Per Gram" style={{paddingLeft:'12px'}} className="w-full  h-[30px] text-xs text-black    rounded-sm border border-gray-300"/>
 
-                        <div className="flex flex-col  gap-3 md:flex-row" style={{paddingTop:'20px'}} >
-                        <h3 className="text-[13px] text-gray-700">Discount On:</h3>
-                        <select
-                          value={selectedField}
-                          onChange={(e) => setSelectedField(e.target.value)}
-                          className=" w-full text-xs text-gray-500 h-[30px]  rounded-sm border border-gray-300"
-                          style={{ paddingLeft: '12px' }}
-                        >
-                          <option value="">Select Field</option>
-                          {fields.map((field) => (
-                            <option key={field} value={field}>
-                              {field.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </option>
-                          ))}
-                        </select>
                      </div>
                         
-                        {/* <div className="flex flex-col gap-10 md:flex-row" style={{paddingTop:'20px'}} >
+                        <div className="flex flex-col gap-10 md:flex-row" style={{paddingTop:'20px'}} >
                         <h3 className="text-[13px] text-gray-700">Item:</h3>
                         <input value={itemData.diamond_item} style={{paddingLeft:'12px'}} className="w-[40%] h-[30px] text-xs rounded-sm border border-gray-300"/>
                         <input className="w-[40%] h-[30px] rounded-sm border border-gray-300"/>
 
-                     </div> */}
+                     </div>
                      
 
              </div>
@@ -588,55 +428,47 @@ const groupedCart = cart.reduce((acc, item) => {
         <tbody>
           <tr>
             
-          <td className="border border-gray-300 p-4 text-black align-top " style={{padding:'3px'}}>
+          <td className="border border-gray-300 p-4 text-black " style={{padding:'3px'}}>
             <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-              {params.type === 'Gold' ? 'Gross Weight (GMS)' : 'Gold Weight (GMS)'}
+              Gold Weight (GMS)
             </h3>
             <input 
               type="text" 
               className="w-full  p-2 border border-gray-300 rounded focus:outline-none text-gray-400 text-xs focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.gold_weight || itemData.Gross_Weight}
+              value={itemData.gold_weight}
             />
             <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-             
-                            {params.type === 'Gold' ? 'Stone Weight (GMS):' : ' Pearl Weight (GMS)'}
-
+              Pearl Weight (GMS):
             </h3>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 text-xs text-gray-400 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.pearl_weight || itemData.Stone_Weight}
+              value={itemData.pearl_weight}
 
             />
              <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-              
-              {params.type === 'Gold' ? 'Multi stone weight (GMS)' : 'Ruby Weight (GMS)'}
+              Ruby Weight (GMS):
             </h3>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.ruby_weight || itemData.m_s_weight}
+              value={itemData.ruby_weight}
 
             /> 
-            {params.type ==='Diamond' && (
-                  <>
-                    <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2"
-                        style={{ height: "20px", marginBottom: '5px' }}>
-                      Emerald Weight (GMS):
-                    </h3>
-                    <input 
-                      type="text" 
-                      className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-                      style={{ height: "30px", marginBottom: '5px', paddingLeft: '12px' }}
-                      value={itemData.emerald_weight}
-                    />
-                  </>
-                )}
-
-            {params.type ==='Diamond'&&(<><h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
+            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
+              Emerald Weight (GMS):
+:
+            </h3>
+            <input 
+              type="text" 
+              className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
+              value={itemData.emerald_weight}
+            />
+            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
               sapphire Weight (GMS):
 :
             </h3>
@@ -645,10 +477,8 @@ const groupedCart = cart.reduce((acc, item) => {
               className="w-full p-2 border border-gray-300 text-gray-300 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
               value={itemData.sapphire_weight}
-            /></>)}
-
-
-            {params.type ==='Diamond'&&(<><h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
+            />
+            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
               other stone Weight (GMS):
 :
             </h3>
@@ -657,7 +487,7 @@ const groupedCart = cart.reduce((acc, item) => {
               className="w-full p-2 border border-gray-300 text-gray-300 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
               value={itemData.other_stone_weight}
-            /></>)}
+            />
           </td>
              <td className="border border-gray-300 p-4 text-black align-top " style={{padding:'3px'}}>
             <h3 className="text-[12px] bg-gray-100 flex justify-center items-start p-2 " style={{height:"20px",marginBottom:'5px'}}>
@@ -672,65 +502,61 @@ const groupedCart = cart.reduce((acc, item) => {
              Stone Rate :
             </h3>
             <input 
-             className="w-full p-2 border border-gray-300 text-gray-300 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-              style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.Stone_Rate}
+              type="text" 
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+              style={{height:"30px",marginBottom:'5px'}}
             />
              <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
               Making Rate :
             </h3>
             <input 
-               className="w-full p-2 border border-gray-300 text-gray-300 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-              style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.Making_Rate}
+              type="text" 
+              className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
+              style={{height:"30px",marginBottom:'5px'}}
             /> 
           </td>
 
 
              <td className="border border-gray-300 p-4 text-black align-top " style={{padding:'3px'}}>
             <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-              
-               {params.type === 'Gold' ? 'Total Amount' : 'Cost Price :'}
+              Cost Price :
             </h3>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.cost_price || itemData.Total_Amount}
+              value={itemData.cost_price}
             />
             <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-           
-             {params.type === 'Gold' ? 'Stone Value' : 'additional Charge  :'}
+             additional Charge  :
             </h3>
             <input 
               type="text" 
                className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.additional_charge || itemData.Stone_Value}
+              value={itemData.additional_charge}
             />
              <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-             
-              {params.type === 'Gold' ? 'Making Value' : 'Tag Price : '}
+              Tag Price :
             </h3>
             <input 
               type="text" 
                className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.tag_price || itemData.Making_Value }
+              value={itemData.tag_price}
             /> 
             <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-           
-             {params.type === 'Gold' ? 'Matel Value' : 'Discount'}
+            Discount :
             </h3>
             <input 
               type="text" 
               className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.discount || itemData.Metal_Value}
+              value={itemData.discount}
             />
           </td>
              <td className="border border-gray-300 p-4 text-black align-top " style={{padding:'3px'}}>
-           {params.type === 'Diamond'&&(<><h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
+            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
             Tax Amount :
             </h3>
             <input 
@@ -738,46 +564,7 @@ const groupedCart = cart.reduce((acc, item) => {
               className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
               style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
               value={itemData.tax_amt}
-            /></>) }
-
-            {params.type === 'Gold'&&(<>
-            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-           Stone Tax:
-            </h3>
-            <input 
-              type="text" 
-              className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-              style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.stone_tax}
             />
-            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-           Making Tax:
-            </h3>
-            <input 
-              type="text" 
-              className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-              style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.stone_tax}
-            />
-            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-          Default Tax :
-            </h3>
-            <input 
-              type="text" 
-              className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-              style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.default_tax}
-            />
-            <h3 className="text-[12px] bg-gray-100 flex justify-center items-center p-2 " style={{height:"20px",marginBottom:'5px'}}>
-            Net Amount :
-            </h3>
-            <input 
-              type="text" 
-              className="w-full p-2 border border-gray-300 text-gray-400 text-xs rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mt-1"
-              style={{height:"30px",marginBottom:'5px',paddingLeft:'12px'}}
-              value={itemData.Net_Amount}
-            />
-            </>) }
             
           </td>
           </tr>
@@ -786,25 +573,53 @@ const groupedCart = cart.reduce((acc, item) => {
     </div>
             
  
-            <div className="flex flex-col gap-2 md:flex-row justify-between" style={{padding:'20px'}} >
+            <div className="flex flex-col md:flex-row justify-between" style={{marginTop:'20px'}}>
 
              <div className="flex flex-col gap-2 md:flex-row">
               <button className="text-white text-sm rounded-sm w-full  md:w-[180px] h-[30px] bg-blue-600 text-[13px]" >Consider Buffer :Yes</button>
               <button className="text-white text-sm rounded-sm w-full  md:w-[200px] h-[30px] bg-blue-600 text-[13px]" >Making Calculations:netWeight</button>
               </div>
              <div className="flex flex-col gap-2 md:flex-row">
-              <button className="text-white text-sm rounded-sm w-full md:w-[80px] h-[30px] bg-gray-600 text-[13px]" onClick={()=>setIsAddNewOpen(false)} >close</button>
-              <button onClick={() => handleAddToCart(itemData)} className="text-white w-full md:w-[80px]  text-sm rounded-sm w-[80px] h-[30px] bg-blue-600 text-[13px]" >Add</button>
+              <button className="text-white text-sm rounded-sm w-[80px] h-[30px] bg-gray-600 text-[13px]" onClick={()=>setIsAddNewOpen(false)} >close</button>
+              <button onClick={() => handleAddToCart(itemData)} className="text-white text-sm rounded-sm w-[80px] h-[30px] bg-blue-600 text-[13px]" >Add</button>
              </div>
          
             </div>
           </div>
         </div>
       )}
-
-      
     </div>
   );
 };
 
 export default Pos;
+
+{
+  "customer": 1,
+  "branch": "main-branch-id",
+  "gold_item": [1,  3,  5],
+  "diamond_item": [ 2,  4,],
+  "item_type": ["Gold", "Diamond", "Gold", "Diamond", "Gold"],
+  "quantity": [1, 2, 1, 3, 1],
+  "selling_price": [1000, 2000, 1500, 3000, 1200],
+  "discount": [100, 200, 150, 300, 120],
+  "message": ["Promo A", "Promo B", "Promo C", "Promo D", "Promo E"],
+  "final_discount": [50, 100, 75, 120, 60],
+  "final_amount": [850, 1700, 1275, 2580, 1020],
+  "discount_on": ["taxable_amount", "multi_stone_rate", "stone_value", "setting_charge", "labour_charge"]
+}
+
+
+{
+  "customer": 1,
+  "branch": "main-branch-id",
+  "diamond_item": [ 'uuid1','uuid2'],
+  "item_type": ["Diamond"],
+  "quantity": [2],
+  "selling_price": [1000],
+  "discount": [100],
+  "final_discount": [50],
+  "final_amount": [1020],
+  "discount_on": ["taxable_amount", "multi_stone_rate", "stone_value", "setting_charge", "labour_charge"]
+
+}

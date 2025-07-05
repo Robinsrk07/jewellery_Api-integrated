@@ -72,6 +72,8 @@ const utils = [
                 [name]: value
               }));
             };
+
+            
            const handleSubmit = async() => {
             // Filter out empty strings, null, and undefined values
             const validData = Object.fromEntries(

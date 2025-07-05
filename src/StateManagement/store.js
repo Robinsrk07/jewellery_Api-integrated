@@ -6,7 +6,7 @@ import { FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER } from 'redux-persist
 
 import customerReducer from './CustomerSlice';
 import authReducer from './authSlice';
-
+import posReducer from './posItemSlice'
 const persistConfig = {
   key: 'root',
   storage, // persist everything to localStorage
@@ -16,6 +16,7 @@ const persistConfig = {
 const rootReducer = combineReducers({
   customer: customerReducer,
   auth: authReducer,
+  posItem:posReducer
 });
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

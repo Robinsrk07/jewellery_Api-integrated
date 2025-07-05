@@ -8,6 +8,9 @@ const  POSModel ={
         })
 
         return axiosInstance.get(`get-product-details/?${params.toString()}`)
+    },
+    CreateCart:(payload)=>{
+        return axiosInstance.post( `create-cart/`,payload)
     }
 }
 
