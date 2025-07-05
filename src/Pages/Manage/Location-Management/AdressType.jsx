@@ -8,7 +8,6 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import addressTypeModel from "../../../models/addressTypeModel";
 import { useSelector } from "react-redux";
 import { toast } from 'react-toastify';
-// import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axiosInstance from "../../../Data/server/axiosinstance";
 
@@ -70,7 +69,7 @@ const Adress_Type = () => {
     setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-   // Validate form
+
   const validateForm = () => {
     const newErrors = {};
     if (!data.name.trim()) newErrors.name = 'Please enter name';
@@ -133,19 +132,14 @@ const Adress_Type = () => {
               setErrors({});
             };
 
-            // const handleEditCloseModal = () => {
-            //   setEditModal(false)
-            // };
+          
 
             const handleEditCloseModal = () => {
               setEditModal(false);
               setEditingAddresss(null); 
             };
 
-            // const handleEditClick = (addressid) => {
-            //     setEditingAddresss(addressid); 
-            //     setEditModal(true);             
-            //   };
+      
 
             const handleEditClick = (addressObj) => {
                 setEditingAddresss({ ...addressObj }); 
@@ -252,16 +246,16 @@ const Adress_Type = () => {
 
   return (
     <>
-      <div className="bg-white w-full
-              max-w-[95vw] 
-              xl:max-w-[90vw] 
-              2xl:max-w-[85vw] 
-              h-auto max-h-[70vh] 
-              rounded-xl px-4 md:px-8 lg:px-12
-              mx-auto overflow-auto  custom-scrollbar"
-        style={{ fontFamily: 'Open Sans', overflow: 'auto' }}
-      >
-        <CustomScrollbar/>
+      <CustomScrollbar/>
+          <div  className="bg-white w-full
+                  max-w-[95vw] 
+                  xl:max-w-[90vw] 
+                  2xl:max-w-[95vw] 
+                  h-auto max-h-[70vh] 
+                  rounded-xl px-4 md:px-8 lg:px-12
+                  mx-auto overflow-auto  custom-scrollbar"
+                style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+                                                      >
         <CreateButton
           buttoncontent="+ New Address Type"
           onClick={() => setModal(true)}
@@ -309,7 +303,7 @@ const Adress_Type = () => {
                     />
 
                     <DeleteButton
-                      buttonText="Delete"
+                      buttonText="Delete Adress Type"
                       modalId={`delete_modal_${address.id}`}  
                       onConfirmDelete={() => handleDeleteAddressType(address.id)}
                     />
@@ -339,7 +333,7 @@ const Adress_Type = () => {
               <input type="text"
                 placeholder="Type here"
                 value={data.name}
-                className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                 style={{ paddingLeft: '12px' }}
                 onChange={(e) => handleChange(e)}
                 name="name"
@@ -349,9 +343,9 @@ const Adress_Type = () => {
                 Description:
               </label>
 
-              <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+              <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                 placeholder="Description"
-                style={{ paddingLeft: '12px', color: '#374151' }}
+                style={{ paddingLeft: '12px',}}
                 onChange={(e) => handleChange(e)}
                 name="description"
                 value={data.description}
@@ -361,7 +355,7 @@ const Adress_Type = () => {
                 Status:
               </label>
               <select
-                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500"
+                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500"
                 style={{ paddingLeft: '12px' }}
                 value={data.status}
                 name='status'
@@ -410,7 +404,7 @@ const Adress_Type = () => {
               </label>
               <input type="text"
                 placeholder="Type here"
-                className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                 style={{ paddingLeft: '12px' }}
                 name="name"
                 value={editingAddressType?.name || ''}
@@ -424,9 +418,9 @@ const Adress_Type = () => {
                 Description:
               </label>
 
-              <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+              <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                 placeholder="Description"
-                style={{ paddingLeft: '12px', color: '#374151' }}
+                style={{ paddingLeft: '12px',}}
                 name="description"
                 value={editingAddressType?.description || ''}
                 onChange={(e) => {
@@ -440,7 +434,7 @@ const Adress_Type = () => {
                 Status:
               </label>
               <select
-                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500"
+                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500"
                 style={{ paddingLeft: '12px' }}
                 name='status'
                 value={editingAddressType?.status ? 'true' : 'false'}
@@ -460,13 +454,6 @@ const Adress_Type = () => {
 
             {/* Button container positioned 10px above bottom */}
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
-              {/* <button
-                type="button"
-                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                style={{ backgroundColor: '#8392ab' }}
-              >
-                Submit
-              </button> */}
               <button
                 type="button"
                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"

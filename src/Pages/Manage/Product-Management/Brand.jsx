@@ -1,5 +1,6 @@
-
-import React, { useState } from 'react';
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 import '@fontsource/open-sans'; // Default weight 400
 import '@fontsource/open-sans/600.css'; // Semi-bold
 import '@fontsource/open-sans/700.css'; // Bold
@@ -7,92 +8,263 @@ import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
+import CustomScrollbar from "../../../components/CustomScrollbar";
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+import BrandModel from "../../../models/brandModel"; 
 
      const  Brand = () => {
-     
-          
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
+
+
+              const auth = useSelector((state) => state.auth);
+              const { login_id, can_manage_user_types } = auth;
+
+              const user_id = login_id;
+              const user_types = Object.keys(can_manage_user_types || {}).join(',');
+    
       
                     const [modal, setModal] = useState(false)   
                     const [editModal,setEditModal]= useState(false)
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };   
-                   
-                   const jewelleryItems = [
+                    const [items, setItems] = useState(10);
+                    const [brandData, setBrandData] = useState([]); 
+                    const [editingBrand, setEditingBrand] = useState(null); 
+                    const [limit, setLimit] = useState(10);
+                    const [page, setPage] = useState(1);
+                    const [search, setSearch] = useState('');
+                    const [status, setStatus] = useState(''); // "true" | "false" | ""
+                    const [isSubmitting, setIsSubmitting] = useState(false);
+
+                    
+                    const [addBrandData, setAddBrandData] = useState({
+                      name: '',
+                      code: '',
+                      description: '',
+                      status: 'true',
+                    });
+
+                    
+                    const [errors, setErrors] = useState({
+                      name: '',
+                      code: '',
+                      description: '',
+                      status: '',
+                    });
+
+
+
+                    const fetchBrands = async () => {
+                      try {
+                        const response = await BrandModel.getBrands(
+                          user_id,
+                          user_types,
+                          limit,
+                          page,
+                          search,
+                          status
+                        );
+
+                        console.log("Response from API:", response);
+
+                        if (response.data && response.data.data) {
+                          console.log("Data Received:", response.data.data);
+                          setBrandData(response.data.data); // Make sure to define `brandData` state
+                        } else {
+                          toast.error("Unable to fetch brands");
+                        }
+                      } catch (error) {
+                        console.error("Error fetching brands:", error);
+                        toast.error("Failed to load brands");
+                      }
+                    };
+
+                    useEffect(() => {
+                      fetchBrands();
+                    }, [limit, page, search, status]);
+   
+
+
+                  const validateBrand = () => {
+                  const newErrors = {};
+                  if (!addBrandData.name.trim()) newErrors.name = 'Please enter name';
+                  if (!addBrandData.code.trim()) newErrors.code = 'Please enter code';
+                  if (!addBrandData.description.trim()) newErrors.description = 'Please Enter the Description';
+                  if (addBrandData.status === '') newErrors.status = 'Please select status';
+                  return newErrors;
+                };
+
+                  const handleAddBrandChange = (e) => {
+                    const { name, value } = e.target;
+                    setAddBrandData((prev) => ({
+                      ...prev,
+                      [name]: value,
+                    }));
+                  };
+
+                  useEffect(() => {
+                    console.log("Updated Brand form state:", addBrandData);
+                  }, [addBrandData]);
+
+
+                  const handleSubmitBrand = async () => {
+                    const validationErrors = validateBrand();
+                    if (Object.keys(validationErrors).length > 0) {
+                      setErrors(validationErrors);
+                      return;
+                    }
+
+                    const payload = {
+                      name: addBrandData.name,
+                      code: addBrandData.code,
+                      description: addBrandData.description,
+                      status: addBrandData.status === 'true ',
+                      created_by: user_id,
+                      created_by_type: user_types,
+                    };
+
+                    console.log("Payload being sent:", payload);
+
+
+                    try {
+                      const response = await BrandModel.createBrand(payload);
+                      console.log("Create Brand response:", response);
+
+                      if (response.status === 201 || response.status === 200) {
+                        fetchBrands();
+                        handleCloseModal(); 
+                        toast.success('Brand created successfully!');
+                      }
+                    } catch (error) {
+                      console.error("Create brand error:", error);
+                      toast.error('Failed to create brand!');
+                      handleCloseModal();
+
+                      if (error.response?.data?.errors) {
+                        setErrors((prev) => ({
+                          ...prev,
+                          ...error.response.data.errors,
+                        }));
+                      }
+                    }
+                  };
+
+                    const [editErrors, setEditErrors] = useState({
+                      name: '',
+                      code: '',
+                      description: '',
+                      status: '',
+                    });
+
+
+                                      
+                    const handleEditClick = (brandObj) => {
+                      console.log("Selected for Edit:", brandObj);
+                      setEditingBrand({ ...brandObj });
+                      setEditModal(true);
+                    };
+
+                    const handleEditBrandChange = (e) => {
+                      const { name, value } = e.target;
+                      setEditingBrand((prev) => ({
+                        ...prev,
+                        [name]: name === 'status' ? value === 'true' : value,
+                      }));
+                    };
+
+                    const validateEditBrand = () => {
+                      let valid = true;
+                      const newErrors = { name: '', code: '', description: '', status: '' };
+
+                      if (!editingBrand?.name?.trim()) {
+                        newErrors.name = 'Brand name is required';
+                        valid = false;
+                      }
+
+                      if (!editingBrand?.code?.trim()) {
+                        newErrors.code = 'Brand code is required';
+                        valid = false;
+                      }
+
+                      if (!editingBrand?.description?.trim()) {
+                        newErrors.description = 'Description is required';
+                        valid = false;
+                      }
+
+                      if (editingBrand?.status === undefined || editingBrand.status === '') {
+                        newErrors.status = 'Status is required';
+                        valid = false;
+                      }
+
+                      setEditErrors(newErrors);
+                      return valid;
+                    };
+
+                    const handleEditSubmitBrand = async () => {
+                      console.log("Editing Brand:", editingBrand);
+
+                      if (!editingBrand?.id) {
+                        toast.error("Invalid brand selected for editing.");
+                        return;
+                      }
+
+                      if (!validateEditBrand()) return;
+
+                      setIsSubmitting(true);
+                      try {
+                        const response = await BrandModel.updateBrand(
+                          editingBrand.id,
                           {
-                            id: 1,
-                            slNo: 1,
-                            code: 'Tanishq',
-                            name: 'Tanishq',
-                            description: 'A leading Indian jewellery brand known for its high-quality gold and diamond collections, including bridal and everyday wear.',
-                            status: 'ACTIVE'
-                          },
-                          {
-                            id: 2,
-                            slNo: 2,
-                            code: 'Harry Winston',
-                            name: 'Harry Winston',
-                            description: 'An ultra-luxury American brand renowned for rare diamonds, exclusive designs, and red-carpet jewellery',
-                            status: 'ACTIVE'
-                          },
-                          {
-                            id: 3,
-                            slNo: 3,
-                            code: 'Cartier',
-                            name: 'Cartier',
-                            description: 'A luxury French brand famous for its designer and high-end diamond jewellery, including engagement rings and statement pieces',
-                            status: 'ACTIVE'
+                            name: editingBrand.name,
+                            code: editingBrand.code,
+                            description: editingBrand.description,
+                            status: editingBrand.status === true || editingBrand.status === 'true',
                           }
-                      
-                        ];
+                        );
+
+                        if (response.status === 200) {
+                          fetchBrands(); // Refresh list
+                          toast.success('Brand updated successfully!');
+                          setEditModal(false);
+                        }
+                      } catch (error) {
+                        console.error("Update error:", error);
+                        toast.error('Failed to update brand!');
+                        if (error.response?.data?.errors) {
+                          setEditErrors(prev => ({
+                            ...prev,
+                            ...error.response.data.errors,
+                          }));
+                        }
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    };
+
+                    
+                    const handleDeleteBrand = async (id) => {
+                      console.log("Deleting brand with ID:", id);
+                      if (!id) return;
+
+                      try {
+                        await BrandModel.deleteBrand(id); // Call the delete API
+
+                        setBrandData(prevData => prevData.filter(item => item.id !== id)); // Remove from state
+
+                        // Close modal if it exists
+                        const modal = document.getElementById('my_modal_8');
+                        if (modal && typeof modal.close === 'function') {
+                          modal.close();
+                        }
+
+                        toast.success('Brand deleted successfully');
+                      } catch (error) {
+                        console.error("Error deleting brand:", error);
+                        toast.error('Failed to delete brand');
+                      }
+                    };
+                                        
+                  
+
+
                  
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
                   
                    // Handle close modal
                    const handleCloseModal = () => {
@@ -107,47 +279,21 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
-                <div className="bg-white w-full
-                    max-w-[99vw] 
-                    xl:max-w-[90vw] 
-                    2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
-                    rounded-xl px-4 md:px-8 lg:px-12
-                    mx-auto overflow-auto  custom-scrollbar"
-                 style={{ fontFamily: 'Open Sans',overflow:'auto'}}
-                   >
-                                   <CreateButton
-                                      buttoncontent="+ New Brand"
-                                      onClick={() => setModal(true)}  // This will now work!
-                                      />                 
-                                      <ItemsPerPageSelector items={items} setItems={setItems} />
+                <CustomScrollbar/>
+                      <div className="bg-white w-full
+                      max-w-[95vw] 
+                      xl:max-w-[90vw] 
+                      2xl:max-w-[95vw] 
+                      h-auto max-h-[70vh] 
+                      rounded-xl px-4 md:px-8 lg:px-12
+                      mx-auto overflow-auto  custom-scrollbar"
+                      style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+                    >
+                      <CreateButton
+                          buttoncontent="+ New Brand"
+                            onClick={() => setModal(true)}  // This will now work!
+                      />                 
+                      <ItemsPerPageSelector items={items} setItems={setItems} />
                  
                        
                  
@@ -164,27 +310,34 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                             </tr>
                           </thead>
                           <tbody>
-                            {jewelleryItems.map((item) => (
-                              <tr key={item.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{item.slNo}</td>
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.code}</td>
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.description}</td>
+                            {brandData.map((brand, index) => (
+                              <tr key={brand.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index+1}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{brand.code}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{brand.name}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{brand.description}</td>
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                                  <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" 
-                                        style={{ padding: '2px 6px' }}>
-                                    {item.status}
-                                  </span>
+                                 {brand.status ? (
+                                    <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                      Active
+                                    </span>
+                                  ) : (
+                                    <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                      INACTIVE
+                                    </span>
+                                  )}
                                 </td>
+
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                     <EditButton
-                                        onClick={()=>setEditModal(true)}
+                                        onClick={()=>handleEditClick(brand)}
                                         />
 
                                         <DeleteButton 
-                                          buttonText="Delete Brand" 
-                                            modalId="my_modal_8" 
+                                           buttonText="Delete Type" 
+                                           modalId={`delete_modal_${brand.id}`} 
+                                           onConfirmDelete={() => handleDeleteBrand(brand.id)} 
                                         />
                                   </div>
                                 </td>
@@ -198,82 +351,6 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                        <Pagination/>
                  
                        {/* Modal */}
-      
-      
-                       <dialog id="my_modal_8" className="modal">
-                       <div className="modal-box text-center py-8 px-6 rounded-xl bg-white relative font-[Open_Sans]
-                          w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                         
-                    "
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs bg-green-500 border-none font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 w-[90vw] max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Sub Category is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
                       </div>
       
                       {modal && (
@@ -295,10 +372,10 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        onChange={(e)=>handleAddBrandChange(e)}
+                                        name="name"
                                       />
                                       <label 
                                        
@@ -308,10 +385,11 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                       </label>
                                     <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addBrandData.code}
+                                        onChange={handleAddBrandChange}
+                                        name="code"
                                       />
                                       
 
@@ -322,11 +400,12 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        style={{paddingLeft:'12px',}}
+                                        value={addBrandData.description}
+                                        onChange={handleAddBrandChange}
+                                        name="description"
                                       ></textarea>
                             
                                            
@@ -337,15 +416,16 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
+                                                value={addBrandData.status}
+                                                onChange={handleAddBrandChange}
+                                                name='status'
+                                                // onChange={(e)=>handleAddBrandChange(e)}
                                             >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className="text-gray-600">Select</option>
+                                                <option value="true" className="text-gray-600">Active</option>
+                                                <option value="false" className="text-gray-600">InActive</option>
                                             </select>
             
                                             </div> 
@@ -355,15 +435,15 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                                onClick={handleSubmitBrand}
                                             >
                                                 Submit
                                             </button>
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
@@ -379,45 +459,37 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                   <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
-                                         Create SubCategory                        </h3>
+                                         Edit Brand                        </h3>
                                     <hr className=" border-gray-300"/>
       
                                     <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                   
-                                      
                                       <label 
-                                       
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Name:
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingBrand.name}
+                                        onChange={(e)=>handleEditBrandChange(e)}
+                                        name="name"
                                       />
                                       <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Category:
+                                       Code:
                                       </label>
-                                     <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-300 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{paddingLeft:'12px'}}
-                                                    placeholder="Description" 
-
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600 " disabled> Select Category</option>
-                                                <option className=" text-gray-600"> Everyday wear</option>
-                                                <option className=" text-gray-600"> Gold</option>
-                                                <option className=" text-gray-600"> Bridal Jewellery </option>
-                                            </select>
+                                    <input type="text" 
+                                        placeholder="Type here" 
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        style={{paddingLeft:'12px'}}
+                                        value={editingBrand.code}
+                                        onChange={handleEditBrandChange}
+                                        name="code"
+                                      />
                                       
 
                                       <label 
@@ -427,11 +499,12 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        style={{paddingLeft:'12px',}}
+                                        value={editingBrand.description}
+                                        onChange={handleEditBrandChange}
+                                        name="description"
                                       ></textarea>
                             
                                            
@@ -442,15 +515,16 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-00 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
+                                                value={String(editingBrand?.status)}
+                                                onChange={handleEditBrandChange}
+                                                name='status'
+
                                             >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
             
                                             </div> 
@@ -459,19 +533,20 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
                                                 >
                                             <button
                                                 type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                              style={{ backgroundColor: '#5E72E4' }}
+                                              onClick={handleEditSubmitBrand}
+                                              disabled={isSubmitting}
+                                            >
+                                              {isSubmitting ? 'Updating...' : 'Update'}
                                             </button>
                                             </div>
                                         </div>

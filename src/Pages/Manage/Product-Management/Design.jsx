@@ -213,27 +213,27 @@ const Design= ()=>{
                           };
 
 
-const handleDeleteDesign = async (id) => {
-  console.log("Deleting design with ID:", id);
-  if (!id) return;
+                        const handleDeleteDesign = async (id) => {
+                          console.log("Deleting design with ID:", id);
+                          if (!id) return;
 
-  try {
-    await designModel.deleteDesign(id); 
+                          try {
+                            await designModel.deleteDesign(id); 
 
-    setDesigns((prevData) => prevData.filter((item) => item.id !== id)); 
+                            setDesigns((prevData) => prevData.filter((item) => item.id !== id)); 
 
-    
-    const modal = document.getElementById('my_modal_8');
-    if (modal && typeof modal.close === 'function') {
-      modal.close();
-    }
+                            
+                            const modal = document.getElementById('my_modal_8');
+                            if (modal && typeof modal.close === 'function') {
+                              modal.close();
+                            }
 
-    toast.success('Design deleted successfully');
-  } catch (error) {
-    console.error("Error deleting design:", error);
-    toast.error('Failed to delete design');
-  }
-};
+                            toast.success('Design deleted successfully');
+                          } catch (error) {
+                            console.error("Error deleting design:", error);
+                            toast.error('Failed to delete design');
+                          }
+                        };
 
         
                    
@@ -253,15 +253,15 @@ const handleDeleteDesign = async (id) => {
                       
                   <>
                   <CustomScrollbar/>
-                 <div className="bg-white w-full
-                  max-w-[95vw] 
-                  xl:max-w-[90vw] 
-                  2xl:max-w-[95vw] 
-                  h-auto max-h-[70vh] 
-                  rounded-xl px-4 md:px-8 lg:px-12
-                  mx-auto overflow-auto  custom-scrollbar"
-                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
-             >
+                <div className="bg-white w-full
+                max-w-[95vw] 
+                xl:max-w-[90vw] 
+                2xl:max-w-[95vw] 
+                h-auto max-h-[70vh] 
+                rounded-xl px-4 md:px-8 lg:px-12
+                mx-auto overflow-auto  custom-scrollbar"
+                style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+               >
                    <CreateButton
                     buttoncontent="+ New Design"
                     onClick={() => setModal(true)}  
@@ -289,23 +289,23 @@ const handleDeleteDesign = async (id) => {
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{design.name}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{design.description}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                                 {design.status ? (
-                                    <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                      Active
-                                    </span>
-                                  ) : (
-                                    <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                      INACTIVE
-                                    </span>
-                                  )}
-                                </td>
+                          {design.status ? (
+                            <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                              Active
+                            </span>
+                            ) : (
+                            <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                              INACTIVE
+                            </span>
+                          )}
+                      </td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                          <EditButton
                          onClick={()=>handleEditClick(design)}
                          />
                           <DeleteButton 
-                             buttonText="Delete Type" 
+                             buttonText="Delete Design" 
                              modalId={`delete_modal_${design.id}`} 
                              onConfirmDelete={() => handleDeleteDesign(design.id)} 
                                         />
@@ -343,7 +343,7 @@ const handleDeleteDesign = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={addDesignData.name}
                                         onChange={handleAddDesignChange}
@@ -359,9 +359,9 @@ const handleDeleteDesign = async (id) => {
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
+                                        style={{paddingLeft:'12px',}}
                                        value={addDesignData.description}
                                        onChange={handleAddDesignChange}
                                         name="description"
@@ -375,7 +375,7 @@ const handleDeleteDesign = async (id) => {
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
                                                 // value={addDesignData.status}
                                                 onChange={handleAddDesignChange}
@@ -432,7 +432,7 @@ const handleDeleteDesign = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingDesign.name}
                                         onChange={(e)=>handleEditDesignChange(e)}
@@ -447,10 +447,10 @@ const handleDeleteDesign = async (id) => {
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                       value={editingDesign.description}
+                                        style={{paddingLeft:'12px',}}
+                                        value={editingDesign.description}
                                         onChange={(e)=>handleEditDesignChange(e)}
                                         name="description"
                                       ></textarea>
@@ -463,7 +463,7 @@ const handleDeleteDesign = async (id) => {
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
                                                 value={String(editingDesign?.status)}
                                                 onChange={handleEditDesignChange}

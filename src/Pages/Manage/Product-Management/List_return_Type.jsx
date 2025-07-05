@@ -3,6 +3,7 @@ import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
+import CustomScrollbar from "../../../components/CustomScrollbar";
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -257,35 +258,16 @@ const List_return_Type =()=>{
 
   return (
    <>
-   <style jsx global>{`
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;  /* Slightly wider for better visibility */
-    height: 6px; /* For horizontal scroll */
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: #f1f1f1; /* Light gray track */
-    border-radius: 3px;
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background:rgb(218, 216, 216); /* Rich red color */
-    border-radius: 3px;
-    border: 1px solidrgb(206, 198, 198); /* Darker red border */
-  }
-  
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background:rgb(202, 190, 190); /* Darker red on hover */
-  }
-  
-  /* For Firefox */
-  .custom-scrollbar {
-    scrollbar-width: thin;
-    scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-  }
-`}</style>
-<div className="bg-white text-gray-500 w-full max-w-6xl h-auto max-h-[65vh] rounded-xl px-4 md:px-8 lg:px-12 mx-auto overflow-auto  custom-scrollbar" style={{ fontFamily: 'Open Sans',overflow:'auto'}}>
-            <CreateButton
+          <CustomScrollbar/>
+                <div className="bg-white w-full
+                max-w-[95vw] 
+                xl:max-w-[90vw] 
+                2xl:max-w-[95vw] 
+                h-auto max-h-[70vh] 
+                rounded-xl px-4 md:px-8 lg:px-12
+                mx-auto overflow-auto  custom-scrollbar"
+                style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+               ><CreateButton
             buttoncontent="+ New Return Type"
             onClick={() => setModal(true)}  // This will now work!
              />
@@ -312,16 +294,16 @@ const List_return_Type =()=>{
             <td className="border-b border-gray-200 text-xs">{policy.name}</td>
             <td className="border-b border-gray-200 text-xs">{policy.description}</td>
             <td className="py-4 border-b border-gray-200 text-xs">
-                              {policy.status ? (
-                                <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                  INACTIVE
-                                </span>
-                              )}
-                            </td>
+             {policy.status ? (
+              <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                Active
+              </span>
+              ) : (
+              <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                 INACTIVE
+              </span>
+             )}
+            </td>
             <td className="border-b border-gray-200 text-blue-600">
               <button 
                 className="border-none text-white font-bold text-xs rounded-lg" 
@@ -333,7 +315,7 @@ const List_return_Type =()=>{
             </td>
             <td className="border-b border-gray-200 text-blue-600">
               <DeleteButton 
-              buttonText="Delete Type" 
+              buttonText="Delete Return Type" 
               modalId={`delete_modal_${policy.id}`} 
               onConfirmDelete={() => handleDeleteReturnType(policy.id)} 
              />
@@ -372,7 +354,7 @@ const List_return_Type =()=>{
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         // onChange={(e)=>handleAddReturnTypeChange(e)}
                                         value={addReturnTypeData.name}
@@ -389,31 +371,25 @@ const List_return_Type =()=>{
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                      //  onChange={(e)=>handleAddReturnTypeChange(e)}
+                                        style={{paddingLeft:'12px'}}
                                         value={addReturnTypeData.description}
                                         onChange={handleAddReturnTypeChange}
                                         name="description"
                                       ></textarea>
-                            
-                                           
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[80%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{paddingLeft:'12px'}}
-                                                value={addReturnTypeData.status}
-                                                onChange={handleAddReturnTypeChange}
-                                                name='status'
-                                             
-                                              
-                                            >
+                                      <label 
+                                        className="font-semibold text-xs text-[#344767] w-[80%]"
+                                      >
+                                        Status:
+                                      </label>
+                                      <select defaultValue=""
+                                          className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                          style={{paddingLeft:'12px'}}
+                                          value={addReturnTypeData.status}
+                                          onChange={handleAddReturnTypeChange}
+                                          name='status'
+                                      >
                                                 <option value="" className="text-gray-600">Select</option>
                                                 <option value="true" className="text-gray-600">Active</option>
                                                 <option value="false" className="text-gray-600">InActive</option>
@@ -454,17 +430,14 @@ const List_return_Type =()=>{
                                     <hr className=" border-gray-300"/>
       
                                     <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                   
-                                      
                                       <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[80%]"
+                                       className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Name:
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingReturnType?.name || ''} 
                                         onChange={(e)=>handleEditReturnTypeChange(e)}
@@ -480,23 +453,21 @@ const List_return_Type =()=>{
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
+                                        style={{paddingLeft:'12px',}}
                                         value={editingReturnType?.description || ''} 
                                         onChange={(e)=>handleEditReturnTypeChange(e)}
                                         name="description"
                                       ></textarea>
                             
-                                           
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[80%]"
-                                            >
+                                         <label 
+                                            className="font-semibold text-xs text-[#344767] w-[80%]"
+                                          >
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
                                                 value={String(editingReturnType?.status)}
                                                 onChange={handleEditReturnTypeChange}

@@ -1,142 +1,289 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import productSizeModel from "../../../models/productSizeModel";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
+import CustomScrollbar from "../../../components/CustomScrollbar";
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+
+
+
 const Product_Size =()=>{
 
-    //state managment
-    const  [isHovered, setIsHovered] = useState(false);
-     const [items, setItems] = useState(10);
-     const [formData, setFormData] = useState({
-       code: '',
-       hex_code: '',
-       name: '',
-       color: '',
-       description: '',
-       status:'',
-       action:''
-     });
-     const [errors, setErrors] = useState({});
-      // handle change 
-   
-   const handleChange = (e) => {
-           const { name, value } = e.target;
-           setFormData((prev) => ({ ...prev, [name]: value }));
-           setErrors((prev) => ({ ...prev, [name]: '' })); 
-         };
 
-  const [modal, setModal] = useState(false)   
-  const [editModal,setEditModal]= useState(false)
+                    const [modal, setModal] = useState(false);
+                    const [editModal, setEditModal] = useState(false);
 
-  const handleCloseModal =()=>{
-    setModal(false)
-  }
-  const handleEditCloseModal =()=>{
-    setEditModal(false)
-  }
-   const sizeData = [
-    {
-      id: 1,
-      name: "Ring Size",
-      description: "Measured in numbers (e.g., US Size 6, 7, 8 or Indian Size 12, 14, 16)",
-      status: "ACTIVE"
-    },
-    {
-      id: 2,
-      name: "Bangle Size",
-      description: "Typically measured in diameter (e.g., 2.4, 2.6, 2.8 inches in India).",
-      status: "ACTIVE"
-    },
-    {
-      id: 3,
-      name: "Necklace Length",
-      description: "Measured in inches or cm (e.g., 16-inch choker, 18-inch princess length, 24-inch opera length).",
-      status: "ACTIVE"
-    }
-  ];
-     //validation 
-     
-     const validate = () => {
-       const newErrors = {};
-       if (!formData.code.trim()) newErrors.code = 'Please Enter Code';
-       if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-       if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-       if (!formData.itemType.trim()) newErrors.itemType = 'Please Select Item Type'; // Added this validation
-       if (!formData.status.trim()) newErrors.status = 'Enter Status';
-       return newErrors;
-     };    
-   
-     //handle submit
-   
-     const handleSubmit = (e) => {
-       e.preventDefault();
-       const validationErrors = validate();
-       if (Object.keys(validationErrors).length > 0) {
-         setErrors(validationErrors);
-         return;
-       }
-   
-       // Submit form
-       console.log('Form submitted:', formData);
-   
-       // Reset form and close modal - Fixed to include all fields
-       setFormData({
-         code: '',
-         hex_code: '',
-         name: '',
-         color: '', // Adding this field which was missing in reset
-         description: '',
-         status: '',
-         action: ''
-       });
-       setErrors({});
-       document.getElementById('my_modal_color').close();
-     };
+                    const [productSizes, setProductSizes] = useState([]);
+
+                    const [limit, setLimit] = useState(10);
+                    const [page, setPage] = useState(1);
+                    const [search, setSearch] = useState('');
+                    const [status, setStatus] = useState('');
+
+                    const [editingProductSize, setEditingProductSize] = useState(null);
+                    const [editErrors, setEditErrors] = useState({});
+                    const [isSubmitting, setIsSubmitting] = useState(false);
+                    
+
+                    
+                    const auth = useSelector((state) => state.auth);
+                    const { login_id, can_manage_user_types } = auth;
+
+                    const user_id = login_id;
+                    const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+                    
+                    const [addProductSizeData, setAddProductSizeData] = useState({
+                      name: '',
+                      description: '',
+                      status: '',
+                    });
+
+                   
+                    const [errors, setErrors] = useState({
+                      name: '',
+                      description: '',
+                      status: '',
+                    });
+
+
+                    const [sizeData, setSizeData] = useState([]);
+
+                    const fetchProductSizes = async () => {
+                      try {
+                        const response = await productSizeModel.getProductSizes(
+                          user_id,
+                          user_types,
+                          limit,
+                          page,
+                          search,
+                          status
+                        );
+
+                        console.log("Response from API:", response);
+
+                        if (response.data && response.data.data) {
+                          console.log("Data Received:", response.data.data);
+                          setSizeData(response.data.data);
+                        } else {
+                          toast.error("Unable to fetch product sizes");
+                        }
+                      } catch (error) {
+                        console.error("Error fetching product sizes:", error);
+                        toast.error("Failed to load product sizes");
+                      }
+                    };
+
+
+                    useEffect(() => {
+                      fetchProductSizes();
+                    }, [limit, page, search, status]);
+
+
+                    const validateProductSize = () => {
+                      const newErrors = {};
+                      if (!addProductSizeData.name.trim()) newErrors.name = 'Please enter name';
+                      if (!addProductSizeData.description.trim()) newErrors.description = 'Please enter description';
+                      if (addProductSizeData.status === '') newErrors.status = 'Please select status';
+                      return newErrors;
+                    };
+
+
+                    const handleAddProductSizeChange = (e) => {
+                      const { name, value } = e.target;
+                      setAddProductSizeData((prev) => ({
+                        ...prev,
+                        [name]: value,
+                      }));
+                    };
+                    useEffect(() => {
+                      console.log("Updated Product Size form state:", addProductSizeData);
+                    }, [addProductSizeData]);
+
+
+                    const handleSubmitProductSize = async () => {
+                      const validationErrors = validateProductSize();
+                      if (Object.keys(validationErrors).length > 0) {
+                        setErrors(validationErrors);
+                        return;
+                      }
+
+                      const payload = {
+                        name: addProductSizeData.name,
+                        description: addProductSizeData.description,
+                        status: addProductSizeData.status === 'true',
+                        created_by: user_id,
+                        created_by_type: user_types,
+                      };
+
+                      console.log("Payload being sent:", payload);
+
+                      try {
+                        const response = await productSizeModel.createProductSize(payload);
+                        console.log("Create Product Size response:", response);
+
+                        if (response.status === 201 || response.status === 200) {
+                          fetchProductSizes();     
+                          handleCloseModal();     
+                          toast.success('Product size created successfully!');
+                        }
+                      } catch (error) {
+                        console.error("Create product size error:", error);
+                        toast.error('Failed to create product size!');
+                        handleCloseModal();
+
+                        if (error.response?.data?.errors) {
+                          setErrors((prev) => ({
+                            ...prev,
+                            ...error.response.data.errors,
+                          }));
+                        }
+                      }
+                    };
+
+
+                      const handleEditClickProductSize = (sizeObj) => {
+                        if (!sizeObj || typeof sizeObj !== 'object' || !sizeObj.id) {
+                          console.warn("Invalid object passed to handleEditClickProductSize:", sizeObj);
+                          toast.error("Invalid product size selected.");
+                          return;
+                        }
+
+                        console.log("Selected for Edit:", sizeObj);
+                        setEditingProductSize({ ...sizeObj });
+                        setEditModal(true);
+                      };
+
+
+                      const handleEditProductSizeChange = (e) => {
+                        const { name, value } = e.target;
+                        setEditingProductSize((prev) => ({
+                          ...prev,
+                          [name]: name === 'status' ? value === 'true' : value,
+                        }));
+                      };
+
+                      const validateEditProductSize = () => {
+                        let valid = true;
+                        const newErrors = { name: '', description: '', status: '' };
+
+                        if (!editingProductSize?.name?.trim()) {
+                          newErrors.name = 'Product size name is required';
+                          valid = false;
+                        }
+
+                        if (!editingProductSize?.description?.trim()) {
+                          newErrors.description = 'Description is required';
+                          valid = false;
+                        }
+
+                        if (editingProductSize?.status === undefined || editingProductSize.status === '') {
+                          newErrors.status = 'Status is required';
+                          valid = false;
+                        }
+
+                        setEditErrors(newErrors);
+                        return valid;
+                      };
+
+                      const handleEditSubmitProductSize = async () => {
+                        console.log("Editing Product Size:", editingProductSize);
+
+                        if (!editingProductSize?.id) {
+                          toast.error("Invalid product size selected for editing.");
+                          return;
+                        }
+
+                        if (!validateEditProductSize()) return;
+
+                        setIsSubmitting(true);
+                        try {
+                          const response = await productSizeModel.updateProductSize(
+                            editingProductSize.id,
+                            {
+                              name: editingProductSize.name,
+                              description: editingProductSize.description,
+                              status: editingProductSize.status === true || editingProductSize.status === 'true',
+                            }
+                          );
+
+                          if (response.status === 200) {
+                            fetchProductSizes(); // Reload table
+                            toast.success('Product size updated successfully!');
+                            setEditModal(false);
+                          }
+                        } catch (error) {
+                          console.error("Update error:", error);
+                          toast.error('Failed to update product size!');
+                          if (error.response?.data?.errors) {
+                            setEditErrors(prev => ({
+                              ...prev,
+                              ...error.response.data.errors,
+                            }));
+                          }
+                        } finally {
+                          setIsSubmitting(false);
+                        }
+                      };
+
     
+
+                        const handleDeleteProductSize = async (id) => {
+                          console.log("Deleting product size with ID:", id);
+                          if (!id) return;
+
+                          try {
+                            await productSizeModel.deleteProductSize(id); // Replace with your actual model method
+
+                            setSizeData((prevData) => prevData.filter((item) => item.id !== id)); // Update state
+
+                            const modal = document.getElementById('my_modal_8'); // Optional modal closing logic
+                            if (modal && typeof modal.close === 'function') {
+                              modal.close();
+                            }
+
+                            toast.success('Product size deleted successfully');
+                          } catch (error) {
+                            console.error("Error deleting product size:", error);
+                            toast.error('Failed to delete product size');
+                          }
+                        };
+
+
    
    
-   
-   
-   
-   
+                          // Handle close modal
+                          const handleCloseModal = () => {
+                            setModal(false);
+                          };
+                          const handleEditCloseModal = () => {
+                            setEditModal(false)
+                          };
+                  
+
+
      return (
        
    <>
-   <style jsx global>{`
-     .custom-scrollbar::-webkit-scrollbar {
-       width: 6px;  /* Slightly wider for better visibility */
-       height: 6px; /* For horizontal scroll */
-     }
-     
-     .custom-scrollbar::-webkit-scrollbar-track {
-       background: #f1f1f1; /* Light gray track */
-       border-radius: 3px;
-     }
-     
-     .custom-scrollbar::-webkit-scrollbar-thumb {
-       background:rgb(218, 216, 216); /* Rich red color */
-       border-radius: 3px;
-       border: 1px solidrgb(206, 198, 198); /* Darker red border */
-     }
-     
-     .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-       background:rgb(202, 190, 190); /* Darker red on hover */
-     }
-     
-     /* For Firefox */
-     .custom-scrollbar {
-       scrollbar-width: thin;
-       scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-     }
-   `}</style>
-   <div className="bg-white w-full max-w-6xl h-auto max-h-[65vh] rounded-xl px-4 md:px-8 lg:px-12 mx-auto overflow-auto  custom-scrollbar" style={{ fontFamily: 'Open Sans',overflow:'auto'}}>
+  <CustomScrollbar/>
+                <div className="bg-white w-full
+                max-w-[95vw] 
+                xl:max-w-[90vw] 
+                2xl:max-w-[95vw] 
+                h-auto max-h-[70vh] 
+                rounded-xl px-4 md:px-8 lg:px-12
+                mx-auto overflow-auto  custom-scrollbar"
+                style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+               >
     <CreateButton
             buttoncontent="+ New Product Size"
             onClick={() => setModal(true)}  // This will now work!
              />                 
-            <ItemsPerPageSelector items={items} setItems={setItems} />
+            {/* <ItemsPerPageSelector items={items} setItems={setItems} /> */}
    
          
    
@@ -152,25 +299,31 @@ const Product_Size =()=>{
               </tr>
             </thead>
             <tbody>
-              {sizeData.map((size) => (
+              {sizeData.map((size ,index) => (
                 <tr key={size.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                  <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '35px' }}>{size.id}</td>
+                  <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '35px' }}>{index+1}</td>
                   <td className="border-b border-gray-200 text-xs">{size.name}</td>
                   <td className="border-b border-gray-200 text-xs">{size.description}</td>
-                  <td className="border-b border-gray-200">
-                    <span className="bg-green-100 text-green-800 font-bold text-[8px] rounded" 
-                      style={{ padding: '4px 6px' }}>
-                      {size.status}
-                    </span>
+                  <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                    {size.status ? (
+                      <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                         Active
+                      </span>
+                      ) : (
+                      <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                         INACTIVE
+                      </span>
+                    )}
                   </td>
                   <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                     <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                       <EditButton
-                      onClick={()=>setEditModal(true)}
+                      onClick={() => handleEditClickProductSize(size)}
                         />
                       <DeleteButton 
-                        buttonText="Delete Product Size" 
-                          modalId="my_modal_8" 
+                         buttonText="Delete product Size" 
+                             modalId={`delete_modal_${size.id}`} 
+                             onConfirmDelete={() => handleDeleteProductSize(size.id)} 
                       />
                     </div>
                   </td>
@@ -187,103 +340,8 @@ const Product_Size =()=>{
    
        
         </div>
-        <dialog id="my_modal_8" className="modal">
-       
-       
-                        <div className="modal-box bg-white  text-center py-8 px-6 relative font-[Open_Sans]
-                           
-                            w-[90vw]   h-[45vh]      /* Mobile: 4:3 ratio */
-                            sm:-w-[70vw] sm:h-[35vh]
-                            md:w-[50vw] md:h-[35vh]
-                            lg:w-[35vw] lg:h-[35vh]
-                            xl:w-[30vw] xl:h-[50vh]
-                          "
-       
-                        onClick={()=>document.getElementById('my_modal_8').close()}
-                        >
-                        
-                         {/* Icon */}
-                         <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                           <div className="text-orange-400 text-6xl">
-                             <svg
-                               xmlns="http://www.w3.org/2000/svg"
-                               fill="none"
-                               viewBox="0 0 24 24"
-                               strokeWidth=".7"
-                               stroke="currentColor"
-                               className="w-30 h-30"
-                             >
-                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                             </svg>
-                           </div>
-                         </div>
-       
-                         {/* Title & Message */}
-                         <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                         <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-       
-                         {/* Actions */}
-                         <div className="flex justify-center gap-4">
-                           <button
-                             className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                             onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                             style={{width:'100px'}}
-                           >
-                             No, cancel!
-                           </button>
-                           <button
-                             className="btn text-xs border-none bg-green-500 font-bold text-white hover:bg-green-600 px-6"
-                             onClick={() => {
-                               document.getElementById('my_modal_8').close();
-                             }}
-                             style={{width:'100px'}}
-                           >
-                             Yes, delete it!
-                           </button>
-                         </div>
-                       </div>
-                     </dialog>
-       
-       
-          <dialog id="my_modal_cancel" className="modal">
-       
-       
-         <div className="modal-box text-center  bg-white py-10 px-8 relative font-[Open Sans]  w-[90vw]   h-[45vh]      /* Mobile: 4:3 ratio */
-                            sm:-w-[70vw] sm:h-[35vh]
-                            md:w-[50vw] md:h-[35vh]
-                            lg:w-[35vw] lg:h-[35vh]
-                            xl:w-[30vw] xl:h-[50vh]"
-         onClick={() => {
-           
-             document.getElementById('my_modal_cancel').close();
-           
-         }}>
-           {/* Icon */}
-           <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-             <div className="text-blue-400 text-6xl">
-               <svg
-                 xmlns="http://www.w3.org/2000/svg"
-                 fill="none"
-                 viewBox="0 0 24 24"
-                 strokeWidth=".7"
-                 stroke="currentColor"
-                 className="w-30 h-30"
-               >
-                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-               </svg>
-             </div>
-           </div>
-       
-           {/* Title & Message */}
-           <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-           <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Jewellery Type is safe</p>
-           <button className="btn bg-blue-500 border-none w-[50px] rounded-lg" > ok</button>
-       
-           
-         </div>
-       </dialog>      
-                      
-       
+                          
+
                        {modal && (
                           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
                                   <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
@@ -303,10 +361,11 @@ const Product_Size =()=>{
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addProductSizeData.name}
+                                        onChange={handleAddProductSizeChange}
+                                        name="name"
                                       />
                                       
                                       
@@ -318,11 +377,12 @@ const Product_Size =()=>{
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                       // onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        style={{paddingLeft:'12px',}}
+                                        value={addProductSizeData.description}
+                                        onChange={handleAddProductSizeChange}
+                                        name="description"
                                       ></textarea>
                             
                                            
@@ -332,16 +392,17 @@ const Product_Size =()=>{
                                             >
                                                 Status:
                                             </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                            <select 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
-                                                //value={formData.status}
-                                                name=''
-                                               // onChange={(e)=>handleChange(e)}
+                                                value={addProductSizeData.status}
+                                                onChange={handleAddProductSizeChange}
+                                                name='status'
+                                               
                                             >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className="text-gray-600">Select</option>
+                                                <option value="true" className="text-gray-600">Active</option>
+                                                <option value="false" className="text-gray-600">InActive</option>
                                             </select>
             
                                             </div> 
@@ -351,22 +412,22 @@ const Product_Size =()=>{
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                               // onClick={(e) => handleSubmit(e)}
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                                onClick={handleSubmitProductSize}
                                             >
                                                 Submit
                                             </button>
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
                                             </button>
                                             </div>
-                                        </div>
-                                        </div>
+                                  </div>
+                          </div>
                          )}
        
                        {editModal &&(
@@ -388,10 +449,12 @@ const Product_Size =()=>{
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingProductSize.name}
+                                        onChange={handleEditProductSizeChange}
+                                        
+                                        name="name"
                                       />
                                       
                                       
@@ -403,11 +466,12 @@ const Product_Size =()=>{
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                       // onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        style={{paddingLeft:'12px',}}
+                                        value={editingProductSize.description}
+                                        onChange={handleEditProductSizeChange}
+                                        name="description"
                                       ></textarea>
                             
                                            
@@ -418,15 +482,16 @@ const Product_Size =()=>{
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
-                                                //value={formData.status}
-                                                name=''
-                                               // onChange={(e)=>handleChange(e)}
+                                                value={String(editingProductSize?.status)}
+                                                onChange={handleEditProductSizeChange}
+                                                name='status'
+                                              
                                             >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                 <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
             
                                             </div> 
@@ -435,19 +500,20 @@ const Product_Size =()=>{
                                                 >
                                             <button
                                                 type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                               // onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleEditCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                              style={{ backgroundColor: '#5E72E4' }}
+                                              onClick={handleEditSubmitProductSize}
+                                              disabled={isSubmitting}
+                                            >
+                                              {isSubmitting ? 'Updating...' : 'Update'}
                                             </button>
                                             </div>
                                         </div>

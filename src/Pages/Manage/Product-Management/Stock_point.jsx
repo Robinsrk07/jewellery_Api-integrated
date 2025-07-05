@@ -223,30 +223,30 @@ const StockPoint = () => {
               };
 
 
-const handleDeleteStockPoint = async (id) => {
-  console.log("Deleting stock point with ID:", id);
-  if (!id) return;
+                const handleDeleteStockPoint = async (id) => {
+                  console.log("Deleting stock point with ID:", id);
+                  if (!id) return;
 
-  try {
-    await stockPointModel.deleteStockPoint(id);
+                  try {
+                    await stockPointModel.deleteStockPoint(id);
 
-    setStockPointData(prevData => prevData.filter(item => item.id !== id));
+                    setStockPointData(prevData => prevData.filter(item => item.id !== id));
 
-    const modal = document.getElementById('my_modal_8');
-    if (modal && typeof modal.close === 'function') {
-      modal.close();
-    }
+                    const modal = document.getElementById('my_modal_8');
+                    if (modal && typeof modal.close === 'function') {
+                      modal.close();
+                    }
 
-    toast.success('Stock point deleted successfully');
-  } catch (error) {
-    console.error("Error deleting stock point:", error);
-    toast.error('Failed to delete stock point');
-  }
-};
+                    toast.success('Stock point deleted successfully');
+                  } catch (error) {
+                    console.error("Error deleting stock point:", error);
+                    toast.error('Failed to delete stock point');
+                  }
+                };
 
-useEffect(() => {
-  fetchStockPoints(); 
-}, []);
+                useEffect(() => {
+                  fetchStockPoints(); 
+                }, []);
 
      
                 // Handle close modal
@@ -262,12 +262,15 @@ useEffect(() => {
                   
               <>
              <CustomScrollbar/>
-             <div className="bg-white 
-                 max-w-[90vw] h-[80vh]
-                 rounded-xl px-4 md:px-8 lg:px-12 
-                 mx-auto overflow-auto  custom-scrollbar" 
-                 style={{ fontFamily: 'Open Sans',overflow:'auto'}}
-               >
+                <div  className="bg-white w-full
+                        max-w-[95vw] 
+                        xl:max-w-[90vw] 
+                        2xl:max-w-[95vw] 
+                        h-auto max-h-[70vh] 
+                        rounded-xl px-4 md:px-8 lg:px-12
+                        mx-auto overflow-auto  custom-scrollbar"
+                      style={{ fontFamily: 'Open Sans',overflow:'auto'}}
+                                                            >
              <CreateButton
               buttoncontent="+ New Stock Point"
               onClick={() => setModal(true)}  // This will now work!
@@ -276,54 +279,54 @@ useEffect(() => {
               
                     
               
-    <table className="table w-full text-sm text-left text-gray-500 border-collapse" 
-      style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '1200px' }}>
-      <thead className="text-xs text-gray-400 uppercase bg-white">
-        <tr>
-          <th className="px-6 py-3" style={{ width: '70px', paddingLeft: '20px' }}>SL NO</th>
-          <th className="px-6 py-3" style={{ width: '130px' }}>NAME</th>
-          <th className="px-6 py-3" style={{ width: '500px' }}>DESCRIPTION</th>
-          <th className="px-6 py-3" style={{ width: '90px' }}>STATUS</th>
-          <th className="px-6 py-3" style={{ width: '90px' }}>ACTION</th>
-        </tr>
-      </thead>
-      <tbody>
-        {stockPointData.map((category,index) => (
-          <tr key={category.id} className="bg-white hover:bg-gray-50 h-[40px] text-gray-400">
-            <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
-              {/* {category.id} */}
-              {index+1}
-            </td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{category.name}</td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs">{category.description}</td>
-           <td className="py-4 border-b border-gray-200 text-xs">
-                              {category.status ? (
-                                <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
-                                  INACTIVE
-                                </span>
-                              )}
-                            </td>
-            <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-               <EditButton 
-                    onClick={() => handleEditClick(category)} 
-                    />
-                  {/* DeleteButton  */}
-                   <DeleteButton
-                      buttonText="Delete"
-                      modalId={`delete_modal_${category.id}`}  
-                      onConfirmDelete={() => handleDeleteStockPoint(category.id)}
-                    />
-              </div>
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+                          <table className="table w-full text-sm text-left text-gray-500 border-collapse" 
+                            style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '1200px' }}>
+                            <thead className="text-xs text-gray-400 uppercase bg-white">
+                              <tr>
+                                <th className="px-6 py-3" style={{ width: '70px', paddingLeft: '20px' }}>SL NO</th>
+                                <th className="px-6 py-3" style={{ width: '130px' }}>NAME</th>
+                                <th className="px-6 py-3" style={{ width: '500px' }}>DESCRIPTION</th>
+                                <th className="px-6 py-3" style={{ width: '90px' }}>STATUS</th>
+                                <th className="px-6 py-3" style={{ width: '90px' }}>ACTION</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {stockPointData.map((category,index) => (
+                                <tr key={category.id} className="bg-white hover:bg-gray-50 h-[40px] text-gray-400">
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                                    {/* {category.id} */}
+                                    {index+1}
+                                  </td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{category.name}</td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{category.description}</td>
+                                <td className="py-4 border-b border-gray-200 text-xs">
+                                  {category.status ? (
+                                      <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                          Active
+                                      </span>
+                                      ) : (
+                                      <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                          INACTIVE
+                                      </span>
+                                  )}
+                                </td>
+                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                    <EditButton 
+                                          onClick={() => handleEditClick(category)} 
+                                          />
+                                        {/* DeleteButton  */}
+                                        <DeleteButton
+                                            buttonText="Delete Stock Point"
+                                            modalId={`delete_modal_${category.id}`}  
+                                            onConfirmDelete={() => handleDeleteStockPoint(category.id)}
+                                          />
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                     
               
                     {/* Pagination */}
@@ -335,74 +338,71 @@ useEffect(() => {
                    
                    </div>
    
-{modal && (
-  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-    <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
-      <h3 className="font-bold text-[22px] text-[#344767]">
-        Create Stock Point</h3>
-      <hr className="border-gray-300" />
+                            {modal && (
+                              <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+                                <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+                                  <h3 className="font-bold text-[22px] text-[#344767]">
+                                    Create Stock Point</h3>
+                                  <hr className="border-gray-300" />
 
-      <div className="flex flex-col flex-grow gap-2">
-        {/* Name */}
-        <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
-        <input
-          type="text"
-          name="name"
-          placeholder="Type here"
-          className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
-          style={{ paddingLeft: '12px' }}
-          value={addStockPointData.name}
-          onChange={handleAddStockPointChange}
-        />
+                                  <div className="flex flex-col flex-grow gap-2">
+                                    <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
+                                    <input
+                                      type="text"
+                                      name="name"
+                                      placeholder="Type here"
+                                      className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                      style={{ paddingLeft: '12px' }}
+                                      value={addStockPointData.name}
+                                      onChange={handleAddStockPointChange}
+                                    />
 
-        {/* Description */}
-        <label className="font-semibold text-xs text-[#344767] w-[100%]">Description:</label>
-        <textarea
-          name="description"
-          placeholder="Description"
-          className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-          style={{ paddingLeft: '12px', color: '#374151' }}
-          value={addStockPointData.description}
-          onChange={handleAddStockPointChange}
-        ></textarea>
 
-        {/* Status */}
-        <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>
-        <select
-          name="status"
-          className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500"
-          style={{ paddingLeft: '12px' }}
-          value={addStockPointData.status}
-          onChange={handleAddStockPointChange}
-        >
-          <option value="" className="text-gray-600">Select</option>
-          <option value="true" className="text-gray-600">Active</option>
-          <option value="false" className="text-gray-600">InActive</option>
-        </select>
-      </div>
+                                    <label className="font-semibold text-xs text-[#344767] w-[100%]">Description:</label>
+                                    <textarea
+                                      name="description"
+                                      placeholder="Description"
+                                      className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                      style={{ paddingLeft: '12px',}}
+                                      value={addStockPointData.description}
+                                      onChange={handleAddStockPointChange}
+                                    ></textarea>
 
-      {/* Buttons */}
-      <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
-        <button
-          type="button"
-          className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-          style={{ backgroundColor: '#5E72e4' }}
-          onClick={handleSubmitStockPoint}
-        >
-          Submit
-        </button>
-        <button
-          type="button"
-          className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-          style={{ backgroundColor: '#8392ab' }}
-          onClick={handleCloseModal}
-        >
-          Close
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+                                    <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>
+                                    <select
+                                      name="status"
+                                      className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500"
+                                      style={{ paddingLeft: '12px' }}
+                                      value={addStockPointData.status}
+                                      onChange={handleAddStockPointChange}
+                                    >
+                                      <option value="" className="text-gray-600">Select</option>
+                                      <option value="true" className="text-gray-600">Active</option>
+                                      <option value="false" className="text-gray-600">InActive</option>
+                                    </select>
+                                  </div>
+
+                                  <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
+                                    <button
+                                      type="button"
+                                      className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                      style={{ backgroundColor: '#5E72e4' }}
+                                      onClick={handleSubmitStockPoint}
+                                    >
+                                      Submit
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                      style={{ backgroundColor: '#8392ab' }}
+                                      onClick={handleCloseModal}
+                                    >
+                                      Close
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
        
                        {editModal &&(
@@ -414,17 +414,13 @@ useEffect(() => {
                                     <hr className=" border-gray-300"/>
       
                                     <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                   
-                                      
-                                      <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[80%]"
-                                      >
-                                       Name:
+                                      <label
+                                        className="font-semibold text-xs text-[#344767] w-[80%]">
+                                           Name:
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingStockPoint?.name || ''} 
                                         onChange={(e)=>handleEditStockPointChange(e)}
@@ -436,14 +432,15 @@ useEffect(() => {
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
+                                       >
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                       onChange={(e)=>handleEditStockPointChange(e)}
+                                        style={{paddingLeft:'12px',}}
+                                        value={editingStockPoint.description}
+                                        onChange={handleEditStockPointChange}
                                         name="description"
                                       ></textarea>
                             
@@ -455,12 +452,11 @@ useEffect(() => {
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
                                                 value={String(editingStockPoint?.status)}
                                                 onChange={handleEditStockPointChange}
                                                 name='status'
-                                              //  onChange={(e)=>handleChange(e)}
                                             >
                                                 <option value="" className=" text-gray-600">Select </option>
                                                 <option value={true} className=" text-gray-600"> Active</option>
@@ -471,14 +467,6 @@ useEffect(() => {
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
-                                            {/* <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                               onClick={(e) => handleEditSubmit(e)}
-                                            >
-                                                Submit
-                                            </button> */}
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
