@@ -5,210 +5,230 @@ import { toast } from "react-toastify";
 import GoldItemModel from "../../models/GoldItem";
 import { useParams } from "react-router";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 
 const UpdateItem = () => {
-    const [data, setData] = useState({
-        code: '',
-        name: '', 
-        item_type: '',
-        uom: '',
-        category: '',
-        subcategory: '',
-        jewellery_type: '',
-        brand: '',
-        making_calculation_on: '',
-        is_scrap_item: '',
-        is_serialized: '',
-        is_gift_item: '',
-        return_as: '',
-        is_repair_item: '',
-        item_image: null,
-        default_tax: '',
-        made_in: '',
-        making_buffer_value: '',
-        stone_buffer_value: '',
-        stone_sale_markup: '',
-        making_sale_markup: '',
-        buffer_consider_type: '',
-        hsn_code: '',
-        status: '',
-        prefix: '',
-        id_length: ''
-      });
-    
-      const auth= useSelector((state) => state.auth);
-      const {login_type,login_id} =auth
-      const [limit, setLimit] = useState(10);
-      const [page, setPage] = useState(1);
-      const [search, setSearch] = useState('');
-      const [status, setStatus] = useState('');
-      const [goldItemData, setGoldItemData] = useState([]);
-      const [selectedItem,setItem]=useState([])
+  const [data, setData] = useState({
+    code: '',
+    name: '',
+    item_type: '',
+    uom: '',
+    category: '',
+    subcategory: '',
+    jewellery_type: '',
+    brand: '',
+    making_calculation_on: '',
+    is_scrap_item: '',
+    is_serialized: '',
+    is_gift_item: '',
+    return_as: '',
+    is_repair_item: '',
+    item_image: null,
+    default_tax: '',
+    made_in: '',
+    making_buffer_value: '',
+    stone_buffer_value: '',
+    stone_sale_markup: '',
+    making_sale_markup: '',
+    buffer_consider_type: '',
+    hsn_code: '',
+    status: '',
+    prefix: '',
+    id_length: ''
+  });
+  const [UtilsData, setUtilsData] = useState([]);
+  const [goldItemData, setGoldItemData] = useState([]);
+  const navigate = useNavigate()
+  const [selectedItem, setItem] = useState([]);
+  const { id } = useParams();
+  const auth = useSelector((state) => state.auth);
+  const { login_type, login_id } = auth;
+  const [limit] = useState(10);
+  const [page] = useState(1);
+  const [search] = useState('');
+  const [status] = useState('');
 
-       const [UtilsData,setUtilsData] = useState([]);
-       console.log("UtilsData", UtilsData);
-       console.log("goldItemData", goldItemData);
-       const { id } = useParams();
-       console.log("id", id);
-       console.log("selectedItem", selectedItem);
-       console.log("selectedItem", selectedItem.code);
-
-      const FetchItemToEdit = (id) => {
-        console.log("FetchItemToEdit called with id:", id);
-        console.log("goldItemData length:", goldItemData.length);
-
-        if (!id) {
-          toast.error("Cannot update: ID missing");
-          return;
-        }
-
-        if (goldItemData.length === 0) {
-          console.log("goldItemData is empty, waiting for data to load...");
-          return;
-        }
-
-        const itemTobeUpdate = goldItemData.find(item => item.id.toString() === id.toString());
-
-        if (!itemTobeUpdate) {
-          toast.error("Please select a valid item to update");
-          return;
-        }
-
-       setItem(itemTobeUpdate)
-        console.log("Item to update:", itemTobeUpdate);
-      };
-     
-
-      const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission behavior
-        console.log(data)
-        if (!validateForm()) {
-          toast.error("Please fix form errors");
-          return;
-        }
-      
-      
-        try {
-          const response = await GoldItemModel.updateGoldItem(data,id);
-          
-          if (response.data) {
-            toast.success(response.data.message || "Item created successfully!");
-          } else {
-            console.warn("Unexpected response structure:", response);
-            toast.success(response.data.message || "Item created (check console for details)");
-          }
-        } catch (error) {
-      
-        if (error.response) {
-          const { message, errors } = error.response.data;
-      
-          // Show field-specific errors (like code already exists)
-          if (errors && typeof errors === 'object') {
-            Object.entries(errors).forEach(([field, messages]) => {
-              if (Array.isArray(messages)) {
-                messages.forEach(msg => toast.error(` ${msg}`));
-              } else {
-                toast.error(`${field}: ${messages}`);
-              }
-            });
-          }
-        } else {
-          toast.error(error.message || "Creation failed");
-        }
-      }
-      
-      };
-
-      const FetUtilsdata = async() => {
-        try {
-          const response = await UtilsGetModel.getUtilsData();
-          setUtilsData(response.data);
-        } catch (error) {
+  // Fetch utils data
+  useEffect(() => {
+    const FetUtilsdata = async () => {
+      try {
+        const response = await UtilsGetModel.getUtilsData();
+        setUtilsData(response.data);
+      } catch (error) {
         console.error("Error fetching utils data:", error);
-        }
       }
+    };
+    FetUtilsdata();
+  }, []);
 
-      // Fix: Wait for both id and goldItemData to be available
-      useEffect(()=>{
-        if (id && goldItemData.length > 0) {
-          FetchItemToEdit(id);
-        }
-      },[id, goldItemData])
+  // Fetch gold item data
+  useEffect(() => {
+    const FetchGoldItemData = async () => {
+      try {
+        const response = await GoldItemModel.getGoldItem(login_type, login_id, limit, page, search, status);
+        setGoldItemData(response.data.data);
+      } catch (error) {
+        console.error("Error fetching gold item data:", error);
+      }
+    };
+    FetchGoldItemData();
+  }, [login_type, login_id, limit, page, search, status]);
 
-      const validateForm = () => {
-            const newErrors = {};
+  // Set selected item when goldItemData and id are available
+  useEffect(() => {
+    if (id && goldItemData.length > 0) {
+      const itemTobeUpdate = goldItemData.find(item => item.id.toString() === id.toString());
+      if (itemTobeUpdate) {
+        setItem(itemTobeUpdate);
+      }
+    }
+  }, [id, goldItemData]);
 
-            const requiredFields = [
-              'code',
-              'item_type',
-              'uom',
-              'category',
-              'subcategory',
-              'jewellery_type',
-              'making_calculation_on',
-              'is_serialized'
-            ];
+  // Fetch item details and update form data
+  useEffect(() => {
+    const fetchItemDetials = async (uuid) => {
+      try {
+        const response = await GoldItemModel.getSingleItem(uuid);
+        const itemTomap = response?.data?.data || {};
+        setData({
+          code: itemTomap.code || '',
+          name: itemTomap.name || '',
+          item_type: itemTomap.item_type || '',
+          uom: itemTomap.uom || '',
+          category: itemTomap.category || '',
+          subcategory: itemTomap.subcategory || '',
+          jewellery_type: itemTomap.jewellery_type || '',
+          brand: itemTomap.brand || '',
+          making_calculation_on: itemTomap.making_calculation_on || '',
+          is_scrap_item: itemTomap.is_scrap_item || '',
+          is_serialized: itemTomap.is_serialized || '',
+          is_gift_item: itemTomap.is_gift_item || '',
+          return_as: itemTomap.return_as || '',
+          is_repair_item: itemTomap.is_repair_item || '',
+          item_image: itemTomap.item_image || null,
+          default_tax: itemTomap.default_tax || '',
+          made_in: itemTomap.made_in || '',
+          making_buffer_value: itemTomap.making_buffer_value || '',
+          stone_buffer_value: itemTomap.stone_buffer_value || '',
+          stone_sale_markup: itemTomap.stone_sale_markup || '',
+          making_sale_markup: itemTomap.making_sale_markup || '',
+          buffer_consider_type: itemTomap.buffer_consider_type || '',
+          hsn_code: itemTomap.hsn_code || '',
+          status: itemTomap.status || '',
+          prefix: itemTomap.prefix || '',
+          id_length: itemTomap.id_length || ''
+        });
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    if (selectedItem && selectedItem.uuid) {
+      fetchItemDetials(selectedItem.uuid);
+    }
+  }, [selectedItem]);
 
-            requiredFields.forEach(field => {
-              if (!data[field]?.toString().trim()) {
-                newErrors[field] = 'This field is required';
-              }
-            });
+  const handleSubmit = async (e) => {
+  e.preventDefault(); // Prevent default form submission behavior
 
-            
+  // Clean the data: remove null, undefined, and empty string values
+  const cleanedData = Object.fromEntries(
+    Object.entries(data).filter(
+      ([_, value]) => value !== null && value !== '' && value !== undefined
+    )
+  );
 
-            return Object.keys(newErrors).length === 0;
-          };
+  console.log("Cleaned Data:", cleanedData);
 
+  if (!validateForm()) {
+    toast.error("Please fix form errors");
+    return;
+  }
 
-           const getUtilsData = (key) => {
-            if (!UtilsData?.data) return [];
-            
-            const item = UtilsData.data.find(item => item[key] !== undefined);
-            return item ? item[key] : [];
-          };
-           const getSubcategories = () => {
-              if (!data.category) return [];
-              const categories = getUtilsData('categories');
-              const selectedCategory = categories.find(cat => 
-                cat.category_name === data.category || cat.category_id.toString() === data.category
-              );
-              return selectedCategory ? selectedCategory.sub_cat : [];
-            };
+  try {
+    const response = await GoldItemModel.updateGoldItem(cleanedData, id);
+navigate('/dashboard/item')
+    if (response.data) {
+      toast.success(response.data.message || "Item updated successfully!");
+    } else {
+      console.warn("Unexpected response structure:", response);
+      toast.success("Item updated (check console for details)");
+    }
+  } catch (error) {
+    if (error.response) {
+      const { message, errors } = error.response.data;
 
-             const handleChange = (e) => {
-                const { name, value, type, files } = e.target;
-                if (type === 'file') {
-                  setData({
-                    ...data,
-                    [name]: files[0] 
-                  });
-                } else {
-                  setData({
-                    ...data,
-                    [name]: value
-                  });
-                }
-              };
-           
-
-          const FetchGoldItemData =async()=>{
-            try{
-              const response = await GoldItemModel.getGoldItem(login_type,login_id,limit,page,search,status)
-              setGoldItemData(response.data.data);
-            }catch(error){
-              console.error("Error fetching gold item data:", error);
-            }
+      // Show field-specific errors (like code already exists)
+      if (errors && typeof errors === 'object') {
+        Object.entries(errors).forEach(([field, messages]) => {
+          if (Array.isArray(messages)) {
+            messages.forEach(msg => toast.error(` ${msg}`));
+          } else {
+            toast.error(`${field}: ${messages}`);
           }
-           useEffect(() => {
-              FetUtilsdata()
-            },[])
+        });
+      } else {
+        toast.error(message || "Update failed");
+      }
+    } else {
+      toast.error(error.message || "Update failed");
+    }
+  }
+};
 
-          useEffect(() => {
-            FetchGoldItemData(); 
-          }, [limit, page, search, status]);
 
-         
+  const validateForm = () => {
+    const newErrors = {};
+
+    const requiredFields = [
+      'code',
+      'item_type',
+      'uom',
+      'category',
+      'subcategory',
+      'jewellery_type',
+      'making_calculation_on',
+      'is_serialized'
+    ];
+
+    requiredFields.forEach(field => {
+      if (!data[field]?.toString().trim()) {
+        newErrors[field] = 'This field is required';
+      }
+    });
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const getUtilsData = (key) => {
+    if (!UtilsData?.data) return [];
+    
+    const item = UtilsData.data.find(item => item[key] !== undefined);
+    return item ? item[key] : [];
+  };
+
+  const getSubcategories = () => {
+    if (!data.category) return [];
+    const categories = getUtilsData('categories');
+    const selectedCategory = categories.find(cat => 
+      cat.category_name === data.category || cat.category_id.toString() === data.category
+    );
+    return selectedCategory ? selectedCategory.sub_cat : [];
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, files } = e.target;
+    if (type === 'file') {
+      setData({
+        ...data,
+        [name]: files[0] 
+      });
+    } else {
+      setData({
+        ...data,
+        [name]: value
+      });
+    }
+  };
 
   return (
     <div 
@@ -230,7 +250,7 @@ const UpdateItem = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7" style={{padding:'30px'}} >
           {/* code */}
             <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Code</label>
+          <label className="text-xs font-bold text-[#344767]">Code<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="text"
             name='code'
@@ -260,7 +280,7 @@ const UpdateItem = () => {
 
         {/* item type */}
            <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Item Type</label>
+          <label className="text-xs font-bold text-[#344767]">Item Type<span className="text-red-500 text-[14px]">*</span></label>
           <select  
             name="item_type"
             onChange={handleChange}
@@ -284,7 +304,7 @@ const UpdateItem = () => {
         {/* uom */}
 
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">UOM</label>
+          <label className="text-xs font-bold text-[#344767]">UOM<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="uom"
             onChange={handleChange}
@@ -305,7 +325,7 @@ const UpdateItem = () => {
 
         {/* category */}
          <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Category</label>
+          <label className="text-xs font-bold text-[#344767]">Category<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="category"
             onChange={handleChange}
@@ -328,7 +348,7 @@ const UpdateItem = () => {
   
        {/* sub Category */}
          <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Sub Category</label>
+          <label className="text-xs font-bold text-[#344767]">Sub Category<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="subcategory"
             value={data.subcategory}
@@ -346,7 +366,7 @@ const UpdateItem = () => {
         </div>
             {/* jewellery type */}
          <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Jewellery Type</label>
+          <label className="text-xs font-bold text-[#344767]">Jewellery Type<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="jewellery_type"
             value={data.jewellery_type}
@@ -387,7 +407,7 @@ const UpdateItem = () => {
         {/* --------------- */}
 
           <div className="w-full flex flex-col gap-2">
-          <label className="text-xs font-bold text-[#344767]">Making Calculation On</label>
+          <label className="text-xs font-bold text-[#344767]">Making Calculation On<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="making_calculation_on"
             value={selectedItem.making_calculation_on}
@@ -422,7 +442,7 @@ const UpdateItem = () => {
         </div>
 {/* --------------- */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Is Serialized</label>
+          <label className="text-xs font-bold text-[#344767]">Is Serialized<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="is_serialized"
             value={data.is_serialized}
@@ -701,7 +721,7 @@ const UpdateItem = () => {
         
 
       </div>
-      <div className="flex w-full h-[20vh] mt-4 justify-center items-center">
+      <div className="flex w-full h-[20vh] mt-4 justify-end items-end" style={{padding:'20px'}}>
         <button
           type="submit"
           onClick={handleSubmit}

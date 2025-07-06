@@ -11,6 +11,9 @@ const  POSModel ={
     },
     CreateCart:(payload)=>{
         return axiosInstance.post( `create-cart/`,payload)
+    },
+    CreatePayment:(payload)=>{
+        return axiosInstance.post(`complete-payment/`,payload)
     }
 }
 

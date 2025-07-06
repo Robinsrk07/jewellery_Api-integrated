@@ -31,7 +31,11 @@ const PurchaseModel = {
   EditPurchase:(editPurchaseData,id)=>{
     console.log("idtest",id)
     return axiosInstance.put(`/update-gold-purchase/${id}/`,editPurchaseData)
-  }
+  },
+   getUpdateUtils:(uuid)=>{
+
+            return axiosInstance.get(`/get-gold-items/${uuid}/`)
+        }
 };
 
 export default PurchaseModel;

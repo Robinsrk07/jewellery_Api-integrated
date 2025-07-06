@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import PurchaseModel from "../../../models/PurchaseModel";
 import { useParams } from "react-router";
 import { useSelector } from "react-redux";
+import { useNavigate } from "react-router";
 const UpdateGoldPurchase = () => {
   const [data, setData] = useState({
     purchase_type: '',
@@ -45,6 +46,18 @@ const UpdateGoldPurchase = () => {
     
   });
 
+//item_type: '',    document_currency: '',    terms_of_payment: '',    supplier: '',    stock_point: '',    items: '', design: '',    brand: '',
+// made_in: '',
+  //  size: '',  
+   // style: '',
+   // occasion: '',
+   // metal_color: '',
+   // gender: '',
+   // stone_type: '',
+
+
+
+
 
 
 
@@ -59,6 +72,7 @@ const UpdateGoldPurchase = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  const navigate = useNavigate()
   const [purchaseData,setPurchaseData] =useState([])
   console.log(purchaseData);
   
@@ -89,6 +103,10 @@ const UpdateGoldPurchase = () => {
       console.error("Error fetching utils data:", error);
     }
   }
+
+
+  
+ 
 //const requiredFields = ['items', 'making_rate', 'stone_rate', 'stone_weight', 'gross_weight', 'supplier', 'stock_point', 'document_currency'];
 
   // Helper function to extract specific data from the utils
@@ -150,29 +168,80 @@ const validateForm = () => {
 
 
   
-  const handleSubmit = async() => {
-    console.log('Submitting data:', data);
-    if(!validateForm()){
-      toast.error('Please fill all required fields');
-      return;
+ const handleSubmit = async (shouldRedirect) => {
+  const cleanedData = Object.fromEntries(
+    Object.entries(data).filter(
+      ([_, value]) => value !== null && value !== '' && value !== undefined
+    )
+  );
+
+  const selectFields = [
+    'item_type', 'document_currency', 'terms_of_payment', 'supplier', 'stock_point',
+    'items', 'design', 'brand', 'made_in', 'size', 'style', 'occasion',
+    'metal_color', 'gender', 'stone_type', 'buyer_currency'
+  ];
+
+  const fieldMap = {
+    item_type: 'item_type',
+    document_currency: 'default_currency',
+    terms_of_payment: 'terms_of_payment',
+    supplier: 'supplier_list',
+    stock_point: 'stock_point',
+    items: 'inventory_items',
+    design: 'product_design',
+    brand: 'product_brand',
+    made_in: 'product_country',
+    size: 'product_size',
+    style: 'product_style',
+    occasion: 'occasion',
+    metal_color: 'product_color',
+    gender: 'product_gender',
+    stone_type: 'stone_type',
+    buyer_currency: 'buyer_currency'
+  };
+
+  const processedData = { ...cleanedData };
+
+  selectFields.forEach(field => {
+    if (processedData[field]) {
+      processedData[field] = getDisplayValue(fieldMap[field], processedData[field]);
     }
-    
-    console.log('Processed submit data:', data);
-    
-    try{
-      const response = await PurchaseModel.EditPurchase(data, itemId);
-      console.log('Response:', response);
-      toast.success("Purchase edited successfully!");
-    } catch(error){
-      console.error("Error updating purchase:", error);
-      if (error.response) {
-        console.error("Error response:", error.response.data);
-        toast.error(`Error: ${error.response.data?.message || 'Unable to update Purchase'}`);
-      } else {
-        toast.error("Unable to update Purchase, Please try again later.");
+  });
+
+  Object.entries(processedData).forEach(([key, value]) => {
+    if (typeof value === 'number') {
+      processedData[key] = parseFloat(value.toFixed(2));
+    } else if (typeof value === 'string' && !isNaN(value) && value.trim() !== '') {
+      const num = parseFloat(value);
+      if (!isNaN(num)) {
+        processedData[key] = parseFloat(num.toFixed(2));
       }
     }
-  };
+  });
+
+  if (!validateForm()) {
+    toast.error('Please fill all required fields');
+    return;
+  }
+
+  try {
+    const response = await PurchaseModel.EditPurchase(processedData, itemId);
+    toast.success("Purchase edited successfully!");
+
+    if (shouldRedirect) {
+      navigate('/dashboard/purchase');
+    }
+  } catch (error) {
+    console.error("Error updating purchase:", error);
+    if (error.response) {
+      toast.error(`Error: ${error.response.data?.message || 'Unable to update Purchase'}`);
+    } else {
+      toast.error("Unable to update Purchase, Please try again later.");
+    }
+  }
+};
+ 
+
  
 
   useEffect(() => {
@@ -270,7 +339,7 @@ const validateForm = () => {
 
         {/* Document Currency */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Document Currency</label>
+          <label className="text-xs font-bold text-[#344767]">Document Currency<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="document_currency"
             value={data.document_currency}
@@ -339,7 +408,7 @@ const validateForm = () => {
 
         {/* Supplier */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Supplier</label>
+          <label className="text-xs font-bold text-[#344767]">Supplier<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="supplier"
             value={data.supplier}
@@ -377,7 +446,7 @@ const validateForm = () => {
 
         {/* Stock Point */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stock Point</label>
+          <label className="text-xs font-bold text-[#344767]">Stock Point<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="stock_point"
             value={data.stock_point}
@@ -478,7 +547,7 @@ const validateForm = () => {
 
         {/* Items */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Items</label>
+          <label className="text-xs font-bold text-[#344767]">Items<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="items"
             value={data.items}
@@ -670,7 +739,7 @@ const validateForm = () => {
 
         {/* Making Rate */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Making Rate</label>
+          <label className="text-xs font-bold text-[#344767]">Making Rate <span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="making_rate"
@@ -685,7 +754,7 @@ const validateForm = () => {
 
         {/* Stone Rate */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stone Rate</label>
+          <label className="text-xs font-bold text-[#344767]">Stone Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="stone_rate"
@@ -715,7 +784,7 @@ const validateForm = () => {
 
         {/* Stone Weight */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stone Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Stone Weight<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="stone_weight"
@@ -745,7 +814,7 @@ const validateForm = () => {
 
         {/* Gross Weight */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Gross Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Gross Weight<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="gross_weight"
@@ -886,17 +955,21 @@ const validateForm = () => {
         </div>
       </div>
 
-      <div className="flex w-full h-[20vh] justify-end gap-2 text-white " style={{padding:'20px'}}>
-        <button 
-          onClick={handleSubmit}
-          className="btn border-none text-white text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[10vw] rounded-lg"
-        >
-          Save
-        </button>
-        <button className="btn text-white border-none text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[15vw] rounded-lg">
-          Save & Continue Adding
-        </button>
-      </div>
+     <div className="flex w-full h-[20vh] justify-end gap-2 text-white" style={{ padding: '20px' }}>
+      <button
+        onClick={() => handleSubmit(true)}  // Save and redirect
+        className="btn border-none text-white text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[10vw] rounded-lg"
+      >
+        Save
+      </button>
+      <button
+        onClick={() => handleSubmit(false)} // Save and stay
+        className="btn text-white border-none text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[15vw] rounded-lg"
+      >
+        Save & Continue Adding
+      </button>
+    </div>
+
     </div>
   );
 };

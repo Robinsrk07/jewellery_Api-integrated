@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import { toast } from "react-toastify";
 import PurchaseModel from "../../../models/PurchaseModel";
+import { useNavigate } from "react-router";
 const CreateGoldPurchase = () => {
   const [data, setData] = useState({
     purchase_type: '',
@@ -53,7 +54,7 @@ const CreateGoldPurchase = () => {
 };
 
 const cleanedData = cleanData(data);
-
+const navigate =useNavigate()
   const [errors, setErrors] = useState({});
   const [UtilsData, setUtilsData] = useState([]);
 
@@ -119,6 +120,7 @@ const validateForm = () => {
   try{
     const response = await PurchaseModel.createPurchase(cleanedData);
     if (response.status === 201) {
+      navigate('/dashboard/purchase')
       toast.success("Purchase created successfully!");
     }
   } catch(error){

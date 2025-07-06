@@ -3,9 +3,14 @@ import {useDispatch,useSelector} from 'react-redux'
 import POSModel from "../models/PosModel";
 import { addCustomer } from "../StateManagement/CustomerSlice";
 import Loader from "./../components/Loader";
+import { toast } from "react-toastify";
+
+
 import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManagement/posItemSlice";
+import { useNavigate } from "react-router";
 
   const Pos = () => {
+    
   const [mobileSearch, setMobileSearch] = useState('');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAddNewOpen, setIsAddNewOpen] = useState(false);
@@ -17,6 +22,7 @@ import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManag
   const [selectedField, setSelectedField] = useState('');
   const cartItems = useSelector((state) => state.posItem?.itemData || []);
   console.log(cart)
+  const navigate = useNavigate()
   const [customerDetails, setCustomerDetails] = useState({
       name: '',
       phoneNumber: '',
@@ -72,18 +78,23 @@ const CreateCart = (cart) => {
   cart.forEach((item) => {
     if (!item.uuid) return;
 
+    const selling_price = Number(item.Net_Amount || item.tag_price || 0);
+    const discount = Number(item.discount || 0);
+
     if (grouped[item.uuid]) {
       grouped[item.uuid].quantity += 1;
+      grouped[item.uuid].final_amount = grouped[item.uuid].quantity * grouped[item.uuid].selling_price;
+      grouped[item.uuid].final_discount = grouped[item.uuid].quantity * grouped[item.uuid].discount;
     } else {
       const baseData = {
         item_type: item.item_type || "",
         quantity: 1,
-        selling_price: Number(item.Net_Amount || item.tag_price || 0),
-        discount: Number(item.discount || 0),
+        selling_price,
+        discount,
         message: item.description || "",
         discount_on: item.discount_on || "",
-        final_discount: '',
-        final_amount: ''
+        final_discount: discount, // initial = discount * 1
+        final_amount: selling_price, // initial = price * 1
       };
 
       if (item.item_type === "Gold") {
@@ -103,6 +114,7 @@ const CreateCart = (cart) => {
   return Object.values(grouped);
 };
 
+
     const handleCheckout = async () => {
       const payload = CreateCart(cart); 
       console.log(payload)
@@ -115,9 +127,16 @@ const CreateCart = (cart) => {
       });
       try {
         const response = await POSModel.CreateCart(formData);
-        console.log("Cart created successfully", response.data);
+           setLoading(true)
+
+           const cartResponseData = response.data; 
+
+           setTimeout(() => {
+            navigate('/dashboard/completePayment', { state: { cartData: cartResponseData } });
+           }, 1000);
+           console.log("Cart created successfully", response.data);
       } catch (error) {
-        console.error("Cart creation failed:", error);
+        toast.error("Please Try Again")
       }
     };
 
@@ -157,10 +176,17 @@ const CreateCart = (cart) => {
       }, 3000);
     };
 
-const handleAddToCart = (item) => {
-  const newItem = { ...item }; 
-  if (selectedField) newItem.discount_on = selectedField;
-  dispatch(addItemToCart(newItem));
+    const handleAddToCart = (item) => {
+      setLoading(true);
+    setTimeout(()=>{
+    const newItem = { ...item }; 
+      if (selectedField) newItem.discount_on = selectedField;
+      dispatch(addItemToCart(newItem));
+      setLoading(false);
+
+    },1000)
+  
+
   setIsAddNewOpen(false);
 };
 
@@ -287,12 +313,19 @@ const groupedCart = cart.reduce((acc, item) => {
                 + New Customer
               </button>
             </div>
-            <button
+          <div className="flex flex-col md:flex-row gap-2"> <button
               className="text-white w-full sm:w-[120px] h-[35px] text-[12px] bg-[#5E72E4] rounded hover:bg-blue-700 mt-2 sm:mt-0"
               onClick={() => setIsAddNewOpen(true)} // Open Item Details modal
             >
               Add New +
             </button>
+            <button
+              className="text-white w-full sm:w-[120px] h-[35px] text-[12px] bg-[#5E72E4] rounded hover:bg-blue-700 mt-2 sm:mt-0"
+              onClick={handleClearCart} // Open Item Details modal
+            >
+              Clear Cart
+            </button></div>
+           
           </div>
 
           {/* Blue Header Bar */}
@@ -369,7 +402,7 @@ const groupedCart = cart.reduce((acc, item) => {
               <th className="px-4 py-2 border text-center">Rate</th>
               <th className="px-4 py-2 border text-center">Amount</th>
               <th className="px-4 py-2 border text-center">Quantity</th>
-              {/* <th className="px-4 py-2 border text-center">Remove</th> */}
+              <th className="px-4 py-2 border text-center">Remove</th>
             </tr>
           </thead>
           <tbody className="bg-white text-gray-700 text-xs">
@@ -388,9 +421,9 @@ const groupedCart = cart.reduce((acc, item) => {
                       {item.quantity}
                     
                     </td>
-                    {/* <td style={{paddingLeft:'60px'}} className="px-4 py-2 items-center border text-center">
+                    <td  className="flex items-center justify-center " style={{padding:'10px'}}>
                       
-                       <button title="Remove Item"></button>
+                       <button onClick={() => handleRemove(item.uuid)} title="Remove Item">
                      <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       fill="none" 
@@ -404,10 +437,10 @@ const groupedCart = cart.reduce((acc, item) => {
                         strokeLinejoin="round" 
                         d="M6 18L18 6M6 6l12 12" 
                       />
-                    </svg>
+                    </svg></button>
 
                     
-                    </td> */}
+                    </td>
                   </tr>
                 ))
               ) : (

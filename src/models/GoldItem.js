@@ -21,8 +21,12 @@ const GoldItemModel={
     },
     updateGoldItem: (data, id) => {
      return axiosInstance.put(`/update-items-gold/${id}/`, data);
-}
+},
+    getSingleItem:(uuid)=>{
+        return axiosInstance.get(`/get-gold-items/${uuid}`)
+    }
+
 
 }
-
+   
 export default GoldItemModel;
