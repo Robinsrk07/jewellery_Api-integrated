@@ -122,6 +122,7 @@ import ListDiamond from './Pages/Inventory/Diamond/ListDiamond.jsx';
 import CreateDiamond from './Pages/Inventory/Diamond/CreateDiamond.jsx';
 import Tagging from './Pages/Inventory/Diamond/Tagging.jsx';
 import CompletePayment from './Pages/CompletePayment.jsx';
+import PaymentSuccessPage from './Pages/PaymentCompleteSucces.jsx';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -198,11 +199,12 @@ function App() {
                 <Route path='createDiamondPurchase' element={<CreateDiamondPurchase/>} />
                 <Route path='itemDetials/:id' element={<ItemDetials/>} />
                 <Route path='editDiamondItems' element={<EditDiamondItem/>} />
-                <Route path='listDiamond/:uuid' element={<ListDiamond/>}/>
+                <Route path='listDiamond/:uuid/:id' element={<ListDiamond/>}/>
                 <Route path='createDiamond' element={<CreateDiamond/>}/>
                 <Route path='editDiamond/:uuid' element={<Tagging/>}/>
                 <Route path='completePayment' element={<CompletePayment/>}/>
-
+                
+                 <Route path='paymentSucces' element={<PaymentSuccessPage/>}/>
 
                 {/* settings */}
                 <Route path='tax' element={<SettingsTax/>} />

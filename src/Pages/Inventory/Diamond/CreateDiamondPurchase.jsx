@@ -167,12 +167,16 @@ const utils = [
               </option>
               {
                 // Find the 'item_type' object in utils and map over it
-                (utils.find(item => item.item_type)?.item_type || []).map(option => (
-                  <option key={option.id} value={option.id} className="text-black">
-                    {option.name}
-                  </option>
-                ))
+                // (utils.find(item => item.item_type)?.item_type || []).map(option => (
+                //   <option key={option.id} value={option.id} className="text-black">
+                //     {option.name}
+                //   </option>
+                // ))
+
               }
+                            <option value =''>--select Option --</option>
+
+              <option value ={14}>Diamond</option>
             </select>
           </div>
 

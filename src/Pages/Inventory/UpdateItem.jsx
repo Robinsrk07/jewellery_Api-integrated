@@ -126,7 +126,7 @@ const UpdateItem = () => {
       fetchItemDetials(selectedItem.uuid);
     }
   }, [selectedItem]);
-
+ console.log(data)
   const handleSubmit = async (e) => {
   e.preventDefault(); // Prevent default form submission behavior
 

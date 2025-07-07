@@ -8,13 +8,18 @@ import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
 import { useSelector } from "react-redux";
 import GoldItemModel from '../../models/GoldItem';
+import TableSkelton from "../../components/tableSkelton";
+
 const  Item = () => {
 
 const [items, setItems] = useState(10);
+const [isLoading, setIsLoading] = useState(true);
 const auth= useSelector((state) => state.auth);
 const {login_type,login_id} =auth
 const [limit, setLimit] = useState(10);
 const [page, setPage] = useState(1);
+ const [purchaseData, setPurchaseData] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
 const [search, setSearch] = useState('');
 const [status, setStatus] = useState('');
 const [goldItemData, setGoldItemData] = useState([]);
@@ -23,8 +28,11 @@ const FetchGoldItemData =async()=>{
   try{
     const response = await GoldItemModel.getGoldItem(login_type,login_id,limit,page,search,status)
     setGoldItemData(response.data.data);
+    setTotalPages(response.data.pagination.pages);
   }catch(error){
     console.error("Error fetching gold item data:", error);
+  }finally {
+    setIsLoading(false); // stop loading
   }
 }
 
@@ -83,51 +91,60 @@ useEffect(() => {
                               </tr>
                             </thead>
                             <tbody>
-                              {goldItemData.slice().reverse().map((item,index) => (
-                                <tr key={index} className="bg-white hover:bg-gray-50 h-[50px] text-gray-400" >
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
-                                    {index+1}
-                                  </td>
-                                  <td className=" border-b border-gray-200  text-xs" style={{ paddingLeft: '20px' }} >{item.code}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200  text-xs" style={{ paddingLeft: '30px' }}>{item.unique_id}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200  text-xs">{item.name}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200  text-xs">{item.uom}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.category}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.making_calculation_on}</td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                                   <span
-                                    className={`font-bold text-[10px] px-2 py-0.5 rounded ${
-                                      item.status
-                                        ? 'bg-green-300 text-green-700'
-                                        : 'bg-red-300 text-red-700'
-                                    }`}
-                                    style={{ padding: '2px 6px' }}
-                                  >
-                                    {item.status ? 'Active' : 'Inactive'}
-                                  </span>
+                              {isLoading ? (
+                          <TableSkelton />
+                        ) : goldItemData.length === 0 ? (
+                          <tr>
+                            <td colSpan={11} className="text-center py-4 text-gray-500 text-sm">
+                              No data available
+                            </td>
+                          </tr>
+                        ) : (
+                          goldItemData.slice().reverse().map((item, index) => (
+                            <tr key={index} className="bg-white hover:bg-gray-50 h-[50px] text-gray-400">
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                                {index + 1}
+                              </td>
+                              <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                                {item.code}
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                                {item.unique_id}
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uom}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.category}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.making_calculation_on}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                                <span
+                                  className={`font-bold text-[10px] px-2 py-0.5 rounded ${
+                                    item.status ? 'bg-green-300 text-green-700' : 'bg-red-300 text-red-700'
+                                  }`}
+                                  style={{ padding: '2px 6px' }}
+                                >
+                                  {item.status ? 'Active' : 'Inactive'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <Link to={`/dashboard/updateitem/${item.id}`}>
+                                    <EditButton />
+                                  </Link>
+                                  <DeleteButton buttonText="Delete Item" modalId="my_modal_8" />
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        )}
 
-                                  </td>
-                                  <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <Link to={`/dashboard/updateitem/${item.id}`}>
-                                        <EditButton />
-                                      </Link>
-                                      <DeleteButton 
-                                      buttonText="Delete Item" 
-                                      modalId="my_modal_8" 
-                                    />
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
                             </tbody>
                           </table>
                        
                  
                        {/* Pagination */}
-                        <Pagination/>
+                         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                  
                        {/* Modal */}
       

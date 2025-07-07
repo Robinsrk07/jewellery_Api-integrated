@@ -34,6 +34,8 @@ const Adress_Type = () => {
   const [editingAddressType, setEditingAddresss] = useState(null);
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
+   const [purchaseData, setPurchaseData] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [modal, setModal] = useState(false)
@@ -55,7 +57,7 @@ const Adress_Type = () => {
         toast.error("unable to fetch Address")
        }
         setAddressTypes(response?.data?.data)
-      
+         setTotalPages(response.data.pagination.pages);
     } catch (err) {
       toast.error("Failed to load address types");
     }
@@ -315,8 +317,7 @@ const Adress_Type = () => {
         </table>
 
         {/* Pagination */}
-        <Pagination />
-      </div>
+  <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />      </div>
 
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">

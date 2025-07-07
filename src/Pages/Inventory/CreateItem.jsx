@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import UtilsGetModel from "../../models/Utils_getModel";
 import { toast } from "react-toastify";
 import GoldItemModel from "../../models/GoldItem";
+import { useNavigate } from "react-router";
 const CreateItem = () => {
+  const navigate = useNavigate()
   const [data, setData] = useState({
     code: '',
     name: '', 
@@ -48,7 +50,7 @@ const validateForm = () => {
   const requiredFields = [
     'code',
     'item_type',
-      'uom',
+     'uom',
     'category',
     'subcategory',
     'jewellery_type',
@@ -87,7 +89,6 @@ const cleanedData = cleanData(data);
   return item ? item[key] : [];
 };
 
-console.log(getUtilsData('making_calculation')); // Log making_calculation data
 
 
   const handleChange = (e) => {
@@ -106,44 +107,52 @@ console.log(getUtilsData('making_calculation')); // Log making_calculation data
   };
 
 const handleSubmit = async (e) => {
-  e.preventDefault(); // Prevent default form submission behavior
-  
+  e.preventDefault();
+
   if (!validateForm()) {
-    toast.error("Please Fill All Required Feild");
+    toast.error("Please Fill All Required Fields");
     return;
   }
-console.log(data)
 
   try {
-    const response = await GoldItemModel.CreateGoldItem(cleanedData);
-    
+    // Convert cleanedData to FormData
+    const formData = new FormData();
+    Object.entries(cleanedData).forEach(([key, value]) => {
+      if (value !== null && value !== undefined && value !== '') {
+        formData.append(key, value);
+      }
+    });
+
+    const response = await GoldItemModel.CreateGoldItem(formData);
+     navigate('/dashboard/item')
     if (response.data) {
       toast.success(response.data.message || "Item created successfully!");
     } else {
       console.warn("Unexpected response structure:", response);
-      toast.success(response.data.message || "Item created (check console for details)");
+      toast.success("Item created ");
     }
   } catch (error) {
+    toast.error('failed to Create Gold Item Please Try again')
+    // if (error.response) {
+    //   const { message, errors } = error.response.data;
 
-  if (error.response) {
-    const { message, errors } = error.response.data;
-
-    // Show field-specific errors (like code already exists)
-    if (errors && typeof errors === 'object') {
-      Object.entries(errors).forEach(([field, messages]) => {
-        if (Array.isArray(messages)) {
-          messages.forEach(msg => toast.error(` ${msg}`));
-        } else {
-          toast.error(`${field}: ${messages}`);
-        }
-      });
-    }
-  } else {
-    toast.error(error.message || "Creation failed");
+    //   if (errors && typeof errors === 'object') {
+    //     Object.entries(errors).forEach(([field, messages]) => {
+    //       if (Array.isArray(messages)) {
+    //         messages.forEach(msg => toast.error(`${msg}`));
+    //       } else {
+    //         toast.error(`${field}: ${messages}`);
+    //       }
+    //     });
+    //   } else {
+    //     toast.error(message || "Creation failed");
+    //   }
+    // } else {
+    //   toast.error(error.message || "Something went wrong");
+    // }
   }
-}
-
 };
+
 
   // Get subcategories based on selected category
   const getSubcategories = () => {

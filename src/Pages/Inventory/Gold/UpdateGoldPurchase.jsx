@@ -396,7 +396,7 @@ const validateForm = () => {
           <input
             type="date"
             name="due_date"
-            value={data.due_date}
+            value={data.purchase_date}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             className="input input-bordered bg-white input-sm w-full text-gray-500 rounded-lg 

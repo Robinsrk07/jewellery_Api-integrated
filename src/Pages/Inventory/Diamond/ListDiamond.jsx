@@ -15,15 +15,14 @@ const ListDiamond = () => {
 const [diamondList, setDiamondList] = useState([]);
  const [goldUtils,setGoldUtils] =useState([])
 
-const {uuid} =useParams()
-const auth = useSelector((state) => state.auth);
-const { login_id, can_manage_user_types } = auth
+const {uuid,id} =useParams()
+//const auth = useSelector((state) => state.auth);
+//const { login_id, can_manage_user_types } = auth
 const [limit, setLimit] = useState(10);
 const [page, setPage] = useState(1);
 const [search, setSearch] = useState('');
 const [status, setStatus] = useState('');
-const user_id = login_id;
-const user_types = Object.keys(can_manage_user_types).join(',');
+//const user_types = Object.keys(can_manage_user_types).join(',');
 
 const commonDiamondItemId =
   diamondList.length > 0 &&
@@ -38,8 +37,7 @@ console.log("check",goldUtils);
  const fetchDiamond = async () => {
         try {
             const response = await DiamondModel.getDiamond( 
-                user_types,
-                user_id,
+                 id,
                  limit,
                  page,
                  search,

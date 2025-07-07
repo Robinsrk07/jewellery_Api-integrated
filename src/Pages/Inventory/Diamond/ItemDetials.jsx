@@ -29,7 +29,7 @@ const ItemDetails = () => {
             category: '',
             subcategory: '',
             style: '',
-            diamond_item:'', //hard coded because not present in api
+            diamond_item:'', 
             diamond_image:'',
             is_gift_item:'',
             consider_profit_margin:"",

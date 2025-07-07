@@ -90,11 +90,11 @@ const CreateCart = (cart) => {
         item_type: item.item_type || "",
         quantity: 1,
         selling_price,
-        discount,
+       discount,
         message: item.description || "",
         discount_on: item.discount_on || "",
-        final_discount: discount, // initial = discount * 1
-        final_amount: selling_price, // initial = price * 1
+       final_discount: discount, // initial = discount * 1
+       final_amount: selling_price, // initial = price * 1
       };
 
       if (item.item_type === "Gold") {
@@ -116,29 +116,37 @@ const CreateCart = (cart) => {
 
 
     const handleCheckout = async () => {
-      const payload = CreateCart(cart); 
-      console.log(payload)
-      const formData = new FormData();
-      formData.append("customer", 1);  
-      payload.forEach((item) => {
-        Object.entries(item).forEach(([key, value]) => {
-          formData.append(key, value);
-        });
+  const payload = CreateCart(cart); 
+  console.log(payload)
+  const formData = new FormData();
+  formData.append("customer", 1);  
+  payload.forEach((item) => {
+    Object.entries(item).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+  });
+
+  try {
+    const response = await POSModel.CreateCart(formData);
+    setLoading(true);
+
+    const cartResponseData = response.data;
+
+    // ✅ Clear cart data in Redux store
+    handleClearCart();
+
+    setTimeout(() => {
+      navigate('/dashboard/completePayment', {
+        state: { cartData: cartResponseData }
       });
-      try {
-        const response = await POSModel.CreateCart(formData);
-           setLoading(true)
+    }, 1000);
 
-           const cartResponseData = response.data; 
+    console.log("Cart created successfully", response.data);
+  } catch (error) {
+    toast.error("Please Try Again");
+  }
+};
 
-           setTimeout(() => {
-            navigate('/dashboard/completePayment', { state: { cartData: cartResponseData } });
-           }, 1000);
-           console.log("Cart created successfully", response.data);
-      } catch (error) {
-        toast.error("Please Try Again")
-      }
-    };
 
 
      const handleGetData =async()=>{
@@ -177,18 +185,20 @@ const CreateCart = (cart) => {
     };
 
     const handleAddToCart = (item) => {
-      setLoading(true);
-    setTimeout(()=>{
-    const newItem = { ...item }; 
-      if (selectedField) newItem.discount_on = selectedField;
-      dispatch(addItemToCart(newItem));
-      setLoading(false);
+  setLoading(true);
 
-    },1000)
-  
+  setTimeout(() => {
+    const newItem = { ...item };
+    if (selectedField) newItem.discount_on = selectedField;
 
-  setIsAddNewOpen(false);
+    dispatch(addItemToCart(newItem));
+
+    setItemsData([]); // ✅ Clear the itemData after adding to cart
+    setLoading(false);
+    setIsAddNewOpen(false)
+  }, 1000);
 };
+
 
 const handleRemove = (uuid) => {
   dispatch(removeItemFromCart(uuid));
@@ -827,7 +837,15 @@ const groupedCart = cart.reduce((acc, item) => {
               </div>
              <div className="flex flex-col gap-2 md:flex-row">
               <button className="text-white text-sm rounded-sm w-full md:w-[80px] h-[30px] bg-gray-600 text-[13px]" onClick={()=>setIsAddNewOpen(false)} >close</button>
-              <button onClick={() => handleAddToCart(itemData)} className="text-white w-full md:w-[80px]  text-sm rounded-sm w-[80px] h-[30px] bg-blue-600 text-[13px]" >Add</button>
+              <button
+                onClick={() => handleAddToCart(itemData)}
+                disabled={itemData.length === 0}
+                className={`text-white text-sm rounded-sm h-[30px] bg-blue-600 text-[13px] 
+                  ${itemData.length === 0 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'} 
+                  w-full md:w-[80px]`}
+              >
+                Add
+              </button>
              </div>
          
             </div>

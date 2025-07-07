@@ -8,6 +8,8 @@ import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import PurchaseModel from '../../../models/PurchaseModel';
 import { useSelector } from "react-redux";
+import TableSkelton from "../../../components/tableSkelton";
+
 
 const  Purchase = () => {
      
@@ -19,15 +21,20 @@ const  Purchase = () => {
                    const [search, setSearch] = useState('');
                    const [status, setStatus] = useState('');
                    const [purchaseData, setPurchaseData] = useState([]);
+                   const [totalPages, setTotalPages] = useState(1);
+                   const [isLoading, setIsLoading] = useState(true);
                    console.log(purchaseData);
                       
                   const FetchPurchaseData =async()=>{
                     try{
                       const response = await PurchaseModel.getPurchases(login_id,login_type,limit,page,search,status)
                       setPurchaseData(response.data.data);
+                      setTotalPages(response.data.pagination.pages);
                     }catch(error){
                       console.error("Error fetching purchase data:", error);
-                    }
+                    }finally {
+                          setIsLoading(false); // stop loading
+                        }
                   }
 
                   useEffect(() => {
@@ -78,13 +85,13 @@ const  Purchase = () => {
                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                    >
                      
-                               
+{/*                                
                               <Link to="/dashboard/creategoldpurchase">
                               <CreateButton
                                 buttoncontent="+ Purchase"
                                 
                                   />
-                              </Link> 
+                              </Link>  */}
 
                                <div
       style={{
@@ -99,8 +106,29 @@ const  Purchase = () => {
         justifyContent: 'flex-end',
         width: 'fit-content',
         minWidth: '100%',
+        gap:'10px'
       }}
     >
+
+                              <Link to="/dashboard/creategoldpurchase">
+<button
+        className="text-xs font-bold"
+        style={{
+          width: '160px',
+          height: '33px',
+          borderRadius: '8px',
+          background: 'linear-gradient(to right, #7F60E4, #6170E4)',
+          color: 'white',
+          transition: 'background-color 0.3s ease',
+          cursor: 'pointer',
+            zIndex: 1, // ✅ Correct camelCase
+        }}
+          
+      >
+      +  Purchase 
+      </button>
+                              </Link> 
+
       <Link to="/dashboard/ListPurchase">
       <button
         className="text-xs font-bold"
@@ -145,7 +173,17 @@ const  Purchase = () => {
                            </tr>
                          </thead>
                       <tbody>
-                  {purchaseData.map((item, index) => (
+                  {/* {purchaseData.map((item, index) => ( */}
+                    {isLoading ? (
+                      <TableSkelton />
+                    ) : purchaseData.length === 0 ? (
+                      <tr>
+                        <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                          No data available
+                        </td>
+                      </tr>
+                    ) : purchaseData.map((item, index) => (
+
                     <tr key={item.id} className="bg-white hover:bg-gray-50 h-[30px] text-gray-400">
                       <td className=" border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs hover:text-blue-300"> <Link to={`/dashboard/viewpurchase/${item.id}`}>{item.invoice_no}</Link></td>
@@ -160,14 +198,17 @@ const  Purchase = () => {
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_items_purchased}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{new Date(item.created_at).toLocaleString()}</td>
 
-                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                        <div className="flex flex-row gap-2">
-                          
-                          <Link to={`/dashboard/viewpurchase/${item.id}`}>
-                            <CreateButton buttoncontent="View Purchase" />
-                          </Link>
-                        </div>
-                      </td>
+                      <td
+  className="border-b border-gray-200 text-xs"
+  style={{ paddingLeft: '10px', position: 'relative', zIndex: 0 }} // ✅ added position & zIndex
+>
+  <div className="flex flex-row gap-2">
+    <Link to={`/dashboard/viewpurchase/${item.id}`}>
+      <CreateButton buttoncontent="View Purchase" />
+    </Link>
+  </div>
+</td>
+
                     </tr>
                   ))}
                 </tbody>
@@ -176,7 +217,7 @@ const  Purchase = () => {
                        
                  
                        {/* Pagination */}
-                        <Pagination/>
+                       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                  
                        {/* Modal */}
       

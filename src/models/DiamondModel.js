@@ -23,9 +23,9 @@ const DiamondModel ={
     DeleteDiamondItem :(uuid)=>{
         return axiosInstance.delete(`manage-diamond-items/${uuid}/`)
     },
-    getDiamond:(user_types, user_id, limit = 10, page = 1, search = "", status = "",uuid)=>{
+    getDiamond:( user_id, limit = 10, page = 1, search = "", status = "",uuid)=>{
         const params = new URLSearchParams({
-            user_types,
+            //user_types,
             user_id,
             limit,
             page,

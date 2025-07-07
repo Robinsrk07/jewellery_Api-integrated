@@ -21,6 +21,8 @@ const DiamondPurchhase = () => {
     const { login_id, can_manage_user_types } = auth
      const [limit, setLimit] = useState(10);
      const [page, setPage] = useState(1);
+      const [purchaseData, setPurchaseData] = useState([]);
+      const [totalPages, setTotalPages] = useState(1);
      const [search, setSearch] = useState('');
      const [status, setStatus] = useState('');
     const user_id = login_id;
@@ -43,6 +45,7 @@ const DiamondPurchhase = () => {
     );
     if (response) {
       setDiamondItem(response.data.data);
+      setTotalPages(response.data.pagination.pages);
     }
   } catch (err) {
     toast.error("Failed to load diamond items");
@@ -159,7 +162,7 @@ const DiamondPurchhase = () => {
         {getNameFromId('item_type', item.item_type)}
       </td>
       <td className="px-4 py-3 border-b border-gray-200 text-xs">
-        <Link to={`/dashboard/listDiamond/${item.uuid}`}>
+        <Link to={`/dashboard/listDiamond/${item.uuid}/${item.created_by}`}>
           {item.item_name}
         </Link>
       </td>
@@ -224,8 +227,7 @@ const DiamondPurchhase = () => {
     </tbody>
   </table>
 
-          <Pagination />
-
+          <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
         </div>     
       </>
     )

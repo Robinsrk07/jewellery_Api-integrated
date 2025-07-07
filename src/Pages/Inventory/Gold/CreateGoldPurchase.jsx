@@ -770,6 +770,7 @@ const validateForm = () => {
                  style={{paddingLeft:'20px'}}
             className="select select-bordered select-sm w-full bg-white text-gray-300 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
+            <option value="">-- Select Status --</option>
             <option value="True">Active</option>
             <option value="False">Inactive</option>
           </select>
