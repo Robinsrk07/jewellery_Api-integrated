@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import PurchaseModel from "../../../models/PurchaseModel";
 import { useSelector } from "react-redux";
+import TableSkelton from "../../../components/tableSkelton";
 
 const ViewPurchase = () => {
 
@@ -16,11 +17,15 @@ const ViewPurchase = () => {
   const [modal, setModal] = useState(false)   
   const [editModal,setEditModal]= useState(false)
   const auth= useSelector((state) => state.auth);
+   const [PagpurchaseData, setPagPurchaseData] = useState([]);
+   const [isLoading, setIsLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
   const {login_type,login_id} =auth
   const [limit, setLimit] = useState(10);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
+  
   const {id}= useParams()
   const [purchaseData,setPurchaseData] =useState([])
   console.log(purchaseData);
@@ -29,8 +34,11 @@ const ViewPurchase = () => {
    try{
    const response = await PurchaseModel.getPurchaseList(login_id,login_type,limit,page,search,status,id)
     setPurchaseData(response.data.data);
+     setTotalPages(response.data.pagination.pages);
     }catch(error){
     console.error("Error fetching purchase data:", error);
+    }finally{
+      setIsLoading(false)
     }
   }
 
@@ -136,7 +144,15 @@ const ViewPurchase = () => {
              </thead>
              <tbody>
                
-                {purchaseData && purchaseData.map((purchase, index) => (
+                {isLoading ? (
+            <TableSkelton />
+          ) : purchaseData.length === 0 ? (
+            <tr>
+              <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                No data available
+              </td>
+            </tr>
+          ) : purchaseData.map((purchase, index) => (
                   <tr key={purchase.id || index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                     <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>
                       {index + 1}
@@ -249,13 +265,13 @@ const ViewPurchase = () => {
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       <span
                         className={`font-bold text-[10px] px-2 py-0.5 rounded ${
-                          purchase.status === 'True'
+                          purchase.status === true
                             ? 'bg-green-300 text-green-700'
                             : 'bg-red-300 text-red-700'
                         }`}
                         style={{ padding: '2px 6px' }}
                       >
-                        {purchase.status === 'True'  ? 'Active' : 'Inactive'}
+                        {purchase.status === true  ? 'Active' : 'Inactive'}
                       </span>
                     </td>
 
@@ -281,7 +297,7 @@ const ViewPurchase = () => {
            
 
            {/* Pagination */}
-             <Pagination/>
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
            {/* Modal */}
 

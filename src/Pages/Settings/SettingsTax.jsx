@@ -1,68 +1,412 @@
 
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import settingsTaxModel from "../../models/settingsTaxModel";
+import ItemTypeModel from "../../models/itemTypeModel";
+import CustomScrollbar from "../../components/CustomScrollbar";
+import EditButton from '../../components/EditButton';
+import DeleteButton from '../../components/DeleteButton';
+import CreateButton from '../../components/CreateButton';
+import Pagination from '../../components/Pagination';
+import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
 
- 
-     import { useState } from "react";
      
-     const  SettingsTax = () => {
+const  SettingsTax = () => {
      
-          
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
-                  
+
+
+                      const [isHovered, setIsHovered] = useState(false);
+                      const [modal, setModal] = useState(false);
+                      const [editModal, setEditModal] = useState(false);
+
+
+                      const [limit, setLimit] = useState(10);
+                      const [page, setPage] = useState(1);
+                      const [search, setSearch] = useState('');
+                      const [status, setStatus] = useState('');
+
+
+                      const auth = useSelector((state) => state.auth);
+                      const { login_id, can_manage_user_types } = auth;
+                      const user_id = login_id;
+                      const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+                      const [errors, setErrors] = useState({
+                        item_type: '',
+                        tax_type: '',
+                        tax_name: '',
+                        input_tax: '',
+                        output_tax: '',
+                        status: '',
+                      });
+
+                      const [editErrors, setEditErrors] = useState({});
+                      const [isSubmitting, setIsSubmitting] = useState(false);
+
+
+                      const [addTaxData, setAddTaxData] = useState({
+                        item_type: '',      
+                        tax_type: '',      
+                        tax_name: '',
+                        input_tax: '',
+                        output_tax: '',
+                        branch: '',         
+                        status: true,
+                      });
+
+
+                      const [editTaxData, setEditTaxData] = useState({
+                        id: '',
+                        item_type: '',
+                        tax_type: '',
+                        tax_name: '',
+                        input_tax: '',
+                        output_tax: '',
+                        branch: '',
+                        status: true,
+                      });
+
+                                
+                      const [taxData, setTaxData] = useState([]);
+
+                      const fetchTaxes = async () => {
+                        try {
+                          const response = await settingsTaxModel.getTaxes(
+                            user_id,
+                            user_types,
+                            limit,
+                            page,
+                            search,
+                            status
+                          );
+
+                          if (response.data && response.data.data) {
+                            console.log("Taxes Received:", response.data.data);
+                            setTaxData(response.data.data);
+                          } else {
+                            toast.error("Unable to fetch tax settings");
+                          }
+                        } catch (error) {
+                          console.error("Error fetching taxes:", error);
+                          toast.error("Failed to load tax settings");
+                        }
+                      };
+
+                      useEffect(() => {
+                        fetchTaxes();
+                      }, [limit, page, search, status]);
+
+                      const [itemTypes, setItemTypes] = useState([]);
+                      useEffect(() => {
+                        const fetchItemTypes = async () => {
+                          try {
+                            const response = await ItemTypeModel.getItemTypes(user_id, user_types); // Make sure user_id & user_types are defined
+                            if (response.status === 200 && response.data?.data) {
+                              setItemTypes(response.data.data);
+                            } else {
+                              toast.error("Failed to fetch item types");
+                            }
+                          } catch (error) {
+                            console.error("Error fetching item types:", error);
+                            toast.error("Error loading item types");
+                          }
+                        };
+
+                        fetchItemTypes();
+                      }, []);
+                                                            
+
+                      const [branches, setBranches] = useState([]);
+
+                      useEffect(() => {
+                        const fetchBranches = async () => {
+                          try {
+                            const response = await settingsTaxModel.getBranches(user_id);
+                            if (response.status === 200) {
+                              setBranches(response.data?.data || []);
+                            }
+                          } catch (error) {
+                            console.error("Failed to fetch branches:", error);
+                          }
+                        };
+
+                        fetchBranches();
+                      }, []);
+
+
+                      const getItemTypeName = (id) => {
+                        const item = itemTypes.find((i) => i.id === id);
+                        return item ? item.name : "N/A";
+                      };
+
+                      const getBranchName = (id) => {
+                        const branch = branches.find((b) => b.id === id);
+                        return branch ? branch.name : "N/A";
+                      };
+
+
+
+                        const handleAddTaxChange = (e) => {
+                          const { name, value } = e.target;
+                          setAddTaxData((prev) => ({
+                            ...prev,
+                            [name]: value,
+                          }));
+                        };
+
+                      
+                        const validateTax = () => {
+                          const newErrors = {};
+
+                          if (!addTaxData.item_type) {
+                            newErrors.item_type = "Please select item type";
+                            
+                          }
+
+                          if (!addTaxData.tax_type.trim()) {
+                            newErrors.tax_type = "Please enter tax type";
+                          }
+
+                          if (!addTaxData.tax_name.trim()) {
+                            newErrors.tax_name = "Please enter tax name";
+                          }
+
+                          if (!addTaxData.input_tax || isNaN(Number(addTaxData.input_tax))) {
+                            newErrors.input_tax = "Please enter a valid input tax";
+                          }
+
+                          if (!addTaxData.output_tax || isNaN(Number(addTaxData.output_tax))) {
+                            newErrors.output_tax = "Please enter a valid output tax";
+                          }
+
+                          if (!addTaxData.branch) {
+                            newErrors.branch = "Please select a branch";
+                          }
+
+                          return newErrors;
+                        };
+
+                      
+                        const handleSubmitTax = async () => {
+                          const validationErrors = validateTax();
+                          if (Object.keys(validationErrors).length > 0) {
+                            setErrors(validationErrors);
+                            return;
+                          }
+
+                          const payload = {
+                            item_type: parseInt(addTaxData.item_type),
+                            tax_type: addTaxData.tax_type.trim(),
+                            tax_name: addTaxData.tax_name.trim(),
+                            input_tax: Number(addTaxData.input_tax),
+                            output_tax: Number(addTaxData.output_tax),
+                            branch: addTaxData.branch ? parseInt(addTaxData.branch) : null,
+                          };
+
+                          console.log(" Tax Payload being sent:", payload);
+
+                          try {
+                            const response = await settingsTaxModel.createTax(payload);
+                            console.log(" Create Tax response:", response);
+
+                            if (response.status === 201 || response.status === 200) {
+                              toast.success("Tax created successfully!");
+                              fetchTaxes();
+                              handleCloseModal();
+                            }
+                          } catch (error) {
+                            console.error(" Create tax error:", error);
+                            console.log("Error response:", error.response?.data);
+                            console.log("Field errors:", error.response?.data?.errors);
+                            toast.error("Failed to create tax!");
+                            handleCloseModal();
+
+                            if (error.response?.data?.errors) {
+                              setErrors((prev) => ({
+                                ...prev,
+                                ...error.response.data.errors,
+                              }));
+                            }
+                          }
+                        };
+
+
+
+                                                    const [editingTax, setEditingTax] = useState(null);
+                                                    const [editTaxErrors, setEditTaxErrors] = useState({});
+
+
+                                                    const validateEditTax = () => {
+                                                      let valid = true;
+                                                      const errors = {};
+
+                                                      if (!editingTax?.item_type) {
+                                                        errors.item_type = 'Please select item type';
+                                                        valid = false;
+                                                      }
+
+                                                      if (!editingTax?.tax_type?.trim()) {
+                                                        errors.tax_type = 'Tax type is required';
+                                                        valid = false;
+                                                      }
+
+                                                      if (!editingTax?.tax_name?.trim()) {
+                                                        errors.tax_name = 'Tax name is required';
+                                                        valid = false;
+                                                      }
+
+                                                      if (!editingTax?.input_tax?.toString().trim() || isNaN(editingTax.input_tax)) {
+                                                        errors.input_tax = 'Enter valid input tax';
+                                                        valid = false;
+                                                      }
+
+                                                      if (!editingTax?.output_tax?.toString().trim() || isNaN(editingTax.output_tax)) {
+                                                        errors.output_tax = 'Enter valid output tax';
+                                                        valid = false;
+                                                      }
+
+                                                      if (!editingTax?.branch) {
+                                                        errors.branch = 'Please select a branch';
+                                                        valid = false;
+                                                      }
+                                                      setEditTaxErrors(errors);
+                                                      return valid;
+                                                    };
+
+
+
+                                                    const handleEditClickTax = (taxObj) => {
+                                                      if (!taxObj || typeof taxObj !== 'object' || !taxObj.id) {
+                                                        console.warn("Invalid tax object passed:", taxObj);
+                                                        toast.error("Invalid tax selected.");
+                                                        return;
+                                                      }
+
+                                                      console.log("Editing Tax:", taxObj);
+
+                                                      setEditingTax({
+                                                        id: taxObj.id,
+                                                        item_type: taxObj.item_type?.toString(),
+                                                        tax_type: taxObj.tax_type,
+                                                        tax_name: taxObj.tax_name,
+                                                        input_tax: taxObj.input_tax,
+                                                        output_tax: taxObj.output_tax,
+                                                        branch: taxObj.branch?.toString(),
+                                                        status: taxObj.status?.toString(),
+                                                      });
+
+                                                      setEditModal(true);
+                                                    };
+
+
+                                                    const handleEditTaxChange = (e) => {
+                                                      const { name, value } = e.target;
+
+                                                      setEditingTax((prev) => ({
+                                                        ...prev,
+                                                        [name]: name === 'status' ? (value === 'true') : value,
+                                                      }));
+                                                    };
+
+
+                                                    const handleEditSubmitTax = async () => {
+                                                      if (!editingTax?.id) {
+                                                        toast.error("Invalid tax selected for editing.");
+                                                        return;
+                                                      }
+
+                                                      if (!validateEditTax()) return;
+
+                                                      setIsSubmitting(true);
+
+                                                      const payload = {
+                                                        item_type: parseInt(editingTax.item_type),
+                                                        tax_type: editingTax.tax_type.trim(),
+                                                        tax_name: editingTax.tax_name.trim(),
+                                                        input_tax: editingTax.input_tax,
+                                                        output_tax: editingTax.output_tax,
+                                                        branch: editingTax.branch ? parseInt(editingTax.branch) : null,
+                                                        status: editingTax.status === true || editingTax.status === 'true',
+                                                      };
+
+                                                      try {
+                                                        const response = await settingsTaxModel.updateTax(editingTax.id, payload);
+
+                                                        if (response.status === 200) {
+                                                          fetchTaxes();
+                                                          toast.success('Tax updated successfully!');
+                                                          setEditModal(false);
+                                                        }
+                                                      } catch (error) {
+                                                        console.error("Update tax error:", error);
+                                                        toast.error('Failed to update tax!');
+                                                        if (error.response?.data?.errors) {
+                                                          setEditTaxErrors((prev) => ({
+                                                            ...prev,
+                                                            ...error.response.data.errors,
+                                                          }));
+                                                        }
+                                                      } finally {
+                                                        setIsSubmitting(false);
+                                                      }
+                                                    };
+
+
+
+                                                    const handleEditCloseModal = () => {
+                                                      setEditModal(false);
+                                                      setEditingTax(null);
+                                                      setEditTaxErrors({
+                                                        item_type: '',
+                                                        tax_type: '',
+                                                        tax_name: '',
+                                                        input_tax: '',
+                                                        output_tax: '',
+                                                        status: '',
+                                                      });
+                                                    };
+
+
+
+
+
+                        
+
+
+
+                        const handleDeleteTax = async (id) => {
+                        if (!id) return;
+
+                        try {
+                          await settingsTaxModel.deleteTax(id);
+
+                          setTaxData((prevData) => prevData.filter((item) => item.id !== id));
+
+                          if (modal && typeof modal.close === 'function') {
+                            modal.close();
+                          }
+
+                          toast.success('Tax deleted successfully');
+                        } catch (error) {
+                          console.error("Error deleting Tax:", error);
+                          toast.error('Failed to delete Tax');
+                        }
+                      };
+
+
+
                    // Handle close modal
                    const handleCloseModal = () => {
+                    setErrors({
+                        item_type: '',
+                        tax_type: '',
+                        tax_name: '',
+                        input_tax: '',
+                        output_tax: '',
+                        status: '',
+                      })
+                    
                      setModal(false);
                      setEditModal(false)
                    };
@@ -74,33 +418,7 @@
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
+                 <CustomScrollbar/>
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
@@ -144,7 +462,7 @@
                               </button>
                           </div>
                  
-                       <div className="text-gray-600" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
+                       {/* <div className="text-gray-600" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
                          <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {items}</p>
                          <select
                            className="border border-gray-300 rounded-lg w-[114px] h-[35px] px-2"
@@ -163,337 +481,69 @@
                            <option value={25}>25</option>
                            <option value={50}>50</option>
                          </select>
-                       </div>
+                       </div> */}
                  
                        
                  
                        <table className="table w-full  text-sm text-left text-gray-500 border-collapse min-w-[1100px]  " style={{ borderSpacing: '0 12px', borderCollapse: 'separate', }}>
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
-                             <th className="px-6 py-3"  >ITEM TYPE </th>
-                             <th className="px-6 py-3"  >TAX TYPE </th>
-                             <th className="px-6 py-3" >TAX NAME</th>
-                             <th className="px-6 py-3"  >INPUT TAX(PURCHASE TAX)</th>
-                             <th className="px-6 py-3"  >OUTPUT TAX(SALE TAX)</th>
-                             <th className="px-6 py-3"  >STATUS</th>
-                             <th className="px-6 py-3"  >ACTION</th>
+                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
+                             <th className="px-6 py-3 w-[100px]"  >ITEM TYPE </th>
+                             <th className="px-6 py-3 w-[100px]"  >TAX TYPE </th>
+                             <th className="px-6 py-3 w-[120px]" >TAX NAME</th>
+                             <th className="px-6 py-3 w-[100px]" >BRANCH</th>
+                             <th className="px-6 py-3 w-[200px]"  >INPUT TAX(PURCHASE TAX)</th>
+                             <th className="px-6 py-3 w-[170px]"  >OUTPUT TAX(SALE TAX)</th>
+                             <th className="px-6 py-3 w-[100px]"  >STATUS</th>
+                             <th className="px-6 py-3 w-[100px]"  >ACTION</th>
                            </tr>
                          </thead>
                          <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">default </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold-default </td>
-                               <td className="px-6 py-5 border-b border-gray-200  text-red-500 text-xs">1.0000000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-red-500  text-xs">1.0000000 </td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn text-white border-none font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete Tax
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">default </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold-making </td>
-                               <td className="px-6 py-5 border-b border-gray-200  text-red-500 text-xs">1.0000000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-red-500  text-xs">1.0000000 </td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete Tax
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">default </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold-making </td>
-                               <td className="px-6 py-5 border-b border-gray-200  text-red-500 text-xs">1.0000000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-red-500  text-xs">1.0000000 </td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete Tax
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">default </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold-making </td>
-                               <td className="px-6 py-5 border-b border-gray-200  text-red-500 text-xs">1.0000000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-red-500  text-xs">1.0000000 </td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete Tax
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">default </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gold-making </td>
-                               <td className="px-6 py-5 border-b border-gray-200  text-red-500 text-xs">1.0000000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-red-500  text-xs">1.0000000 </td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete Tax
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
+                          {taxData.map((tax, index) => (
+                            <tr key={tax.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400">
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{getItemTypeName(tax.item_type)}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{tax.tax_type}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{tax.tax_name}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{getBranchName(tax.branch)}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{tax.input_tax}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{tax.output_tax}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">
+                                {tax.status ? (
+                                  <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    INACTIVE
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs" style={{ width: '200px', paddingLeft: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <EditButton onClick={() => handleEditClickTax(tax)} />
+                                  <DeleteButton
+                                    buttonText="Delete Tax"
+                                    modalId={`delete_modal_${tax.id}`}
+                                    onConfirmDelete={() => handleDeleteTax(tax.id)}
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
                        </table>
                        
                  
                        {/* Pagination */}
-                       <div className="flex gap-1 justify-center">
-                         <button className="btn bg-white border-gray-200 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'<'}
-                         </button>
-                         <button className="btn border-gray-200 rounded-full w-[40px] h-[40px] flex items-center justify-center font-semibold bg-[#5E72E4] text-white">
-                           1
-                         </button>
-                         <button className="btn bg-white border-gray-200 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'>'}
-                         </button>
-                       </div>
+                       <Pagination/>
+                     
                  
                        {/* Modal */}
       
       
-                       <dialog id="my_modal_8" className="modal">
-                       <div className="modal-box text-center py-8 px-6 rounded-xl bg-white relative font-[Open_Sans]
-                          w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                         
-                    "
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs bg-green-500 border-none font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 w-[90vw] max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Tax is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
+                    
                       </div>
       
                       {modal && (
@@ -507,131 +557,151 @@
                                     <hr className="my-4 border-gray-300"/>
       
                                     <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                    <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
+                                    <div className="w-full flex flex-col gap-2">
+                                      <label className="text-xs font-bold text-[#344767]">Item Type <span className="text-xs text-red-400">*</span></label>
+                                     <div> <select
+                                        name="item_type"
+                                        onChange={handleAddTaxChange} 
+                                        value={addTaxData.item_type}  
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 test-gray-500"
                                       >
-                                        Item Type
-                                      </label>
-                                      <select defaultValue=" --------"
-                                        className="select w-[100%] h-[35px] text-xs focus:outline-none bg-white border-gray-300 text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                        value={formData.item_type}
-                                        name='item_type'
-                                        onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option className=" text-gray-400">-----</option>
-                                        <option className=" text-gray-400">Gold </option>
-                                        <option className=" text-gray-400">Diamond</option>
+                                        <option disabled value="">Select Item Type</option>
+                                        {itemTypes.map((item) => (
+                                          <option key={item.id} value={item.id}>
+                                            {item.name}
+                                          </option>
+                                        ))}
                                       </select>
+                                      <p className="text-xs text-red-400">{errors.item_type}</p></div>
+                                      </div>
 
+
+
+                                    <div>
                                     <label 
                                       
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Tax type:
+                                        Tax type: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <select defaultValue=""
-                                        className="select w-[100%] text-xs h-[35px] bg-white border-gray-300 focus:outline-none text-gray-300 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                        className="select w-[100%] text-xs h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                         style={{paddingLeft:'12px'}}
-                                        value={formData.status}
-                                        name=''
-                                        onChange={(e)=>handleChange(e)}
+                                        value={addTaxData.tax_type}
+                                        name='tax_type'
+                                        onChange={handleAddTaxChange}
                                       >
-                                        <option className=" text-gray-600">-----</option>
-                                        <option className=" text-gray-600">Default tax </option>
-                                        <option className=" text-gray-600">Making tax</option>
-                                        <option className=" text-gray-600">Stone tax</option>
+                                        <option value='' className=" text-gray-600">-----</option>
+                                        <option value='default' className=" text-gray-600">Default tax </option>
+                                        <option value='making' className=" text-gray-600">Making tax</option>
+                                        <option value='stone' className=" text-gray-600">Stone tax</option>
                                       </select>
+                                      <p className="text-xs text-red-400">{errors.tax_type}</p>
+                                      
+                                      </div>
+
+
+                                    <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       Tax Name:
+                                       Tax Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] text-xs bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        onChange={handleAddTaxChange}
+                                        value={addTaxData.tax_name}
+                                        name="tax_name"
                                       />
+                                      <p className="text-xs text-red-400">{errors.tax_name}</p>
+                                      
+                                    </div>
 
+                                      <div className="w-full flex flex-col gap-2">
+                                        <label className="text-xs font-bold text-[#344767]">Branch <span className="text-xs text-red-400">*</span></label>
+                                        <select
+                                          name="branch"
+                                          onChange={handleAddTaxChange}
+                                          value={addTaxData.branch}
+                                          style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                          className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+                                        >
+                                          <option disabled value="">Select Branch</option>
+                                          {branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                              {branch.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <p className="text-xs text-red-400">{errors.branch}</p>
+                                      </div>
 
-                            
+                                      <div>
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Input Tax:
+                                            Input Tax: <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="input_tax"  
                                                 placeholder="Type here" 
-                                                className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input w-[100%] text-xs bg-white text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                 style={{paddingLeft:'12px'}}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
-                                                step="1"  // For decimal values if needed
+                                                value={addTaxData.input_tax}
+                                                onChange={handleAddTaxChange}
+                                                step="1"  
                                                 />
+                                                <p className="text-xs text-red-400">{errors.input_tax}</p>
+                                        </div>
 
-
+                                        <div>
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Output Tax:
+                                            Output Tax: <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="output_tax"  // Must match your formData key
                                                 placeholder="Type here" 
-                                                className="input w-[100%] bg-white text-xs border-gray-300 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                style={{paddingLeft:'12px'}}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
+                                                value={addTaxData.output_tax}
+                                                onChange={handleAddTaxChange}
                                                 step="1"  // For decimal values if needed
                                                 />
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] text-xs bg-white border-gray-300 h-[35px] focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                              style={{paddingLeft:'12px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600">status</option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                            </div> 
+
+                                                <p className="text-xs text-red-400">{errors.output_tax}</p>
+                                            </div>
+                                      </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4 " 
                                                 >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] border-none rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
+                                            
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] border-none   rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] border-none rounded-lg text-white"
+                                                style={{ backgroundColor: '#5E72e4'}}
+                                                onClick={handleSubmitTax}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -650,132 +720,175 @@
                                     <hr className="my-4 border-gray-300"/>
       
                                     <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                    <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Item Type
-                                      </label>
-                                      <select defaultValue=" --------"
-                                        className="select w-[100%] h-[35px] text-xs focus:outline-none bg-white border-gray-300 text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                        value={formData.item_type}
-                                        name='item_type'
-                                        onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option className=" text-gray-400">-----</option>
-                                        <option className=" text-gray-400">Gold </option>
-                                        <option className=" text-gray-400">Diamond</option>
-                                      </select>
+                                      <div className="w-full flex flex-col gap-2">
+                                        <label className="text-xs font-bold text-[#344767]">Item Type<span className="text-xs text-red-400">*</span></label>
+                                        <select
+                                          name="item_type"
+                                          onChange={handleEditTaxChange}  
+                                          value={editingTax?.item_type || ''}
 
+                                          style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                          className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+                                        >
+                                          <option disabled value="">Select Item Type</option>
+                                          {itemTypes.map((item) => (
+                                            <option key={item.id} value={item.id}>
+                                              {item.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <p className="text-xs text-red-400">{editTaxErrors.item_type}</p>
+                                    </div>
+
+
+                                    
+                                    <div>
                                     <label 
                                       
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Tax type:
+                                        Tax type: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <select defaultValue=""
-                                        className="select w-[100%] text-xs h-[35px] bg-white border-gray-400 focus:outline-none text-gray-300 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                        className="select w-[100%] text-xs h-[35px] bg-white border-gray-400 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                         style={{paddingLeft:'12px'}}
-                                        value={formData.status}
-                                        name=''
-                                        onChange={(e)=>handleChange(e)}
+                                        value={editingTax?.tax_type || ''}
+
+                                        onChange={handleEditTaxChange}
+                                        name="tax_type"
                                       >
-                                        <option className=" text-gray-600">-----</option>
-                                        <option className=" text-gray-600">Default tax </option>
-                                        <option className=" text-gray-600">Making tax</option>
-                                        <option className=" text-gray-600">Stone tax</option>
+                                        <option value='' className=" text-gray-600">-----</option>
+                                        <option value='default' className=" text-gray-600">Default tax </option>
+                                        <option value='making' className=" text-gray-600">Making tax</option>
+                                        <option value='stone' className=" text-gray-600">Stone tax</option>
                                       </select>
+                                      <p className="text-xs text-red-400">{editTaxErrors.tax_type}</p>
+                                      </div>
+
+                                   <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       Tax Name:
+                                       Tax Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] text-xs bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingTax?.tax_name|| ''}
+
+                                        onChange={handleEditTaxChange}
+                                        name="tax_name"
                                       />
 
+                                      <p className="text-xs text-red-400">{editTaxErrors.tax_name}</p>
+                                    </div>
 
-                            
+                                      <div className="w-full flex flex-col gap-2">
+                                        <label className="text-xs font-bold text-[#344767]">Branch  <span className="text-xs text-red-400">*</span>
+                                        </label>
+                                        <select
+                                          name="branch"
+                                          value={editingTax?.branch || ""}
+                                          onChange={handleEditTaxChange}
+                                          className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                          style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                        >
+                                          <option value="">Select Branch</option>
+                                          {branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                              {branch.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <p className="text-xs text-red-400">{editTaxErrors.branch}</p>
+                             
+                                      </div>
+
+                                          <div>
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Input Tax:
+                                            Input Tax: <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
                                                 name="input_tax"  // Must match your formData key
                                                 placeholder="Type here" 
-                                                className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input w-[100%] text-xs bg-white text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                 style={{paddingLeft:'12px'}}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
+                                                value={editingTax?.input_tax || ''}
+
+                                                onChange={handleEditTaxChange}
                                                 step="1"  // For decimal values if needed
                                                 />
+                                              <p className="text-xs text-red-400">{editTaxErrors.input_tax}</p>
+                                          </div>
 
-
-                                            <label 
+                                        <div>
+                                          <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Output Tax:
+                                            Output Tax: <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="output_tax"  // Must match your formData key
                                                 placeholder="Type here" 
-                                                className="input w-[100%] bg-white text-xs border-gray-300 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                style={{paddingLeft:'12px'}}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
+                                                value={editingTax?.output_tax || ''}
+
+                                                onChange={handleEditTaxChange}
                                                 step="1"  // For decimal values if needed
                                                 />
+                                                <p className="text-xs text-red-400">{editTaxErrors.output_tax}</p>
+                                    </div>
                                             <label 
                                                 
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
+                                                className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] text-xs bg-white border-gray-300 h-[35px] focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                              style={{paddingLeft:'12px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                style={{paddingLeft:'12px'}}
+                                                value={String(editTaxData.status)}
+                                                onChange={handleEditTaxChange}
+                                                name='status'
+                                               
                                             >
-                                                <option className=" text-gray-600">status</option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col sm:flex-row justify-end items-end gap-4 " 
+                                            <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
                                             <button
                                                 type="button"
-                                                className="btn w-[100px] border-none rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] border-none   rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
+                                                className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
+                                                style={{ backgroundColor:'#8392ab' }}
+                                                onClick={handleEditCloseModal}
                                             >
                                                 Close
                                             </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72E4' }}
+                                                onClick={handleEditSubmitTax}
+                                                disabled={isSubmitting}
+                                          >
+                                                {isSubmitting ? 'Updating...' : 'Update'}
+                                          </button>
                                             </div>
                                         </div>
                                         </div>

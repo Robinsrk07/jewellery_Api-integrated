@@ -1,114 +1,447 @@
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import '@fontsource/open-sans'; // Default weight 400
 import '@fontsource/open-sans/600.css'; // Semi-bold
 import '@fontsource/open-sans/700.css'; // Bold
 import EditButton from '../../components/EditButton';
 import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
+import CustomScrollbar from '../../components/CustomScrollbar';
 import Pagination from '../../components/Pagination';
+import BranchModel from '../../models/branchModel';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
 import { Link } from 'react-router';
-    
+import { useSelector } from 'react-redux';
+import CityAreaModel from '../../models/cityAreaModel'
+import CityModel from "../../models/CityModel"
+import DistrictModel from "../../models/districtModel"
+import StateModel from '../../models/stateModel';
+import CountryModel from "../../models/countryModel";
+import employeeModel from "../../models/employeeModel"
+import { toast } from 'react-toastify';
+
      const  Branches = () => {
      
           
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
+                   const[limit,setLimit]=useState(10);        
+                   const [modal, setModal] = useState(false)   
+                   const [editModal,setEditModal]= useState(false)
+                   const [totalPages, setTotalPages] = useState(1);
+                   const [branches, setBranches] = useState([]);
+                   const [loading, setLoading] = useState(true);
+                   const[page,setPage]=useState(1);  
+                   const[search,setSearch]=useState('');
+                   const[status,setStatus]=useState();
+                   const auth= useSelector((state) => state.auth);
+                   const { login_id ,can_manage_user_types,} = auth;  
+                   const user_id = login_id;
+                   const user_types = Object.keys(can_manage_user_types).join(','); 
+                   const[country,setCountry]= useState([])
+                   const[state,setState] = useState([])
+                   const[district,setDistrict] = useState([])
+                   const[city,setCity] = useState([])
+                   const[cityArea,setCityArea] = useState([])
+                   const[employees,setEmployees] = useState([])
+                  const [dropdownOpen, setDropdownOpen] = useState(false);
+                   const [searchTerm, setSearchTerm] = useState('');
+
+// Filter employees based on search
+                  const filteredEmployees = employees.filter(emp => 
+                    (emp.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    (emp.email || '').toLowerCase().includes(searchTerm.toLowerCase())
+                  );
+         console.log(country)
+         console.log(state)
+         console.log(district)
+         console.log(city)
+         console.log(cityArea)
+         console.log(employees)
+                   
+                 
+
+                   const [branch, setBranch] = useState({
+                      name: '', //mandatory
+                      code: '', //mandatory
+                      country: null, //mandatory
+                      state: null, //mandatory
+                      district: null,
+                      city: null,
+                      city_area: null,
+                      address: '',
+                      pincode: '', //mandatory
+                      currency: null, //mandatory
+                      primary_phone: '', //mandatory
+                      secondary_phone: '',
+                      fax: '',
+                      email: '', //mandatory
+                      gst_number: '',
+                      tax_id: '', //mandatory
+                      opening_date: '', // Format: 'YYYY-MM-DD' //mandatory
+                      manager_name: '',
+                      hr_contact: '',
+                      hr_email: '',
+                      max_employee_capacity: null,
+                      working_hours: '', //mandatory
+                      has_biometric_attendance: false,
+                      is_head_office: false, //mandatory
+                      logo: null, // File or URL depending on usage
+                      users: [], // Array of user IDs
+                      latitude: '', //mandatory
+                      longitude: '' //mandatory
+                    });
+
+                      const [errors,setErrors] = useState({
+                       name: '', //mandatory
+                       code: '', //mandatory
+                       country: '', //mandatory
+                       state: '', //mandatory
+                       district: '',
+                       city: '',
+                       city_area: '',
+                       address: '',
+                       pincode: '', //mandatory
+                       currency: '', //mandatory
+                       primary_phone: '', //mandatory
+                       secondary_phone: '',
+                       fax: '',
+                       email: '', //mandatory
+                       gst_number: '',
+                       tax_id: '', //mandatory
+                       opening_date: '', // Format: 'YYYY-MM-DD' //mandatory
+                       manager_name: '',
+                       hr_contact: '',
+                       hr_email: '',
+                       max_employee_capacity: '',
+                       working_hours: '', //mandatory
+                       has_biometric_attendance: '',
+                       is_head_office: '', //mandatory
+                       logo: '', // File or URL depending on usage
+                       users: '', // Array of user IDs
+                       latitude: '', //mandatory
+                       longitude: '' //mandatory
+                     })
+
+                   // Add formData state for edit modal
                    const [formData, setFormData] = useState({
                      name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
+                     code: '',
+                     city: '',
+                     address: '',
+                     primary_phone: '',
+                     email: '',
+                     country: '',
+                     state: '',
+                     status: '',
+                     users: []
                    });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                    const [isActive, setIsActive] =useState(false)
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
+
+                   // Add handleChange function for edit modal
+                   const handleChange = (e) => {
+                     const { name, value } = e.target;
+                     setFormData(prev => ({
+                       ...prev,
+                       [name]: value
+                     }));
                    };
+
+
+                const validate = () => {
+            const newErrors = {};
+
+            // ✅ Helper functions
+            const isValidEmail = (email) =>
+              /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+            const isValidPhone = (phone) =>
+              /^[0-9]{6,15}$/.test(phone); // Allows digits only, 6 to 15 chars
+
+            const isValidPincode = (pin) =>
+              /^[0-9]{4,10}$/.test(pin); // Customize range for your region
+
+            const isValidGST = (gst) =>
+              /^[0-9A-Z]{15}$/.test(gst); // Typical Indian GST format
+
+            const isValidLatLng = (val, type) => {
+              const num = parseFloat(val);
+              if (isNaN(num)) return false;
+              return type === 'lat'
+                ? num >= -90 && num <= 90
+                : num >= -180 && num <= 180;
+            };
+
+            // ✅ Mandatory fields check
+            if (!branch.name.trim()) newErrors.name = 'Please enter branch name';
+            if (!branch.code.trim()) newErrors.code = 'Please enter branch code';
+            if (!branch.country) newErrors.country = 'Please select country';
+            if (!branch.state) newErrors.state = 'Please select state';
+            if (!branch.pincode.trim()) newErrors.pincode = 'Please enter pincode';
+            if (!branch.currency) newErrors.currency = 'Please select currency';
+            if (!branch.primary_phone.trim()) newErrors.primary_phone = 'Please enter primary phone';
+            if (!branch.email.trim()) newErrors.email = 'Please enter email';
+            if (!branch.tax_id.trim()) newErrors.tax_id = 'Please enter tax ID';
+            if (!branch.opening_date.trim()) newErrors.opening_date = 'Please select opening date';
+            if (!branch.working_hours.trim()) newErrors.working_hours = 'Please enter working hours';
+            if (branch.is_head_office === null || branch.is_head_office === undefined)
+              newErrors.is_head_office = 'Please specify if it is head office';
+            if (!branch.latitude.trim()) newErrors.latitude = 'Please enter latitude';
+            if (!branch.longitude.trim()) newErrors.longitude = 'Please enter longitude';
+
+            // ✅ Format validation for both required and optional fields (if filled)
+
+            if (branch.email && !isValidEmail(branch.email)) {
+              newErrors.email = 'Invalid email format';
+            }
+
+            if (branch.hr_email && !isValidEmail(branch.hr_email)) {
+              newErrors.hr_email = 'Invalid HR email format';
+            }
+
+            if (branch.primary_phone && !isValidPhone(branch.primary_phone)) {
+              newErrors.primary_phone = 'Invalid primary phone number';
+            }
+
+            if (branch.secondary_phone && branch.secondary_phone.trim() && !isValidPhone(branch.secondary_phone)) {
+              newErrors.secondary_phone = 'Invalid secondary phone number';
+            }
+
+            if (branch.pincode && !isValidPincode(branch.pincode)) {
+              newErrors.pincode = 'Invalid pincode';
+            }
+
+            if (branch.gst_number && branch.gst_number.trim() && !isValidGST(branch.gst_number)) {
+              newErrors.gst_number = 'Invalid GST number';
+            }
+
+            if (branch.latitude && !isValidLatLng(branch.latitude, 'lat')) {
+              newErrors.latitude = 'Latitude must be between -90 and 90';
+            }
+
+            if (branch.longitude && !isValidLatLng(branch.longitude, 'lng')) {
+              newErrors.longitude = 'Longitude must be between -180 and 180';
+            }
+
+            return newErrors;
+          };
+
+   
+                 console.log(branch)
+
+                   const handleBranchChange = (e) => {
+                      const { name, type, value, checked, files } = e.target;
+
+                      setBranch(prev => ({
+                        ...prev,
+                        [name]:
+                          type === 'checkbox'
+                            ? checked
+                            : type === 'file'
+                            ? files[0]
+                            : value,
+                      }));
+                    };
+
+                   //handle submit
+                 // console.log(branches)
+                const handleSubmit = async (e) => {
+  e.preventDefault();
+  console.log('test');
+
+  const validationErrors = validate();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  console.log('test2');
+
+  const formData = new FormData();
+
+  Object.entries(branch).forEach(([key, value]) => {
+    if (key === 'users') return;
+    if (value !== null && value !== undefined) {
+      formData.append(key, value);
+    }
+  });
+
+  branch.users.forEach((userId) => {
+    formData.append('users', userId); // same name for multiple entries
+  });
+
+  // ✅ Submit the form
+  try {
+    const response = await BranchModel.createBranch(formData)
+
+    toast.success("Branch Created SuccesFully")
+
+    handleCloseModal(); // if defined
+  } catch (error) {
+    console.error('Submit failed:', error);
+        toast.error("Please Try Again , Failed To Create Branch")
+
+  }
+};
+
+                     
+           
+                        
+
                   
                    // Handle close modal
                    const handleCloseModal = () => {
+                    setErrors({
+                      name: '', //mandatory
+                      code: '', //mandatory
+                      country: '', //mandatory
+                      state: '', //mandatory
+                      district: '',
+                      city: '',
+                      city_area: '',
+                      address: '',
+                      pincode: '', //mandatory
+                      currency: '', //mandatory
+                      primary_phone: '', //mandatory
+                      secondary_phone: '',
+                      fax: '',
+                      email: '', //mandatory
+                      gst_number: '',
+                      tax_id: '', //mandatory
+                      opening_date: '', // Format: 'YYYY-MM-DD' //mandatory
+                      manager_name: '',
+                      hr_contact: '',
+                      hr_email: '',
+                      max_employee_capacity: '',
+                      working_hours: '', //mandatory
+                      has_biometric_attendance: '',
+                      is_head_office: '', //mandatory
+                      logo: '', // File or URL depending on usage
+                      users: '', // Array of user IDs
+                      latitude: '', //mandatory
+                      longitude: '' //mandatory
+                    })
+                    
+                    setBranch({
+                      name: '', //mandatory
+                      code: '', //mandatory
+                      country: null, //mandatory
+                      state: null, //mandatory
+                      district: null,
+                      city: null,
+                      city_area: null,
+                      address: '',
+                      pincode: '', //mandatory
+                      currency: null, //mandatory
+                      primary_phone: '', //mandatory
+                      secondary_phone: '',
+                      fax: '',
+                      email: '', //mandatory
+                      gst_number: '',
+                      tax_id: '', //mandatory
+                      opening_date: '', // Format: 'YYYY-MM-DD' //mandatory
+                      manager_name: '',
+                      hr_contact: '',
+                      hr_email: '',
+                      max_employee_capacity: null,
+                      working_hours: '', //mandatory
+                      has_biometric_attendance: false,
+                      is_head_office: false, //mandatory
+                      logo: null, // File or URL depending on usage
+                      users: [], // Array of user IDs
+                      latitude: '', //mandatory
+                      longitude: '' //mandatory
+                    })
                      setModal(false);
                      setEditModal(false)
                    };
+
+                   const fetchBranch = async()=>{
+                      setLoading(true)
+                      try{
+                          const res = await BranchModel.getBranches(user_id,user_types,limit,page,search,status)
+                          setBranches(res?.data?.data)
+                          setTotalPages(res?.data?.pagination?.pages);
+                      }catch(error){
+                           console.log(error)  
+                      }finally{
+                           setLoading(false)
+                      }
+                     }
+
                  
-                 
-                 
-                 
+                 useEffect(()=>{
+                     let isMount = true 
+                     const fetchBranch = async()=>{
+                      setLoading(true)
+                      try{
+                         const res = await BranchModel.getBranches(user_id,user_types,limit,page,search,status)
+                         if(isMount){
+                          setBranches(res?.data?.data)
+                          setTotalPages(res?.data?.pagination?.pages);
+                         }
+                      }catch(error){
+                         if(isMount){
+                           console.log(error)
+                         }
+                      }finally{
+                        setLoading(false)
+                      }
+                     }
+
+                     fetchBranch()
+                     return ()=>{
+                      isMount = false 
+                     }
+                 },[user_id, user_types, limit, page, search, status])
+
+
+useEffect(() => {
+    let isMounted = true;
+
+    const fetchAllData = async () => {
+      try {
+        const [
+          countryRes,
+          stateRes,
+          districtRes,
+          cityRes,
+          cityAreaRes,
+          employeesRes
+        ] = await Promise.all([
+          CountryModel.getCountries(user_id, user_types, 1000),
+          StateModel.getStates(user_id, user_types, 1000),
+          DistrictModel.getDistricts(user_id, user_types, 1000),
+          CityModel.getCities(user_id, user_types, 1000),
+          CityAreaModel.getCityAreas(user_id, user_types, 1000),
+          employeeModel.getEmployees(user_id, user_types, 1000)
+        ]);
+
+        if (isMounted) {
+          setCountry(countryRes?.data?.data || []);
+          setState(stateRes?.data?.data || []);
+          setDistrict(districtRes?.data?.data || []);
+          setCity(cityRes?.data?.data || []);
+          setCityArea(cityAreaRes?.data?.data || []);
+          setEmployees(employeesRes?.data?.data || []);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error fetching data:', error);
+        }
+      }
+    };
+
+    fetchAllData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user_id, user_types]);
+
+
                  
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
+               <CustomScrollbar/>
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
@@ -122,7 +455,7 @@ import { Link } from 'react-router';
                          buttoncontent="+ New Branch"
                          onClick={() => setModal(true)}  // This will now work!
                       />                 
-                      <ItemsPerPageSelector items={items} setItems={setItems} />
+                     <ItemsPerPageSelector items={limit} setItems={setLimit} />
                        
                  
                        
@@ -143,354 +476,564 @@ import { Link } from 'react-router';
                            </tr>
                          </thead>
                          <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-sm" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">BCR23#</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Dubai</td>
-                                <td className="border-b border-gray-200 text-xs text-gray-400">
-                                <div className="max-w-[200px]  break-words">
-                                    Street 232, SH-202-855 Road, Business Bay
-                                </div>
-                                </td>               
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs ">7788994455</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs ">r@gmail.com</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs ">UAE</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs ">ABHUDHABI</td>
-                             
+                          {branches.map((branch, index) => (
+                            <tr key={branch.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                              <td className="px-6 py-5 border-b border-gray-200 text-sm" style={{ paddingLeft: '20px' }}>
+                                {index + 1}
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{branch.code || '-'}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{branch.city || '-'}</td>
+                              <td className="border-b border-gray-200 text-xs text-gray-400">
+                                <div className="max-w-[200px] break-words">{branch.address || '-'}</div>
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{branch.primary_phone || '-'}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{branch.email || '-'}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{branch.country || '-'}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{branch.state || '-'}</td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-200 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-                             
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className=" text-white font-bold text-xs  rounded-lg"
+                                <span
+                                  className={`${
+                                    branch.status ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700'
+                                  } font-bold text-[10px] px-2 py-0.5 rounded`}
+                                  style={{ padding: '2px 6px' }}
+                                >
+                                  {branch.status ? 'ACTIVE' : 'INACTIVE'}
+                                </span>
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <button
+                                    type="button"
+                                    className="text-white font-bold text-xs rounded-lg"
+                                    style={{ width: '120px', padding: '5px', backgroundColor: '#696BE4', height: '35px' }}
+                                    onClick={() => setEditModal(true)} // Pass branch data if needed
+                                  >
+                                    Edit
+                                  </button>
+
+                                  <button
+                                    className="text-white font-bold text-xs rounded-lg"
+                                    style={{
+                                      width: '120px',
+                                      padding: '5px',
+                                      background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
+                                      height: '35px',
+                                    }}
+                                    onClick={() => document.getElementById('my_modal_8').showModal()} // Handle properly
+                                  >
+                                    Delete
+                                  </button>
+
+                                  <Link to="/dashboard/branch/branchwiseemployee">
+                                    <button
+                                      className="text-white font-bold text-xs rounded-lg"
                                       style={{
-                                          width: '120px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                          height:'35px'
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className=" text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '120px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                          height:'35px'
+                                        width: '120px',
+                                        padding: '5px',
+                                        background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
+                                        height: '35px',
                                       }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete 
-                                      </button>
-                                      <Link to="/dashboard/branch/branchwiseemployee">
-                                      <button
-                                      className=" text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '120px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                          height:'35px'
-                                      }}
-      
-                                      >
-                                  View Employees                                     
-                                   </button></Link>
-                                  </div>
-                                  </td>
-                             </tr>
-                           
-                            
-                           
-                             
-                             
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
+                                    >
+                                      View Employees
+                                    </button>
+                                  </Link>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+
                        </table>
                        
-                 
-                       {/* Pagination */}
-                       <Pagination/>
+                   <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                  
                        {/* Modal */}
       
       
-                       <dialog id="my_modal_8" className="modal">
+                    
       
       
-                       <div className="modal-box text-center py-8 px-6 bg-white text-gray-700 rounded-xl relative font-[Open_Sans]
-                          w-[90vw] h-[50vh]             /* base (mobile) */
-                          sm:w-[70vw] sm:h-[30vh]       /* ≥ 640px */
-                          md:w-[50vw] md:h-[30vh]       /* ≥ 768px */
-                          lg:w-[35vw] lg:h-[30vh]       /* ≥ 1024px */
-                          xl:w-[30vw] xl:h-[50vh]       /* ≥ 1280px */
-                         
-                        "
-      
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-      
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn border-none text-xs bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn border-none text-xs bg-green-500 font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 relative font-[Open Sans] w-[90vw] h-[50vh]             /* base (mobile) */
-                          sm:w-[70vw] sm:h-[30vh]       /* ≥ 640px */
-                          md:w-[50vw] md:h-[30vh]       /* ≥ 768px */
-                          lg:w-[35vw] lg:h-[30vh]       /* ≥ 1024px */
-                          xl:w-[30vw] xl:h-[50vh]       /* ≥ 1280px */ "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Branch is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
+                
                       </div>
       
                       {modal && (
-                                <div className="fixed text-black inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
-                                                
-                                                {/* Added flex-col */}
-                                    <h3 className="font-bold text-[22px] text-[#344767] "
-                                        >
-                                         Create New Branch                        </h3>
-                                    <hr className="my-4 border-gray-200" />
+  <div className="fixed text-black inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+    <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[600px] h-[95vh] max-h-[95vh] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
+      <h3 className="font-bold text-[22px] text-[#344767]">Create New Branch</h3>
+      <hr className="my-4 border-gray-200" />
+      <div className="flex flex-col flex-grow text-gray-600 gap-4 justify-center items-center w-full" >
+        {/* Basic Info */}
+        <div className="w-full">
+          <h4 className="font-semibold text-md mb-2 text-[#344767]">Basic Info</h4>
+          
+          <label className="font-semibold text-gray-500 text-xs w-full">Branch Name<span className="text-red-500 ml-1">*</span></label>
+          <input name="name" value={branch.name} 
+           onChange={handleBranchChange}
+           type="text" placeholder="Branch Name"
+           className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+           style={{paddingLeft:'12px'}} />
+         <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+
+
+          <label className="font-semibold text-gray-500 text-xs w-full">Branch Code<span className="text-red-500 ml-1">*</span></label>
+          <input name="code"
+           value={branch.code} 
+           onChange={handleBranchChange} 
+           type="text" placeholder="Branch Code" 
+           className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" 
+           style={{paddingLeft:'12px'}} />
+           <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+          <label className="font-semibold text-gray-500 text-xs w-full">Status</label>
+          <select  name="status" value={branch.status ? 'active' : 'inactive'} onChange={e => setBranch(prev => ({...prev, status: e.target.value === 'active'}))} style={{paddingLeft:'12px'}} className="select w-full h-[35px] border-gray-200 bg-white focus:outline-none text-gray-400 rounded-sm focus:border-b-2 focus:border-blue-500">
+
+            <option value="">--select Status --</option>
+            <option value="True">Active</option>
+            <option value="False">Inactive</option>
+          </select>
+
+          <label className="font-semibold   text-gray-500 text-xs text-[#344767] w-[100%]">
+          Upload Logo:
+          </label>
+          <input
+           type="file"
+           name="logo"
+           accept="image/*"
+           style={{padding:'8px'}}
+           className="input w-full  bg-white border text-gray-400 border-gray-300 rounded-sm focus:outline-none"
+          onChange={handleBranchChange}
+         />
+
+        </div>
+        {/* Location */}
+        <div className="w-full">
+          <h4 className="font-semibold text-md mb-2 text-[#344767]">Location</h4>
+          <label className="font-semibold text-xs text-gray-500 w-full">Country</label>
+          <select
+            name="country"
+            value={branch.country || ''}
+            onChange={handleBranchChange}
+            className="input w-full rounded-sm text-xs border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+            style={{ paddingLeft: '12px' }}
+          >
+            <option value="">Select Country</option>
+            {country.map((item) => (
+              <option key={item.id} value={item.id}>
+                { item.name}
+              </option>
+            ))}
+          </select>
+ <p className="text-red-500 text-xs mt-1">{errors.country}</p>
+
+          <label className="font-semibold text-gray-500  text-xs w-full">State</label>
+          <select
+            name="state"
+            value={branch.state || ''}
+            onChange={handleBranchChange}
+            className="input w-full rounded-sm border-gray-300 text-xs bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+            style={{ paddingLeft: '12px' }}
+          >
+            <option value="">Select State</option>
+            {state.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+<p className="text-red-500 text-xs mt-1">{errors.state}</p>
+
+          <label className="font-semibold text-xs text-gray-500 w-full">District</label>
+          <select
+            name="district"
+            value={branch.district || ''}
+            onChange={handleBranchChange}
+            className="input w-full rounded-sm border-gray-300 text-xs bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+            style={{ paddingLeft: '12px' }}
+          >
+            <option value="">Select District</option>
+            {district.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+ <p className="text-red-500 text-xs mt-1">{errors.district}</p>
+
+          <label className="font-semibold text-xs text-gray-500 w-full">City</label>
+          <select
+            name="city"
+            value={branch.city || ''}
+            onChange={handleBranchChange}
+            className="input w-full rounded-sm text-xs border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+            style={{ paddingLeft: '12px' }}
+          >
+
+            <option value="">Select City</option>
+            {city.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+                      <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+
+
+          <label className="font-semibold text-gray-500 text-xs w-full">City Area</label>
+          <select
+            name="city_area"
+            value={branch.city_area || ''}
+            onChange={handleBranchChange}
+            className="input w-full rounded-sm text-xs border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+            style={{ paddingLeft: '12px' }}
+          >
+            <option value="">Select City Area</option>
+            {cityArea.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+     <p className="text-red-500 text-xs mt-1">{errors.city_area}</p>
+
+
+          <label className="font-semibold text-xs w-full">Address</label>
+          <textarea name="address" value={branch.address} onChange={handleBranchChange} placeholder="Address" className="textarea w-full border-gray-200 bg-white rounded-sm focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+
+          <label className="font-semibold text-xs w-full">Pincode</label>
+          <input name="pincode" value={branch.pincode} onChange={handleBranchChange} type="text" placeholder="Pincode" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+ <p className="text-red-500 text-xs mt-1">{errors.pincode}</p>
+
+          <label className="font-semibold text-xs w-full">Latitude</label>
+          <input name="latitude" value={branch.latitude} onChange={handleBranchChange} type="text" placeholder="Latitude" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+         <p className="text-red-500 text-xs mt-1">{errors.latitude}</p>
+
+          <label className="font-semibold text-xs w-full">Longitude</label>    
+          <input name="longitude" value={branch.longitude} onChange={handleBranchChange} type="text" placeholder="Longitude" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+       <p className="text-red-500 text-xs mt-1">{errors.longitude}</p>
+
+        </div>
+        {/* Contact */}
+        <div className="w-full">
+          <h4 className="font-semibold text-md mb-2 text-[#344767]">Contact</h4>
+          <label className="font-semibold text-xs w-full">Primary Phone</label>
+          <input name="primary_phone" value={branch.primary_phone} onChange={handleBranchChange} type="text" placeholder="Primary Phone" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          <p className="text-red-500 text-xs mt-1">{errors.primary_phone}</p>
+
+          <label className="font-semibold text-xs w-full">Secondary Phone</label>
+          <input name="secondary_phone" value={branch.secondary_phone} onChange={handleBranchChange} type="text" placeholder="Secondary Phone" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+        <p className="text-red-500 text-xs mt-1">{errors.secondary_phone}</p>
+
+          <label className="font-semibold text-xs w-full">Fax</label>
+          <input name="fax" value={branch.fax} onChange={handleBranchChange} type="text" placeholder="Fax" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          <p className="text-red-500 text-xs mt-1">{errors.fax}</p>
+
+          <label className="font-semibold text-xs w-full">Email</label>
+          <input name="email" value={branch.email} onChange={handleBranchChange} type="email" placeholder="Email" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+        <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+
+        </div>
+        {/* HR/Management */}
+        <div className="w-full">
+          <h4 className="font-semibold text-md mb-2 text-[#344767]">HR / Management</h4>
+          <label className="font-semibold text-xs w-full">Manager Name</label>
+         
+          <input name="manager_name" value={branch.manager_name} onChange={handleBranchChange} type="text" placeholder="Manager Name" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          <label className="font-semibold text-xs w-full">HR Contact</label>
+          <input name="hr_contact" value={branch.hr_contact} onChange={handleBranchChange} type="text" placeholder="HR Contact" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          <p className="text-red-500 text-xs mt-1">{errors.hr_contact}</p>
+
+          <label className="font-semibold text-xs w-full">HR Email</label>
+          <input name="hr_email" value={branch.hr_email} onChange={handleBranchChange} type="email" placeholder="HR Email" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          <p className="text-red-500 text-xs mt-1">{errors.hr_email}</p>
+
+          <label className="font-semibold text-xs w-full">Max Employee Capacity</label>
+          <input name="max_employee_capacity" value={branch.max_employee_capacity || ''} onChange={handleBranchChange} type="number" placeholder="Max Employee Capacity" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+         <p className="text-red-500 text-xs mt-1">{errors.max_employee_capacity}</p>
+
+          <label className="font-semibold text-xs w-full">Working Hours</label>
+          <input name="working_hours" value={branch.working_hours} onChange={handleBranchChange} type="text" placeholder="Working Hours" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+   <p className="text-red-500 text-xs mt-1">{errors.working_hours}</p>
+
+          <div className="flex gap-6 mt-4">
+  {/* Biometric Attendance Toggle */}
+        <label className="flex items-center gap-3 text-sm font-medium text-gray-600 cursor-pointer">
+          <span>Biometric Attendance</span>
+          <span className="relative inline-block w-10 align-middle select-none">
+            <input
+              type="checkbox"
+              name="has_biometric_attendance"
+              checked={branch.has_biometric_attendance}
+              onChange={handleBranchChange}
+              className="sr-only peer"
+            />
+            <span
+              className="block h-5 w-10 rounded-full bg-gray-300 peer-checked:bg-blue-500 transition-colors duration-300"
+            ></span>
+            <span
+              className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 peer-checked:translate-x-5"
+            ></span>
+          </span>
+        </label>
+
+        {/* Head Office Toggle */}
+        <label className="flex items-center gap-3 text-sm font-medium text-gray-600 cursor-pointer">
+          <span>Head Office</span>
+          <span className="relative inline-block w-10 align-middle select-none">
+            <input
+              type="checkbox"
+              name="is_head_office"
+              checked={branch.is_head_office}
+              onChange={handleBranchChange}
+              className="sr-only peer"
+            />
+            <span
+              className="block h-5 w-10 rounded-full bg-gray-300 peer-checked:bg-blue-500 transition-colors duration-300"
+            ></span>
+            <span
+              className="absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300 peer-checked:translate-x-5"
+            ></span>
+          </span>
+        </label>
+      </div>
+
+
+        </div>
+        {/* Legal/Tax */}
+        <div className="w-full">
+          <h4 className="font-semibold text-md mb-2 text-[#344767]">Legal / Tax</h4>
+          <label className="font-semibold text-xs w-full">GST Number</label>
+          <input name="gst_number" value={branch.gst_number} onChange={handleBranchChange} type="text" placeholder="GST Number" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          <p className="text-red-500 text-xs mt-1">{errors.gst_number}</p>
+
+          <label className="font-semibold text-xs w-full">Tax ID</label>
+          <input name="tax_id" value={branch.tax_id} onChange={handleBranchChange} type="text" placeholder="Tax ID" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+    <p className="text-red-500 text-xs mt-1">{errors.tax_id}</p>
+
+          <label className="font-semibold text-xs w-full">Currency</label>    
+          <input name="currency" value={branch.currency || ''} onChange={handleBranchChange} type="text" placeholder="Currency" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+          
+          <label className="font-semibold text-xs w-full">Opening Date</label>
+          
+          
+          <input name="opening_date" value={branch.opening_date} onChange={handleBranchChange} type="date" placeholder="Opening Date" className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} />
+ <p className="text-red-500 text-xs mt-1">{errors.opening_date}</p>
+
+        </div>
+
+
+<div className="w-full" style={{display: 'flex', flexDirection: 'column', gap: '16px'}}>
+  <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
+    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+      <h4 className="text-lg font-semibold text-slate-800">Employees</h4>
+    </div>
+    <label className="block text-sm font-medium text-slate-700">
+      Select Employees
+    </label>
+  </div>
+  
+  <div className="relative">
+    <button
+      type="button"
+      onClick={() => setDropdownOpen((prev) => !prev)}
+      className={`
+        relative w-full flex items-center justify-between bg-white border rounded-lg shadow-sm transition-all duration-200
+        ${dropdownOpen ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-slate-300 hover:border-slate-400'}
+        ${errors.users ? 'border-red-300' : ''}
+        focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+      `}
+      style={{padding: '12px 16px', textAlign: 'left'}}
+    >
+      <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+          {branch.users.length > 0 ? (
+            <>
+              <div className="bg-blue-500 rounded-full" style={{width: '8px', height: '8px'}}></div>
+              <span className="text-sm font-medium text-slate-700">
+                {branch.users.length} employee{branch.users.length !== 1 ? 's' : ''} selected
+              </span>
+            </>
+          ) : (
+            <>
+              <div className="bg-slate-300 rounded-full" style={{width: '8px', height: '8px'}}></div>
+              <span className="text-sm text-slate-500">Select employees...</span>
+            </>
+          )}
+        </div>
+      </div>
+      <svg 
+        className={`text-slate-400 transition-transform duration-200 ${
+          dropdownOpen ? 'rotate-180' : ''
+        }`} 
+        style={{width: '20px', height: '20px'}}
+        fill="none" 
+        stroke="currentColor" 
+        viewBox="0 0 24 24"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    </button>
+
+    {dropdownOpen && (
+      <div className="absolute z-50 w-full bg-white border border-slate-200 rounded-lg shadow-lg" style={{marginTop: '8px'}}>
+        <div style={{padding: '12px', borderBottom: '1px solid #e2e8f0'}}>
+          <div className="relative">
+            <svg 
+              className="absolute text-slate-400" 
+              style={{left: '12px', top: '50%', transform: 'translateY(-50%)', width: '16px', height: '16px'}}
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search employees..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm"
+              style={{paddingLeft: '40px', paddingRight: '16px', paddingTop: '8px', paddingBottom: '8px'}}
+            />
+          </div>
+        </div>
+        
+        <div className="overflow-y-auto" style={{maxHeight: '256px'}}>
+          {filteredEmployees.length > 0 ? (
+            filteredEmployees.map((emp) => {
+              const isSelected = branch.users.includes(String(emp.id));
+              return (
+                <label
+                  key={emp.id}
+                  className="flex items-center cursor-pointer hover:bg-slate-50 transition-colors duration-150"
+                  style={{padding: '12px 16px', gap: '12px'}}
+                >
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      value={emp.id}
+                      checked={isSelected}
+                      onChange={(e) => {
+                        const userId = e.target.value;
+                        setBranch((prev) => ({
+                          ...prev,
+                          users: e.target.checked
+                            ? [...prev.users, userId]
+                            : prev.users.filter((id) => id !== userId),
+                        }));
+                      }}
+                      className="sr-only"
+                    />
+                    <div 
+                      className={`
+                        rounded border-2 flex items-center justify-center transition-all duration-200
+                        ${isSelected 
+                          ? 'bg-blue-500 border-blue-500' 
+                          : 'border-slate-300 hover:border-slate-400'
+                        }
+                      `}
+                      style={{width: '20px', height: '20px'}}
+                    >
+                      {isSelected && (
+                        <svg className="text-white" style={{width: '12px', height: '12px'}} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-700 truncate">
+                      {emp.name || emp.email || `User ${emp.id}`}
+                    </p>
+                    {emp.email && emp.name && (
+                      <p className="text-xs text-slate-500 truncate" style={{marginTop: '2px'}}>{emp.email}</p>
+                    )}
+                  </div>
+                </label>
+              );
+            })
+          ) : (
+            <div className="text-center" style={{padding: '24px 16px'}}>
+              <p className="text-sm text-slate-500">No employees found</p>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+
+  {errors.users && (
+    <p className="text-sm text-red-600 flex items-center" style={{gap: '4px'}}>
+      <span className="text-red-500">⚠</span>
+      {errors.users}
+    </p>
+  )}
+
+  {branch.users.length > 0 && (
+    <div className="bg-slate-50 rounded-lg border border-slate-200" style={{padding: '16px'}}>
+      <div className="flex items-center justify-between" style={{marginBottom: '12px'}}>
+        <h5 className="text-sm font-medium text-slate-700">Selected Employees</h5>
+        <span className="text-xs text-slate-500 bg-slate-200 rounded-full" style={{padding: '4px 8px'}}>
+          {branch.users.length}
+        </span>
+      </div>
       
-                                    <div className="flex flex-col flex-grow text-gray-600 gap-2 justify-center items-center"> {/* Added flex-grow */}
-                                   
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                      Branch Name :<span className="text-red-500 font-bold ml-1">*</span>                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%]  rounded-sm focus:outline-none border-gray-300 bg-white  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Branch Code<span className="text-red-500 font-bold ml-1">*</span>                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%]  rounded-sm focus:outline-none border-gray-300 bg-white  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Location/City:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-sm border-gray-200 bg-white focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                                                                style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      
-
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Address:
-                                      </label>
-
-                                      <textarea className="textarea w-[100%] border-gray-200 bg-white rounded-sm focus:outline-none  focus:border-b-2 focus:border-blue-500" 
-                                        placeholder="Description" 
-                                           style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        
-                                        name=""
-                                      ></textarea>
+      <div className="flex flex-wrap" style={{gap: '8px'}}>
+        {branch.users.map((userId) => {
+          const emp = employees.find((e) => e.id == userId);
+          return (
+            <div
+              key={userId}
+              className="flex items-center bg-white border border-slate-200 rounded-md shadow-sm group hover:shadow-md transition-all duration-200"
+              style={{padding: '8px 12px', gap: '8px'}}
+            >
+              <div className="flex items-center flex-1 min-w-0" style={{gap: '8px'}}>
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0" style={{width: '32px', height: '32px'}}>
+                  <span className="text-xs font-medium text-white">
+                    {(emp?.name || emp?.email || '').charAt(0).toUpperCase()}
+                  </span>
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-700 truncate">
+                    {emp?.name || emp?.email || `User ${userId}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setBranch((prev) => ({
+                    ...prev,
+                    users: prev.users.filter((id) => id != userId),
+                  }))
+                }
+                className="flex-shrink-0 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-colors duration-200"
+                style={{width: '24px', height: '24px'}}
+              >
+                ×
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  )}
+</div>
 
 
-                                       <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Phone:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-sm border-gray-200 bg-white focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                         style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      
-                                       <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Email:
-                                      </label>
-                                      <input type="email" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-sm border-gray-200 bg-white focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                       <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Country:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-sm border-gray-200 bg-white focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                          style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                       <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       State / Province:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-sm border-gray-200 bg-white focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                          style={{paddingLeft:'12px'}}
-
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
-                                      />
-                                      
-                            
-                                           
-                                            <label 
-                                               
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] border-gray-200 bg-white focus:outline-none text-gray-400 rounded-sm focus:border-b-2 focus:border-blue-500" 
-                                               
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                            </div> 
-                                            {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
-                                               >
-                                            <button
-                                                type="button"
-                                                className="w-[120px] h-[35px] font-bold text-xs rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className=" w-[120px] h-[35px] rounded-lg text-white  font-bold text-xs border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                                )}      
+        {/* Button container */}
+        <div className="flex flex-col sm:flex-row justify-end items-end gap-4 w-full">
+          
+          <button type="button" className="w-[120px] h-[35px] rounded-lg text-white font-bold text-xs border-none" style={{ backgroundColor: '#8392ab' }} onClick={handleCloseModal}>
+            Close
+          </button>
+          <button type="submit" onClick={handleSubmit} className="w-[120px] h-[35px] font-bold text-xs rounded-lg text-white border-none" style={{ backgroundColor:'#5E72e4' }}>
+            Submit
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}      
       
       
                       {editModal &&  (
@@ -515,7 +1058,7 @@ import { Link } from 'react-router';
                                         className="input w-[100%]  rounded-sm focus:outline-none border-gray-300 bg-white  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="name"
                                       />
                                       <label 
                                         
@@ -528,7 +1071,7 @@ import { Link } from 'react-router';
                                         style={{paddingLeft:'12px'}}
 
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="code"
                                       />
                                       <label 
                                         
@@ -542,7 +1085,7 @@ import { Link } from 'react-router';
                                                                                 style={{paddingLeft:'12px'}}
 
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="city"
                                       />
                                       
 
@@ -559,7 +1102,7 @@ import { Link } from 'react-router';
 
                                         onChange={(e)=>handleChange(e)}
                                         
-                                        name=""
+                                        name="address"
                                       ></textarea>
 
 
@@ -575,7 +1118,7 @@ import { Link } from 'react-router';
                                          style={{paddingLeft:'12px'}}
 
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="primary_phone"
                                       />
                                       
                                        <label 
@@ -590,7 +1133,7 @@ import { Link } from 'react-router';
                                         style={{paddingLeft:'12px'}}
 
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="email"
                                       />
                                        <label 
                                         
@@ -604,7 +1147,7 @@ import { Link } from 'react-router';
                                           style={{paddingLeft:'12px'}}
 
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="country"
                                       />
                                        <label 
                                         
@@ -618,7 +1161,7 @@ import { Link } from 'react-router';
                                           style={{paddingLeft:'12px'}}
 
                                         onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        name="state"
                                       />
                                       
                             
@@ -633,13 +1176,75 @@ import { Link } from 'react-router';
                                                 className="select w-[100%] h-[35px] border-gray-200 bg-white focus:outline-none text-gray-400 rounded-sm focus:border-b-2 focus:border-blue-500" 
                                                
                                                 value={formData.status}
-                                                name=''
+                                                name='status'
                                                 onChange={(e)=>handleChange(e)}
                                             >
                                                 <option className=" text-gray-600"></option>
                                                 <option className=" text-gray-600"> Active</option>
                                                 <option className=" text-gray-600"> InActive</option>
                                             </select>
+
+                                            <label 
+                                                className="font-semibold text-xs text-[#344767] w-[100%]"
+                                            >
+                                                Select Employees:
+                                            </label>
+                                            
+                                            {/* Professional Multiple Select for Edit Modal */}
+                                            <div className="relative w-full">
+                                              <select
+                                                name="users"
+                                                multiple
+                                                value={formData.users}
+                                                onChange={(e) => {
+                                                  const selected = Array.from(e.target.selectedOptions, option => option.value);
+                                                  setFormData(prev => ({ ...prev, users: selected }));
+                                                }}
+                                                className="input w-full rounded-sm border-gray-300 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                                style={{ paddingLeft: '12px', height: '120px' }}
+                                              >
+                                                {employees.map((emp) => (
+                                                  <option key={emp.id} value={emp.id}>
+                                                    {emp.name || emp.email || `User ${emp.id}`}
+                                                  </option>
+                                                ))}
+                                              </select>
+                                              
+                                              {/* Selected Employees Display for Edit Modal */}
+                                              {formData.users && formData.users.length > 0 && (
+                                                <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                                                  <h5 className="text-xs font-semibold text-gray-700 mb-2">Selected Employees ({formData.users.length})</h5>
+                                                  <div className="flex flex-wrap gap-2">
+                                                    {formData.users.map((userId) => {
+                                                      const employee = employees.find(emp => emp.id == userId);
+                                                      return (
+                                                        <div 
+                                                          key={userId}
+                                                          className="flex items-center gap-2 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium"
+                                                        >
+                                                          <span className="w-6 h-6 bg-blue-200 rounded-full flex items-center justify-center text-xs font-bold">
+                                                            {employee?.name?.charAt(0) || employee?.email?.charAt(0) || 'U'}
+                                                          </span>
+                                                          <span>{employee?.name || employee?.email || `User ${userId}`}</span>
+                                                          <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                              setFormData(prev => ({
+                                                                ...prev,
+                                                                users: prev.users.filter(id => id != userId)
+                                                              }));
+                                                            }}
+                                                            className="ml-1 text-blue-600 hover:text-blue-800 font-bold"
+                                                          >
+                                                            ×
+                                                          </button>
+                                                        </div>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+                                            </div>
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}

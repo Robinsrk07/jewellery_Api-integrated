@@ -8,6 +8,7 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import { useSelector } from "react-redux";
 import CityModel from "../../../models/CityModel";
 import CountryModel from "../../../models/countryModel";
+import TableSkelton from "../../../components/tableSkelton";
 import { toast } from "react-toastify";
 const City=()=>{
    
@@ -15,14 +16,19 @@ const City=()=>{
                     const [modal, setModal] = useState(false)   
                     const [editModal,setEditModal]= useState(false)
                     const auth= useSelector((state) => state.auth);
-                    const { login_id ,can_manage_user_types,} = auth;    
+                    const { login_id ,can_manage_user_types,} = auth;   
+                    const [totalPages, setTotalPages] = useState(1); 
+                     const [deletingId, setDeletingId] = useState(null);
+                    const [itemToDelete, setItemToDelete] = useState(null);
                     const[limit,setLimit]=useState(10);  
+                    console.log(limit);
+                    
                     const[page,setPage]=useState(1);  
                     const[search,setSearch]=useState('');
                     const[status,setStatus]=useState();
                     const[country,setCountryData]=useState([])
                     const [isSubmitting, setIsSubmitting] = useState(false);
-
+                    const [isLoading, setIsLoading] = useState(true);
                     const user_id = login_id;
                     const user_types = Object.keys(can_manage_user_types).join(','); 
                     const [city,setCity]= useState([])
@@ -107,23 +113,18 @@ const City=()=>{
                 };
                  const handleDeleteCity = async (id) => {
                              
-                              if (!id) return;
+                              if (!id) toast.error("Sorry Unable to Delete City")
                               
                               try {
                                 await CityModel.DeleteCity(id);
-                                
-                              
-                                setCity(prevData => prevData.filter(city => city.id !== id));
-                                
-                                
-                                document.getElementById('my_modal_8').close();
-                                
-                                
-                                alert('Country deleted successfully');
+                                await fetchCityData()
+                                toast.success("City Deleted SuccessFully")
                               } catch (error) {
                                 console.error("Error deleting country:", error);
-                                alert('Failed to delete country');
-                              }
+                                toast.error("Please Try Again , Failed to delete City")
+                              }finally {
+                                      setDeletingId(null);
+                                  }
                      };
 
 
@@ -145,11 +146,15 @@ const City=()=>{
 
                             if(response){
                               setCity(response?.data?.data)
+                                setTotalPages(response?.data?.pagination?.pages);
                             }
                       }catch(error){
                          console.error(error)
+                      }finally {
+                          setIsLoading(false); 
+                        }
                       }
-                      }
+
                      const FetchCountry = async () => {
                         try {
                           const response = await CountryModel.getCountries(
@@ -201,7 +206,7 @@ const City=()=>{
                                   max-w-[95vw] 
                                   xl:max-w-[90vw] 
                                   2xl:max-w-[85vw] 
-                                  h-auto max-h-[70vh] 
+                                  h-auto max-h-[84vh] 
                                   rounded-xl px-4 md:px-8 lg:px-12
                                   mx-auto overflow-auto  custom-scrollbar"
                               style={{ fontFamily: 'Open Sans',overflow:'auto'}}
@@ -210,7 +215,7 @@ const City=()=>{
                       buttoncontent="+ New City"
                       onClick={() => setModal(true)}  // This will now work!
                    />                 
-                      <ItemsPerPageSelector items={items} setItems={setItems} />
+                      <ItemsPerPageSelector items={limit} setItems={setLimit} />
                   
                         
                             
@@ -227,16 +232,24 @@ const City=()=>{
                                   </tr>
                                 </thead>
                                 <tbody>
-                                  {city
+                                  {isLoading ? (
+                                        <TableSkelton />
+                                      ) : city.length === 0 ? (
+                                        <tr >
+                                          <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                                            No data available
+                                          </td>
+                                        </tr>
+                                      ) :city
                                   .filter(location => countryMap.has(location.country))
                                   .map((location,index) => (
-                                    <tr key={location.id} className="bg-white hover:bg-gray-50 h-[30px] text-gray-400" >
+                                    <tr key={location.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400" >
                                       <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }} >
                                         {index+1}
                                       </td>
-                                      <td className="border-b border-gray-200 text-xs"style={{ paddingLeft: '30px',paddingBottom:'30px' }} >{location.code}</td>
-                                      <td className="border-b border-gray-200 text-xs"style={{ paddingLeft: '30px',paddingBottom:'30px'}} >{location.name}</td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '30px',paddingBottom:'30px' }}> {countryMap.get(location.country)}</td>
+                                      <td className="border-b border-gray-200 text-xs"style={{ paddingLeft: '30px' }} >{location.code}</td>
+                                      <td className="border-b border-gray-200 text-xs"style={{ paddingLeft: '30px'}} >{location.name}</td>
+                                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}> {countryMap.get(location.country)}</td>
                                        <td className="py-4 border-b border-gray-200 text-xs" >
                                {location.status ? (
                                 <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" >
@@ -253,12 +266,14 @@ const City=()=>{
                                           <EditButton
                                           onClick={()=>{setEditModal(true);setEditData(location)}}
                                          />
-                                            <DeleteButton 
-                                           buttonText="Delete " 
-                                           modalId="my_modal_8" 
-                                           item={"city"}
-                                           onConfirmDelete={() => handleDeleteCity(location.id)}
-                                         />
+                                            
+                                         <DeleteButton 
+                                                                                   buttonText={deletingId === location.id ? 'Deleting...' : 'Delete'}
+                                                                                   item="City"
+                                                                                   onOpenModal={() => setItemToDelete(location.id)}
+                                                                                   onConfirmDelete={() => handleDeleteCity(itemToDelete)}
+                                                                                   disabled={deletingId === country.id}
+                                                                                 />
                                         </div>
                                       </td>
                                     </tr>
@@ -268,7 +283,7 @@ const City=()=>{
                         
                   
                        
-                        <Pagination/>
+                     <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                             
                        </div>
                         {modal && (
@@ -292,7 +307,7 @@ const City=()=>{
                                         placeholder="Type here" 
                                         value={data.code}
                                         onChange={handleChange}
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         name="code"
                                       />
@@ -306,7 +321,7 @@ const City=()=>{
                                       <input type="text" 
                                         placeholder="Type here"
                                         value={data.name} 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         onChange={handleChange}
                                         name="name"
@@ -324,14 +339,14 @@ const City=()=>{
                                                 Country:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
                                                 
                                                 name='country'
                                                  onChange={handleChange}
 
                                             >
-                                                <option className=" text-gray-600"disabled>Select Counrty </option>
+                                                <option className=" text-gray-600 text-xs" value=''>--Select Counrty-- </option>
                                                {country.filter((con)=>con.status ==true).map((con)=><option value={con.name} className=" text-gray-600">{con.name}</option>)} 
                                                
                                             </select>
@@ -340,21 +355,23 @@ const City=()=>{
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={ handleSubmit}
-                                            >
-                                                Submit
-                                            </button>
+                                          
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                              
+                                                 style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                              <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                                onClick={ handleSubmit}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -454,21 +471,23 @@ const City=()=>{
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={handleEditSubmit}
-                                            >
-                                                Submit
-                                            </button>
+                                           
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                               
+                                                 style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleEditCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                             <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                               style={{ backgroundColor: '#5E72e4' }}
+                                                onClick={handleEditSubmit}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>

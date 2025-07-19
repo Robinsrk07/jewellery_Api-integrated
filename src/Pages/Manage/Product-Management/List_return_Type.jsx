@@ -8,6 +8,7 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import returnTypeModel from "../../../models/returnTypeModel";
+import TableSkelton from "../../../components/tableSkelton";
 
 
 
@@ -15,18 +16,22 @@ const List_return_Type =()=>{
 
 
 
-                  const [isHovered, setIsHovered] = useState(false);
-                  const [items, setItems] = useState(10);
+         
+                 
                   const [modal, setModal] = useState(false)   
                   const [editModal,setEditModal]= useState(false)
                   const [returnPolicies, setReturnPolicies] = useState([]);
-                  const [limit, setLimit] = useState(10);
+                  const[limit,setLimit]=useState(10);  
+                  const [deletingId, setDeletingId] = useState(null);
+                  const [itemToDelete, setItemToDelete] = useState(null);
                   const [page, setPage] = useState(1);
                   const [search, setSearch] = useState('');
                   const [status, setStatus] = useState('');  
+                  const [totalPages, setTotalPages] = useState(1);
                   const auth = useSelector((state) => state.auth);
                   const { login_id, can_manage_user_types } = auth;
                   const [editingReturnType, setEditingReturnType] = useState(null);
+                   const [isLoading, setIsLoading] = useState(true);
                   const [editErrors, setEditErrors] = useState({});
                   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -64,16 +69,18 @@ const List_return_Type =()=>{
                   );
                   console.log("Response from API:", response);
 
-                  if (response.data && response.data.data) {
-                    console.log("Data Received:", response.data.data);
-                    setReturnPolicies(response.data.data);
+                  if (response?.data && response?.data?.data) {
+                      setReturnPolicies(response?.data?.data);
+                      setTotalPages(response?.data?.pagination?.pages);
                   } else {
                     toast.error("Unable to fetch return types");
                   }
                 } catch (error) {
                   console.error("Error fetching return types:", error);
                   toast.error("Failed to load return types");
-                }
+                } finally {
+                     setIsLoading(false)
+        }
               };
 
               useEffect(() => {
@@ -113,25 +120,21 @@ const List_return_Type =()=>{
                 const payload = {
                   name: addReturnTypeData.name,
                   description: addReturnTypeData.description,
-                  status: addReturnTypeData.status === 'true', // boolean
-                  created_by: user_id,
-                  created_by_type: user_types,
+                  status: addReturnTypeData.status === 'true',
                 };
 
                 try {
                   const response = await returnTypeModel.createReturnType(payload);
-                  console.log("Create response:", response);
 
                   if (response.status === 201 || response.status === 200) {
-                    fetchReturnTypes();
-                    handleCloseModal();
-                    toast.success('Return Type created successfully!');
+                     fetchReturnTypes();
+                     handleCloseModal();
+                     toast.success('Return Type created successfully!');
                   }
                 } catch (error) {
-                  console.error("Create error:", error);
                   toast.error('Failed to create return type!');
                   handleCloseModal();
-
+                     console.log("test",error)
                   if (error.response?.data?.errors) {
                     setErrors((prev) => ({
                       ...prev,
@@ -185,13 +188,8 @@ const List_return_Type =()=>{
                 };
 
                 const handleEditSubmit = async () => {
-                  console.log("Editing Return Type:", editingReturnType);
 
 
-                  if (!editingReturnType?.id) {
-                    toast.error("Invalid return type selected for editing.");
-                    return;
-                  }
 
                   if (!validateEditReturnType()) return;
 
@@ -227,37 +225,39 @@ const List_return_Type =()=>{
 
 
               const handleDeleteReturnType = async (id) => {
-                console.log("Deleting return type with ID:", id);
                 if (!id) return;
-
                 try {
-                  await returnTypeModel.deleteReturnType(id); // call delete API
-
-                  setReturnPolicies(prevData => prevData.filter(item => item.id !== id));
-
-                  const modal = document.getElementById('my_modal_8');
-                  if (modal && typeof modal.close === 'function') {
-                    modal.close();
-                  }
-
+                  await returnTypeModel.deleteReturnType(id);
+                  await fetchReturnTypes()
                   toast.success('Return type deleted successfully');
-                } catch (error) {
-                  console.error("Error deleting return type:", error);
-                  toast.error('Failed to delete return type');
+                } catch (error) {               
+                  toast.error(' Please Try Again ,Failed to delete return type');
+                }finally {
+                    setDeletingId(null);
                 }
               };
 
 
 
-  const handleCloseModal =()=>{
-    setModal(false)
-  }
-  const handleEditCloseModal =()=>{
-    setEditModal(false)
-  }
+        const handleCloseModal =()=>{
+          setModal(false)
+          setErrors({
+                    name: '',
+                    description: '',
+                    status: '',
+                  })
+        }
+        const handleEditCloseModal =()=>{
+          setEditModal(false)
+          setEditErrors({
+                    name: '',
+                    description: '',
+                    status: '',
+                  })
+        }
 
-  return (
-   <>
+        return (
+        <>
           <CustomScrollbar/>
                 <div className="bg-white w-full
                 max-w-[95vw] 
@@ -272,7 +272,7 @@ const List_return_Type =()=>{
             onClick={() => setModal(true)}  // This will now work!
              />
 
-           <ItemsPerPageSelector items={items} setItems={setItems} />
+            <ItemsPerPageSelector items={limit} setItems={setLimit} />
 
        <table className="table w-full text-sm text-left text-gray-500" 
       style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '1300px' }}>
@@ -287,7 +287,15 @@ const List_return_Type =()=>{
         </tr>
       </thead>
       <tbody>
-        {returnPolicies.map((policy,index) => (
+        {isLoading ? (
+          <TableSkelton />
+        ) : returnPolicies.length === 0 ? (
+          <tr >
+            <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+              No data available
+            </td>
+          </tr>
+        ) : returnPolicies.map((policy,index) => (
           <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
             <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '40px' }}>{index+1}</td>
               
@@ -314,11 +322,14 @@ const List_return_Type =()=>{
               </button>
             </td>
             <td className="border-b border-gray-200 text-blue-600">
+             
               <DeleteButton 
-              buttonText="Delete Return Type" 
-              modalId={`delete_modal_${policy.id}`} 
-              onConfirmDelete={() => handleDeleteReturnType(policy.id)} 
-             />
+                buttonText={deletingId === policy.id ? 'Deleting...' : 'Delete'}
+                item="Diamond Item"
+                onOpenModal={() => setItemToDelete(policy.id)}
+                onConfirmDelete={() =>handleDeleteReturnType(itemToDelete)}
+                disabled={deletingId ===policy.id}
+              />
             </td>
           </tr>
         ))}
@@ -326,7 +337,7 @@ const List_return_Type =()=>{
     </table>
 
       {/* Pagination */}
-           <Pagination/>
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
       {/* Modal */}
 
@@ -350,8 +361,9 @@ const List_return_Type =()=>{
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
+                                      <div>
                                       <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -361,6 +373,8 @@ const List_return_Type =()=>{
                                         onChange={handleAddReturnTypeChange}
                                         name="name"
                                       />
+                                      <p className="text-xs text-red-500">{errors.name}</p>
+                                      </div>
                                       
                                       
 
@@ -368,9 +382,9 @@ const List_return_Type =()=>{
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Description:
+                                        Description: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
-
+                                       <div >
                                       <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
                                         style={{paddingLeft:'12px'}}
@@ -378,11 +392,14 @@ const List_return_Type =()=>{
                                         onChange={handleAddReturnTypeChange}
                                         name="description"
                                       ></textarea>
+                                      <p className="text-xs text-red-400">{errors.description}</p>
+                                      </div>
                                       <label 
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                        Status:
+                                        Status: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
+                                      <div>
                                       <select defaultValue=""
                                           className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                           style={{paddingLeft:'12px'}}
@@ -395,19 +412,14 @@ const List_return_Type =()=>{
                                                 <option value="false" className="text-gray-600">InActive</option>
         
                                             </select>
+                                            <p className="text-xs text-red-500">{errors.status}</p>
+                                            </div>
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                               onClick={(e) => handleSubmitReturnType(e)}
-                                            >
-                                                Submit
-                                            </button>
+                                           
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
@@ -415,6 +427,14 @@ const List_return_Type =()=>{
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                             <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                               onClick={(e) => handleSubmitReturnType(e)}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -433,8 +453,9 @@ const List_return_Type =()=>{
                                       <label 
                                        className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name:<span className="text-red-500 text-[14px]">*</span>
                                       </label>
+                                      <div>
                                       <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -443,16 +464,17 @@ const List_return_Type =()=>{
                                         onChange={(e)=>handleEditReturnTypeChange(e)}
                                         name="name"
                                       />
-                                      
+                                      <p className="text-xs text-red-300">{editErrors.name}</p>
+                                      </div>
                                       
 
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Description:
+                                        Description:<span className="text-red-500 text-[14px]">*</span>
                                       </label>
-
+                                      <div>
                                       <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
                                         style={{paddingLeft:'12px',}}
@@ -460,12 +482,15 @@ const List_return_Type =()=>{
                                         onChange={(e)=>handleEditReturnTypeChange(e)}
                                         name="description"
                                       ></textarea>
-                            
+                                        <p className="text-xs text-red-300">{editErrors.description}</p>
+                                      </div>
                                          <label 
                                             className="font-semibold text-xs text-[#344767] w-[80%]"
                                           >
-                                                Status:
+                                                Status:<span className="text-red-500 text-[14px]">*</span>
                                             </label>
+
+                                            <div>
                                             <select defaultValue=""
                                                 className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
@@ -477,7 +502,8 @@ const List_return_Type =()=>{
                                                 <option value={true} className=" text-gray-600"> Active</option>
                                                 <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
-            
+                                             <p className="text-xs text-red-300">{editErrors.status}</p>
+                                           </div>
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 

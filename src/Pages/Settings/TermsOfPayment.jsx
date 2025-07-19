@@ -1,112 +1,346 @@
-
-
-
-
-
-
- 
-     import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import TermsOfPaymentModel from "../../models/TermsOfPaymentModel";
+import CustomScrollbar from "../../components/CustomScrollbar";
+import EditButton from '../../components/EditButton';
+import DeleteButton from '../../components/DeleteButton';
+import CreateButton from '../../components/CreateButton';
+import Pagination from '../../components/Pagination';
+import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
      
      const  TermsOfPayment = () => {
      
           
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
+
+  const [isHovered, setIsHovered] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+
+  const [termsData, setTermsData] = useState([]);
+
+
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [status, setStatus] = useState('');
+  const [search, setSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [errors, setErrors] = useState({
+                        name: '',
+                        branch: '',
+   
+                      });
+  const [editErrors, setEditErrors] = useState({});
+
+
+
+  const [editingTerms, setEditingTerms] = useState({
+    id: null,
+    name: '',
+    description: '',
+    branch: '',
+    status: '',
+  });
+
+  const auth = useSelector((state) => state.auth);
+  const { login_id, can_manage_user_types } = auth;
+  const user_id = login_id;
+  const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+  const fetchTermsOfPayments = async () => {
+    try {
+      const response = await TermsOfPaymentModel.getTermsOfPayments(user_id, user_types, limit, page, search, status);
+      if (response?.data?.data) {
+        setTermsData(response.data.data);
+      } else {
+        toast.error("Unable to fetch Terms of Payments");
+      }
+    } catch (error) {
+      console.error("Error fetching Terms of Payments:", error);
+      toast.error("Failed to load Terms of Payments");
+    }
+  };
+
+  useEffect(() => {
+    fetchTermsOfPayments();
+  }, [limit, page, search, status]);
+
+
+
+                      const [branches, setBranches] = useState([]);
+
+                        useEffect(() => {
+                        fetchBranches();
+                      }, []);
+
+
+                      const fetchBranches = async () => {
+                        try {
+                          const response = await TermsOfPaymentModel.getBranches(user_id);
+                          if (response?.data?.data) {
+                            setBranches(response.data.data);
+                          } else {
+                            toast.error("Failed to load branches");
+                          }
+                        } catch (error) {
+                          console.error("Error fetching branches:", error);
+                          toast.error("Error fetching branches");
+                        }
+                      };
+
+
+                    const getBranchName = (id) => {
+                    const branch = branches.find((b) => b.id === id);
+                      return branch ? branch.name : "N/A";
+                    };
+
+
+const [addTermData, setAddTermData] = useState({
+  name: '',
+  description: '',
+  branch: '',
+  status: '',
+});
+
+
+
+const validateTerm = () => {
+  const newErrors = {};
+
+  if (!addTermData.name.trim()) {
+    newErrors.name = 'Please enter name';
+  }
+
+  if (!addTermData.branch) {
+    newErrors.branch = 'Please select a branch';
+  }
+
+  return newErrors;
+};
+
+
+const handleAddTermChange = (e) => {
+  const { name, value } = e.target;
+
+  setAddTermData((prev) => ({
+    ...prev,
+    [name]: name === 'status' ? value === 'true' : value,
+  }));
+
+  // Optional: clear individual field errors while typing
+  setErrors((prev) => ({
+    ...prev,
+    [name]: '',
+  }));
+};
+
+
+useEffect(() => {
+  console.log("Updated Terms of Payment form state:", addTermData);
+}, [addTermData]);
+
+
+const handleSubmitTerm = async () => {
+  const validationErrors = validateTerm();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  const payload = {
+    name: addTermData.name.trim(),
+    description: addTermData.description?.trim() || '',
+    branch: parseInt(addTermData.branch),
+    status: addTermData.status === true || addTermData.status === 'true',
+  };
+
+  console.log("Terms of Payment Payload being sent:", payload);
+
+  try {
+    const response = await TermsOfPaymentModel.createTerm(payload);
+    console.log("Create Terms of Payment response:", response);
+
+    if (response.status === 201 || response.status === 200) {
+      fetchTermsOfPayments();        
+      handleCloseModal();   
+      toast.success('Terms of Payment created successfully!');
+    }
+  } catch (error) {
+    console.error("Create Terms of Payment error:", error);
+    toast.error('Failed to create Terms of Payment!');
+    handleCloseModal();
+
+    if (error.response?.data?.errors) {
+      setErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  }
+};
+
+
+
+const [editingTerm, setEditingTerm] = useState({
+  id: '',
+  name: '',
+  description: '',
+  branch: '',
+  status: ''
+});
+
+
+
+  const validateEditTerm = () => {
+  let valid = true;
+  const newErrors = {
+    name: '',
+    description: '',
+    branch: '',
+    status: ''
+  };
+
+  if (!editingTerm?.name?.trim()) {
+    newErrors.name = 'Name is required';
+    valid = false;
+  }
+
+
+  if (!editingTerm?.branch) {
+    newErrors.branch = 'Branch is required';
+    valid = false;
+  }
+
+
+  setEditErrors(newErrors);
+  return valid;
+};
+
+
+const handleEditClickTerm = (termObj) => {
+  if (!termObj || typeof termObj !== 'object' || !termObj.id) {
+    toast.error("Invalid term selected.");
+    return;
+  }
+
+  setEditingTerm({
+    id: termObj.id,
+    name: termObj.name,
+    description: termObj.description,
+    branch: termObj.branch?.toString(),
+    status: termObj.status?.toString(),
+  });
+
+  setEditModal(true);
+};
+
+
+const handleEditTermChange = (e) => {
+  const { name, value } = e.target;
+
+  setEditingTerm((prev) => ({
+    ...prev,
+    [name]: name === 'status' ? value === 'true' : value,
+  }));
+};
+
+
+const handleEditSubmitTerm = async () => {
+  if (!editingTerm?.id) {
+    toast.error("Invalid term selected for editing.");
+    return;
+  }
+
+  if (!validateEditTerm()) return;
+
+  setIsSubmitting(true);
+
+  const payload = {
+    name: editingTerm.name.trim(),
+    description: editingTerm.description.trim(),
+    branch: parseInt(editingTerm.branch),
+    status: editingTerm.status === true || editingTerm.status === 'true',
+  };
+
+  try {
+    const response = await TermsOfPaymentModel.updateTerm(editingTerm.id, payload);
+
+    if (response.status === 200) {
+      fetchTermsOfPayments();
+      toast.success('Term of Payment updated successfully!');
+      setEditModal(false);
+    }
+  } catch (error) {
+    console.error("Update Term error:", error);
+    toast.error('Failed to update Term of Payment!');
+    if (error.response?.data?.errors) {
+      setEditErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+
+
+
+
+
+
+const handleDeleteTerm = async (id) => {
+  if (!id) return;
+
+  try {
+    await TermsOfPaymentModel.deleteTerm(id);
+
+    // Remove deleted term from local state
+    setTermsData((prevData) => prevData.filter((item) => item.id !== id));
+
+    // Close modal if open
+    if (modal && typeof modal.close === 'function') {
+      modal.close();
+    }
+
+    toast.success('Terms of Payment deleted successfully');
+  } catch (error) {
+    console.error("Error deleting Terms of Payment:", error);
+    toast.error('Failed to delete Terms of Payment');
+  }
+};
+
                   
                    // Handle close modal
-                   const handleCloseModal = () => {
-                     setModal(false);
-                   };
+                 
                    const handleEditCloseModal = () => {
                      setEditModal(false)
+                     setEditingTerm(null)
+                     setEditErrors({
+                      name:'',
+                      branch:''
+
+                    })
                    };
                  
-                 
+                  const handleCloseModal = () => {
+                    setErrors({
+                        name:'',
+                        branch:''
+                    })
+                     setModal(false);
+                     setEditModal(false)
+                   };         
                  
                  
                  
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
+                 <CustomScrollbar/>
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
@@ -150,8 +384,8 @@
                               </button>
                           </div>
                  
-                       <div className="text-gray-400" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
-                         <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {items}</p>
+                       {/* <div className="text-gray-400" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
+                         <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {termsData}</p>
                          <select
                            className="border border-gray-300 rounded-lg w-[114px] h-[35px] px-2"
                            style={{
@@ -163,13 +397,13 @@
                              paddingLeft: '5px',
                            }}
                            onChange={(e) => setItems(Number(e.target.value))}
-                           value={items}
+                           value={termsData}
                          >
                            <option value={10}>10</option>
                            <option value={25}>25</option>
                            <option value={50}>50</option>
                          </select>
-                       </div>
+                       </div> */}
                  
                        
                  
@@ -179,153 +413,67 @@
                       >
                         <thead className="text-xs text-gray-400 uppercase bg-white">
                           <tr>
-                            <th className="px-6 py-3 w-1/5">SL NO</th>
-                            <th className="px-6 py-3 w-1/5">NAME</th>
-                            <th className="px-6 py-3 w-1/5">DESCRIPTION</th>
-                            <th className="px-6 py-3 w-1/5">STATUS</th>
-                            <th className="px-6 py-3 w-1/5">ACTION</th>
+                            <th className="px-6 py-3 w-[100px]">SL NO</th>
+                            <th className="px-6 py-3 w-[100px]">NAME</th>
+                            <th className="px-6 py-3 w-[100px]">BRANCH</th>
+                            <th className="px-6 py-3 w-[100px]">DESCRIPTION</th>
+                            <th className="px-6 py-3 w-[100px]">STATUS</th>
+                            <th className="px-6 py-3 w-[100px]">ACTION</th>
                           </tr>
                         </thead>
 
-                         <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">bhj </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> bhjbhj</td>
-                             
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '150px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete 
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">FGSGS </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs"> SGSGS </td>
-                             
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '150px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete 
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">FGSGS </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">SGSGS  </td>
-                             
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '150px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete 
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                             
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
+                       <tbody>
+                        {termsData.length > 0 ? (
+                          termsData.map((term, index) => (
+                            <tr key={term.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                                {index + 1}
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{term.name}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{getBranchName(term.branch)}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{term.description}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                                {term.status ? (
+                                  <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                      Active
+                                  </span>
+                                  ) : (
+                                  <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    INACTIVE
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <EditButton
+                                    onClick={()=>handleEditClickTerm(term)}
+                                  />
+                                  <DeleteButton 
+                                      buttonText="Delete " 
+                                      modalId={`delete_modal_${term.id}`} 
+                                      onConfirmDelete={() => handleDeleteTerm(term.id)} 
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="5" className="text-center py-4 text-gray-400 text-sm">
+                              No Terms of Payment found.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+
                        </table>
                        
                  
                        {/* Pagination */}
-                       <div className="flex gap-1 justify-center">
+                       <Pagination/>
+
+
+                       {/* <div className="flex gap-1 justify-center">
                          <button className="btn border-none bg-gray-50 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
                            {'<'}
                          </button>
@@ -335,85 +483,12 @@
                          <button className="btn border-none bg-gray-50 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
                            {'>'}
                          </button>
-                       </div>
+                       </div> */}
                  
                        {/* Modal */}
       
       
-                       <dialog id="my_modal_8" className="modal">
-                       <div className="modal-box text-center py-8 px-6 rounded-xl bg-white relative font-[Open_Sans]
-                          w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                         
-                    "
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs bg-green-500 border-none font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 w-[90vw] max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Terms of Payment is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
+                      
                       </div>
       
                       {modal && (
@@ -426,22 +501,48 @@
       
                                     <div className="flex flex-col flex-grow gap-4"> {/* Added flex-grow */}
                                    
-                                      
+                                      <div>
                                       <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addTermData.name}
+                                        onChange={handleAddTermChange}
+                                        name="name"
                                       />
+                                      <p className="text-xs text-red-400">{errors.name}</p>
                                       
+                                      </div>
+
                                       
+                                      <div className="w-full flex flex-col gap-2">
+                                                  <label className="text-xs font-bold text-[#344767]">
+                                                    Branch <span className="text-xs text-red-400">*</span>
+                                                  </label>
+                                                  <select
+                                                    name="branch"
+                                                    value={addTermData.branch}
+                                                    onChange={handleAddTermChange}
+                                                    className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                                    style={{ paddingLeft: '12px' ,fontSize: '14px'}}
+                                                  >
+                                                    <option value="">Select Branch</option>
+                                                    {branches.map((branch) => (
+                                                      <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  {errors.branch && (
+                                                    <span className="text-red-500 text-xs mt-1">{errors.branch}</span>
+                                                  )}
+                                                </div>
 
                                       <label 
                                         
@@ -450,31 +551,33 @@
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-200 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
                                         style={{paddingLeft:'12px',color: '#374151',}}
-                                       // onChange={(e)=>handleChange(e)}
-                                        name=""
+                                       value={addTermData.description}
+                                       onChange={handleAddTermChange}
+                                        name="description"
                                       ></textarea>
                             
                                            
-                                            <label 
+                                            {/* <label 
                                                 
                                                 className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 text-gray-500 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
-                                                //value={formData.status}
-                                                name=''
-                                               // onChange={(e)=>handleChange(e)}
+                                                value={addTermData.status}
+                                                onChange={handleAddTermChange}
+                                                name='status'
+                                               
                                             >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
+                                                <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
+                                            </select> */}
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
@@ -482,19 +585,19 @@
                                                 >
                                             <button
                                                 type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                               // onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                                onClick={handleSubmitTerm}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -512,21 +615,47 @@
       
                                     <div className="flex flex-col flex-grow gap-4"> {/* Added flex-grow */}
                                    
-                                      
+                                      <div>
                                       <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingTerm.name}
+                                        onChange={handleEditTermChange}
+                                        name="name"
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.name}</p>
                                       
+                                      </div>
+                                      
+                                      <div className="w-full flex flex-col gap-2">
+                                                  <label className="text-xs font-bold text-[#344767]">
+                                                    Branch <span className="text-xs text-red-400">*</span>
+                                                  </label>
+                                                  <select
+                                                    name="branch"
+                                                    value={editingTerm?.branch || ''}
+                                                    onChange={handleEditTermChange}
+                                                    className="select select-bordered bg-white text-gray-500  select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                                    style={{ paddingLeft: '12px', fontSize: '14px' }}
+                                                  >
+                                                    <option value="">Select Branch</option>
+                                                    {branches.map((branch) => (
+                                                      <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  {editErrors.branch && (
+                                                    <span className="text-red-500 text-xs mt-1">{editErrors.branch}</span>
+                                                  )}
+                                                </div>
                                       
 
                                       <label 
@@ -536,11 +665,12 @@
                                         Description:
                                       </label>
 
-                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-300 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
+                                      <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                                         placeholder="Description" 
-                                        style={{paddingLeft:'12px',color: '#374151',}}
-                                       // onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        style={{paddingLeft:'12px'}}
+                                        value={editingTerm.description}
+                                        onChange={handleEditTermChange}
+                                        name="description"
                                       ></textarea>
                             
                                            
@@ -551,15 +681,16 @@
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 text-gray-500 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
-                                                //value={formData.status}
-                                                name=''
-                                               // onChange={(e)=>handleChange(e)}
+                                                value={String(editingTerm.status)}
+                                                onChange={handleEditTermChange}
+                                                name='status'
+                                               
                                             >
-                                                <option className=" text-gray-600">Select </option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
             
                                             </div> 
@@ -568,20 +699,21 @@
                                                 >
                                             <button
                                                 type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                               // onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor:'#8392ab' }}
                                                 onClick={handleEditCloseModal}
                                             >
                                                 Close
                                             </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72E4' }}
+                                                onClick={handleEditSubmitTerm}
+                                                disabled={isSubmitting}
+                                          >
+                                                {isSubmitting ? 'Updating...' : 'Update'}
+                                          </button>
                                             </div>
                                         </div>
                         </div>)}

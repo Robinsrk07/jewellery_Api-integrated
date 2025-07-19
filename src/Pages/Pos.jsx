@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 
 import { addItemToCart ,removeItemFromCart ,clearItemData  } from "../StateManagement/posItemSlice";
 import { useNavigate } from "react-router";
+import CurrencyModel from "../models/CurrencyModel";
 
   const Pos = () => {
     
@@ -21,6 +22,7 @@ import { useNavigate } from "react-router";
   const [cart,setCart] =useState([])
   const [selectedField, setSelectedField] = useState('');
   const cartItems = useSelector((state) => state.posItem?.itemData || []);
+  
   console.log(cart)
   const navigate = useNavigate()
   const [customerDetails, setCustomerDetails] = useState({
@@ -78,7 +80,7 @@ const CreateCart = (cart) => {
   cart.forEach((item) => {
     if (!item.uuid) return;
 
-    const selling_price = Number(item.Net_Amount || item.tag_price || 0);
+    const selling_price = Number(item.gross_price || item.tag_price || 0);
     const discount = Number(item.discount || 0);
 
     if (grouped[item.uuid]) {
@@ -116,40 +118,40 @@ const CreateCart = (cart) => {
 
 
     const handleCheckout = async () => {
-  const payload = CreateCart(cart); 
-  console.log(payload)
-  const formData = new FormData();
-  formData.append("customer", 1);  
-  payload.forEach((item) => {
-    Object.entries(item).forEach(([key, value]) => {
+    const payload = CreateCart(cart); 
+    console.log(payload)
+    const formData = new FormData();
+    formData.append("customer", 1);  
+    payload.forEach((item) => {
+      Object.entries(item).forEach(([key, value]) => {
       formData.append(key, value);
+     });
     });
-  });
 
-  try {
-    const response = await POSModel.CreateCart(formData);
-    setLoading(true);
+      try {
+        const response = await POSModel.CreateCart(formData);
+        setLoading(true);
 
-    const cartResponseData = response.data;
+        const cartResponseData = response.data;
 
-    // ✅ Clear cart data in Redux store
-    handleClearCart();
+        handleClearCart();
 
-    setTimeout(() => {
-      navigate('/dashboard/completePayment', {
-        state: { cartData: cartResponseData }
-      });
-    }, 1000);
+        setTimeout(() => {
+          navigate('/dashboard/completePayment', {
+            state: { cartData: cartResponseData }
+          });
+        }, 1000);
 
-    console.log("Cart created successfully", response.data);
-  } catch (error) {
-    toast.error("Please Try Again");
-  }
-};
-
+        console.log("Cart created successfully", response.data);
+      } catch (error) {
+        console.log(error)
+        toast.error("Please Try Again");
+      }
+    };
 
 
-     const handleGetData =async()=>{
+
+     const handleGetData =async()=>{ 
         try{
            const response = await POSModel.getItemDetails(params.code,params.type)
            setItemsData(response.data.data)
@@ -185,7 +187,7 @@ const CreateCart = (cart) => {
     };
 
     const handleAddToCart = (item) => {
-  setLoading(true);
+    setLoading(true);
 
   setTimeout(() => {
     const newItem = { ...item };
@@ -206,6 +208,14 @@ const handleRemove = (uuid) => {
 const handleClearCart = () => {
   dispatch(clearItemData());
 };
+
+const fetchCurrency = async()=>{
+  try{
+ const response = await CurrencyModel.getCurrency( )
+  }catch(error){
+
+  }
+}
 
 const handleRemoveItem = (removeIndex) => {
   const updatedCart = cart.filter((_, index) => index !== removeIndex);
@@ -234,7 +244,7 @@ const groupedCart = cart.reduce((acc, item) => {
   }
 
  const total = cartItems.reduce((sum, item) => {
-  const value = item.Total_Amount ?? item.tag_price ?? 0;
+  const value = item.gross_price ?? item.tag_price ?? 0;
   return sum + parseFloat(value);
 }, 0);
 
@@ -339,8 +349,8 @@ const groupedCart = cart.reduce((acc, item) => {
           </div>
 
           {/* Blue Header Bar */}
-          <div className="bg-[#5E72E4] w-full h-auto sm:h-[40px] rounded-lg mt-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between py-3 sm:py-0 px-2 sm:px-8">
+          <div className="bg-[#5E72E4] w-full h-auto sm:h-[40px] rounded-lg " style={{padding:'20px'}}>
+            <div className="flex flex-col sm:flex-row items-center justify-between">
               <h3 className="text-[12px] font-bold text-white text-center sm:text-left w-full sm:w-auto" style={{ paddingLeft: '0', paddingRight: '0' }}>
                 Salesman & Customer Details
               </h3>
@@ -426,7 +436,7 @@ const groupedCart = cart.reduce((acc, item) => {
                     <td className="px-4 py-2 border text-center">{item.gold_weight || item.Gross_Weight || '0.00'}</td>
                     <td className="px-4 py-2 border text-center">{item.uom || '-'}</td>
                     <td className="px-4 py-2 border text-center">{item.cost_price || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">{item.tag_price || item.Total_Amount || '0.00'}</td>
+                    <td className="px-4 py-2 border text-center">{item.tag_price || item.gross_price || '0.00'}</td>
                     <td className="px-4 py-2 border text-center">
                       {item.quantity}
                     
@@ -562,8 +572,11 @@ const groupedCart = cart.reduce((acc, item) => {
 
       {/* Add New Item Modal (Matching the Image) */}
       {isAddNewOpen && (
-       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto px-2" style={{fontFamily:'Open Sans'}}>
-          <div className="bg-white rounded-lg shadow-md w-full md:w-[90%] md:h-[90vh]  lg:w-[60%] " style={{padding:'20px'}}>
+       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50  px-2" style={{fontFamily:'Open Sans'}}>
+          <div
+              className="bg-white rounded-lg shadow-md w-full md:w-[90%] lg:w-[60%] max-h-[90vh] overflow-y-auto"
+              style={{ padding: '20px' }}
+            >
                <h3 className="font-semibold text-[13px] text-[#344767] "
                 style={{marginBottom:'20px'}} >
                  Item Detials
@@ -618,8 +631,8 @@ const groupedCart = cart.reduce((acc, item) => {
 
 
 
-           <div className="overflow-y-auto h-[220px]" style={{marginTop:'20px'}} >
-         <table className="w-full bg-white overflow-auto border-collapse border border-gray-300 my-5" style={{minWidth:'900px',minHeight:'100px'}}>
+           <div className="overflow-y-auto min-h-[100px]" style={{marginTop:'20px'}} >
+         <table className="w-full bg-white overflow-auto border-collapse border border-gray-300 my-5" style={{minWidth:'900px'}}>
           <thead>
           <tr className="bg-white"style={{height:"30px"}} >
             <th className="border border-gray-300  bg-white text-black text-sm text-center font-semibold"  >Weight / Quantity</th>
@@ -826,14 +839,14 @@ const groupedCart = cart.reduce((acc, item) => {
           </tr>
         </tbody>
       </table>
-    </div>
+     </div>
             
  
             <div className="flex flex-col gap-2 md:flex-row justify-between" style={{padding:'20px'}} >
 
              <div className="flex flex-col gap-2 md:flex-row">
-              <button className="text-white text-sm rounded-sm w-full  md:w-[180px] h-[30px] bg-blue-600 text-[13px]" >Consider Buffer :Yes</button>
-              <button className="text-white text-sm rounded-sm w-full  md:w-[200px] h-[30px] bg-blue-600 text-[13px]" >Making Calculations:netWeight</button>
+             {/* // <button className="text-white text-sm rounded-sm w-full  md:w-[180px] h-[30px] bg-blue-600 text-[13px]" >Consider Buffer :Yes</button>
+              //<button className="text-white text-sm rounded-sm w-full  md:w-[200px] h-[30px] bg-blue-600 text-[13px]" >Making Calculations:netWeight</button> */}
               </div>
              <div className="flex flex-col gap-2 md:flex-row">
               <button className="text-white text-sm rounded-sm w-full md:w-[80px] h-[30px] bg-gray-600 text-[13px]" onClick={()=>setIsAddNewOpen(false)} >close</button>

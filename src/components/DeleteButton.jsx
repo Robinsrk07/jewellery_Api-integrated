@@ -3,13 +3,11 @@ import { toast } from 'react-toastify';
 
 const DeleteButton = ({
   buttonText = "Delete",
-  modalId = "my_modal_8",
+  modalId = "my_modal_8", 
   onConfirmDelete = () => {},
   onOpenModal = () => {},
   item = null
 }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState(null);
 
   const handleClick = () => {
     onOpenModal();
@@ -20,7 +18,6 @@ const DeleteButton = ({
 
   const handleDelete = async () => {
     try {
-      setIsDeleting(true);
       await onConfirmDelete();
        document.getElementById(modalId).close();
 
@@ -28,8 +25,6 @@ const DeleteButton = ({
       console.error("Delete error:", error);
        document.getElementById(modalId).close();
 
-    } finally {
-      setIsDeleting(false);
     }
   };
 
@@ -38,7 +33,7 @@ const DeleteButton = ({
       <button
         className="btn border-none text-white font-bold text-xs rounded-lg"
         style={{
-          width: '180px',
+          width: '80px',
           padding: '5px',
           height: '35px',
           background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
@@ -46,7 +41,7 @@ const DeleteButton = ({
         }}
         onClick={handleClick}
       >
-        {isDeleting ? 'Deleting...' : buttonText}
+        { buttonText}
       </button>
 
       <dialog id={modalId} className="modal">
@@ -86,9 +81,8 @@ const DeleteButton = ({
               className="btn text-xs border-none bg-green-500 font-bold text-white hover:bg-green-600 px-6"
               onClick={handleDelete}
               style={{width:'100px'}}
-              disabled={isDeleting}
             >
-              {isDeleting ? 'Deleting...' : 'Yes, delete it!'}
+              {'Yes, delete it!'}
             </button>
           </div>
         </div>
@@ -126,7 +120,7 @@ const DeleteButton = ({
            {/* Title & Message */}
            <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
            <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your {item} is  safe</p>
-           <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
+           <button className="btn border-none bg-blue-500 w-[150px] text-white rounded-lg" > Okay</button>
        
            
          </div>

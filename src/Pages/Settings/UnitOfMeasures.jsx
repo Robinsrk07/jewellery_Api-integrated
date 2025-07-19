@@ -1,70 +1,364 @@
-
-
-
-
- 
-     import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import UOMModel from "../../models/UOMModel";
+import CustomScrollbar from "../../components/CustomScrollbar";
+import EditButton from '../../components/EditButton';
+import DeleteButton from '../../components/DeleteButton';
+import CreateButton from '../../components/CreateButton';
+import Pagination from '../../components/Pagination';
+import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
      
-     const  UnitOfMeasures = () => {
+const  UnitOfMeasures = () => {
      
           
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
+                        const [isHovered, setIsHovered] = useState(false);
+                        const [modal, setModal] = useState(false);
+                        const [editModal, setEditModal] = useState(false);
+
+                        const [uomData, setUOMData] = useState([]);
+
+                        const [limit, setLimit] = useState(10);
+                        const [page, setPage] = useState(1);
+                        const [status, setStatus] = useState('');
+                        const [search, setSearch] = useState('');
+                        const [isSubmitting, setIsSubmitting] = useState(false);
+
+                        const [errors, setErrors] = useState({
+                          code: '',
+                          name: '',
+                          conversion_factor: '',
+                          usd_price: '',
+                          branch: '',
+                          status: ''
+                        });
+                        const [editErrors, setEditErrors] = useState({});
+
+                        const [addUOMData, setAddUOMData] = useState({
+                          code: '',
+                          name: '',
+                          conversion_factor: '',
+                          usd_price: '',
+                          branch: '',
+                          is_default: false,
+                          status: '',
+                        });
+
+                        const [editingUOM, setEditingUOM] = useState({
+                          code: '',
+                          name: '',
+                          conversion_factor: '',
+                          usd_price: '',
+                          branch: '',
+                          status: '',
+                        });
+
+                        const auth = useSelector((state) => state.auth);
+                        const { login_id, can_manage_user_types } = auth;
+                        const user_id = login_id;
+                        const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+                        const fetchUOMs = async () => {
+                          try {
+                            const response = await UOMModel.getUOMs(user_id, user_types, limit, page, search, status);
+                            if (response?.data?.data) {
+                              setUOMData(response.data.data);
+                            } else {
+                              toast.error("Unable to fetch UOMs");
+                            }
+                          } catch (error) {
+                            console.error("Error fetching UOMs:", error);
+                            toast.error("Failed to load UOMs");
+                          }
+                        };
+
+                        useEffect(() => {
+                          fetchUOMs();
+                        }, [limit, page, search, status]);
+
+
+
+
+                      const [branches, setBranches] = useState([]);
+
+
+
+                        useEffect(() => {
+                        fetchBranches();
+                      }, []);
+
+
+                      const fetchBranches = async () => {
+                        try {
+                          const response = await UOMModel.getBranches(user_id);
+                          if (response?.data?.data) {
+                            setBranches(response.data.data);
+                          } else {
+                            toast.error("Failed to load branches");
+                          }
+                        } catch (error) {
+                          console.error("Error fetching branches:", error);
+                          toast.error("Error fetching branches");
+                        }
+                      };
+
+
+                    const getBranchName = (id) => {
+                    const branch = branches.find((b) => b.id === id);
+                      return branch ? branch.name : "N/A";
+                    };
+
+
+const validateUOM = () => {
+  const newErrors = {};
+
+  if (!addUOMData.code.trim()) {
+    newErrors.code = 'Please enter UOM code';
+  }
+
+  if (!addUOMData.name.trim()) {
+    newErrors.name = 'Please enter UOM name';
+  }
+
+  if (!addUOMData.conversion_factor || isNaN(addUOMData.conversion_factor)) {
+    newErrors.conversion_factor = 'Please enter valid conversion factor';
+  }
+
+  if (!addUOMData.usd_price || isNaN(addUOMData.usd_price)) {
+    newErrors.usd_price = 'Please enter valid USD price';
+  }
+
+  if (!addUOMData.branch) {
+    newErrors.branch = 'Please select a branch';
+  }
+
+
+  return newErrors;
+};
+
+
+const handleAddUOMChange = (e) => {
+  const { name, value } = e.target;
+  setAddUOMData((prev) => ({
+    ...prev,
+    [name]: name === 'status' ? value === 'true' : value,
+  }));
+};
+
+
+const handleSubmitUOM = async () => {
+  const validationErrors = validateUOM();
+
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  const payload = {
+    code: addUOMData.code.trim(),
+    name: addUOMData.name.trim(),
+    conversion_factor: parseFloat(addUOMData.conversion_factor),
+    usd_price: parseFloat(addUOMData.usd_price),
+    branch: parseInt(addUOMData.branch),
+  
+  };
+
+  console.log("UOM Payload being sent:", payload);
+
+  try {
+    const response = await UOMModel.createUOM(payload);
+    console.log("Create UOM response:", response);
+
+    if (response.status === 201 || response.status === 200) {
+      fetchUOMs();
+      handleCloseModal();
+      toast.success('UOM created successfully!');
+    }
+  } catch (error) {
+    console.error("Create UOM error:", error);
+    toast.error('Failed to create UOM!');
+    handleCloseModal();
+
+    if (error.response?.data?.errors) {
+      setErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  }
+};
+
+
+const [editUOMErrors, setEditUOMErrors] = useState({});
+
+const validateEditUOM = () => {
+  let valid = true;
+  const newErrors = {
+    code: '',
+    name: '',
+    conversion_factor: '',
+    usd_price: '',
+    branch: '',
+    status: ''
+  };
+
+  if (!editingUOM?.code?.trim()) {
+    newErrors.code = 'Code is required';
+    valid = false;
+  }
+
+  if (!editingUOM?.name?.trim()) {
+    newErrors.name = 'Name is required';
+    valid = false;
+  }
+
+  if (!editingUOM?.conversion_factor || isNaN(editingUOM.conversion_factor)) {
+    newErrors.conversion_factor = 'Valid conversion factor is required';
+    valid = false;
+  }
+
+  if (!editingUOM?.usd_price || isNaN(editingUOM.usd_price)) {
+    newErrors.usd_price = 'Valid USD price is required';
+    valid = false;
+  }
+
+  if (!editingUOM?.branch) {
+    newErrors.branch = 'Branch is required';
+    valid = false;
+  }
+
+
+  setEditErrors(newErrors);
+  return valid;
+};
+
+
+
+
+const handleEditClickUOM = (uomObj) => {
+  if (!uomObj || typeof uomObj !== 'object' || !uomObj.id) {
+    console.warn("Invalid UOM passed to handleEditClickUOM:", uomObj);
+    toast.error("Invalid UOM selected.");
+    return;
+  }
+
+  console.log("Selected UOM for Edit:", uomObj);
+
+  setEditingUOM({
+    id: uomObj.id,
+    code: uomObj.code,
+    name: uomObj.name,
+    conversion_factor: uomObj.conversion_factor,
+    usd_price: uomObj.usd_price,
+    branch: uomObj.branch?.toString(),
+    status: uomObj.status?.toString(),
+  });
+
+  setEditModal(true);
+};
+
+
+
+const handleEditUOMChange = (e) => {
+  const { name, value } = e.target;
+
+  setEditingUOM((prev) => ({
+    ...prev,
+    [name]: name === 'status' ? value === 'true' : value,
+  }));
+};
+
+
+
+const handleEditSubmitUOM = async () => {
+  if (!editingUOM?.id) {
+    toast.error("Invalid UOM selected for editing.");
+    return;
+  }
+
+  if (!validateEditUOM()) return;
+
+  setIsSubmitting(true);
+
+  const payload = {
+    code: editingUOM.code.trim(),
+    name: editingUOM.name.trim(),
+    conversion_factor: parseFloat(editingUOM.conversion_factor),
+    usd_price: parseFloat(editingUOM.usd_price),
+    branch: parseInt(editingUOM.branch),
+    status: editingUOM.status === true || editingUOM.status === 'true',
+  };
+
+  try {
+    const response = await UOMModel.updateUOM(editingUOM.id, payload);
+
+    if (response.status === 200) {
+      fetchUOMs();
+      toast.success('UOM updated successfully!');
+      setEditModal(false);
+    }
+  } catch (error) {
+    console.error("Update UOM error:", error);
+    toast.error('Failed to update UOM!');
+    if (error.response?.data?.errors) {
+      setEditErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+                                                  const handleEditCloseModal = () => {
+                                                      setEditModal(false);
+                                                      setEditingUOM(null);
+                                                      setEditUOMErrors({
+                                                        code: '',
+                                                        name: '',
+                                                        conversion_factor: '',
+                                                        usd_price: '',
+                                                        branch: '',
+                                                        status: ''
+                                                      });
+                                                    };
+
+
+
+
+const handleDeleteUOM = async (id) => {
+  if (!id) return;
+
+  try {
+    await UOMModel.deleteUOM(id);
+
+    // Remove deleted UOM from local state
+    setUOMData((prevData) => prevData.filter((item) => item.id !== id));
+
+    // Close modal if open
+    if (modal && typeof modal.close === 'function') {
+      modal.close();
+    }
+
+    toast.success('UOM deleted successfully');
+  } catch (error) {
+    console.error("Error deleting UOM:", error);
+    toast.error('Failed to delete UOM');
+  }
+};
+
                   
                    // Handle close modal
                    const handleCloseModal = () => {
+                     setErrors({
+                      code: '',
+                      name: '',
+                      conversion_factor: '',
+                      usd_price: '',
+                      branch: '',
+                      status: ''
+                     })
                      setModal(false);
                      setEditModal(false)
                    };
@@ -76,33 +370,7 @@
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
+                 <CustomScrollbar/>
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
@@ -146,99 +414,61 @@
                               </button>
                           </div>
                  
-                       <div className="text-gray-500" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
-                         <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {items}</p>
-                         <select
-                           className="border border-gray-300 rounded-lg w-[114px] h-[35px] px-2"
-                           style={{
-                             appearance: 'none',
-                             WebkitAppearance: 'none',
-                             MozAppearance: 'none',
-                             backgroundColor: 'white',
-                             backgroundImage: 'none',
-                             paddingLeft: '5px',
-                           }}
-                           onChange={(e) => setItems(Number(e.target.value))}
-                           value={items}
-                         >
-                           <option value={10}>10</option>
-                           <option value={25}>25</option>
-                           <option value={50}>50</option>
-                         </select>
-                       </div>
-                 
-                       
-                 
                        <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1300px]   " style={{ borderSpacing: '0 12px', borderCollapse: 'separate'}}>
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
-                             <th className="px-6 py-3"  >CODE</th>
-                             <th className="px-6 py-3"  >NAME </th>
-                             <th className="px-6 py-3" >CONVERTION FACTOR IN GRAM </th>
-                             <th className="px-6 py-3"  >PRICE IN USD</th>
-                             <th className="px-6 py-3"  >STATUS</th>
-                             <th className="px-6 py-3"  >ACTION</th>
+                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
+                             <th className="px-6 py-3 w-[80px]"  >CODE</th>
+                             <th className="px-6 py-3 w-[80px]"  >NAME </th>
+                             <th className="px-6 py-3 w-[100px]" >CONVERTION FACTOR IN GRAM </th>
+                             <th className="px-6 py-3 w-[100px]"  >PRICE IN USD</th>
+                             <th className="px-6 py-3 w-[80px]"  >BRANCH</th>
+                             <th className="px-6 py-3 w-[80px]"  >STATUS</th>
+                             <th className="px-6 py-3 w-[100px]"  >ACTION</th>
                            </tr>
                          </thead>
                          <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">GM </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Gram </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1.0000</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-red-400  text-xs">60.0000</td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>PRIMARY</span>
-                               </td> 
-      
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn text-white border-none font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '150px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete UOM
-                                      </button>
-                                  </div>
-                                  </td>
-                             </tr>
-                             
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
+                          {uomData.map((uom, index) => (
+                            <tr key={uom.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400">
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{uom.code}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{uom.name}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{uom.conversion_factor}</td>
+                              <td className="px-6 py-5 border-b border-gray-200  text-xs">{uom.usd_price}</td>
+                              <td className="px-6 py-5 border-b border-gray-200  text-xs">{getBranchName(uom.branch)}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs">
+                                {uom.status ? (
+                                  <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    Active
+                                  </span>
+                                ) : (
+                                  <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    INACTIVE
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                  <EditButton
+                                    onClick={()=>handleEditClickUOM(uom)}
+                                  />
+                                  <DeleteButton 
+                                      buttonText="Delete UOM" 
+                                      modalId={`delete_modal_${uom.id}`} 
+                                      onConfirmDelete={() => handleDeleteUOM(uom.id)} 
+                                  />
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+
                        </table>
                        
                  
                        {/* Pagination */}
-                       <div className="flex gap-1 justify-center">
+                       <Pagination/>
+                       {/* <div className="flex gap-1 justify-center">
                          <button className="btn bg-gray-50 border-none rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
                            {'<'}
                          </button>
@@ -248,85 +478,10 @@
                          <button className="btn rounded-full bg-gray-50 border-none w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
                            {'>'}
                          </button>
-                       </div>
+                       </div> */}
                  
                        {/* Modal */}
       
-      
-                      <dialog id="my_modal_8" className="modal">
-                       <div className="modal-box text-center py-8 px-6 rounded-xl bg-white relative font-[Open_Sans]
-                          w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                         
-                    "
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs bg-green-500 border-none font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 w-[90vw] max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your UOM is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
                       </div>
       
                       {modal && (
@@ -340,112 +495,128 @@
                                     <hr className="my-4 border-gray-300" />
       
                                     <div className="flex flex-col flex-grow gap-3"> {/* Added flex-grow */}
-                                   
+                                     <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       code:
+                                       code: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addUOMData.code}
+                                        onChange={handleAddUOMChange}
+                                        name="code"
                                       />
+                                      <p className="text-xs text-red-400">{errors.code}</p>
+                                      
+                                    </div>
+
+                                    <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addUOMData.name}
+                                        onChange={handleAddUOMChange}
+                                        name="name"
                                       />
-
-
+                                      <p className="text-xs text-red-400">{errors.name}</p>
+                                      
+                                    </div>
+                                    <div>
                             
+                                            <label className="font-semibold text-xs text-[#344767] w-[100%]">
+                                              Conversion Factor: <span className="text-xs text-red-400">*</span>
+                                            </label>
+
+                                            <input 
+                                              type="number" 
+                                              name="conversion_factor"  
+                                              placeholder="Type here" 
+                                              className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg border border-gray-300 text-gray-500 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                              style={{ paddingLeft: '12px' }}
+                                              value={addUOMData.conversion_factor}
+                                              onChange={handleAddUOMChange}  
+                                              step="1"
+                                            />
+                                            <p className="text-xs text-red-400">{errors.conversion_factor}</p>
+                                      
+                                    </div>
+
+
+                                            <div>
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Convertion Factor:
+                                            Usd price : <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="usd_price"  // Must match your formData key
                                                 placeholder="Type here" 
-                                                className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                                style={{paddingLeft:'12px' }}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
-                                                step="1"  // For decimal values if needed
-                                                />
-
-                                            <label 
-                                            
-                                            className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                            Usd price :
-                                            </label>
-
-                                            <input 
-                                                type="number" 
-                                                name="input_tax"  // Must match your formData key
-                                                placeholder="Type here" 
-                                                className="input w-[100%] text-xs rounded-lg border bg-white border-gray-300 border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input w-[100%] text-xs rounded-lg border bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                 style={{ paddingLeft:'12px' }}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
+                                                value={addUOMData.usd_price}
+                                                onChange={handleAddUOMChange}
                                                 step="1"  // For decimal values if needed
                                                 />
+                                                <p className="text-xs text-red-400">{errors.usd_price}</p>
+                                      
+                                    </div>
 
-                                       
-
-                                           
-                                            <label 
-                                                
-                                                className="font-semibold text-sm text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{paddingLeft:'25px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
+                                                <div className="w-full flex flex-col gap-2">
+                                                  <label className="text-xs font-bold text-[#344767]">
+                                                    Branch <span className="text-xs text-red-400">*</span>
+                                                  </label>
+                                                  <select
+                                                    name="branch"
+                                                    value={addUOMData.branch}
+                                                    onChange={handleAddUOMChange}
+                                                    className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                                    style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                                  >
+                                                    <option value="">Select Branch</option>
+                                                    {branches.map((branch) => (
+                                                      <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  {errors.branch && (
+                                                    <span className="text-red-500 text-xs mt-1">{errors.branch}</span>
+                                                  )}
+                                                </div>
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
+                                            
                                             <button
                                                 type="button"
                                                 className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
                                                 style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
+                                                onClick={handleCloseModal}
                                             >
-                                                Submit
+                                                Close
                                             </button>
                                             <button
                                                 type="button"
                                                 className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
                                                 style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
+                                                onClick={handleSubmitUOM}
                                             >
-                                                Close
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -464,91 +635,128 @@
                                     <hr className="my-4 border-gray-300" />
       
                                     <div className="flex flex-col flex-grow gap-3"> {/* Added flex-grow */}
-                                   
+                                     <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       code:
+                                       code: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingUOM.code}
+                                        onChange={handleEditUOMChange}
+                                        name="code"
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.code}</p>
+                                      
+                                    </div>
+                                    <div>
+
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingUOM.name}
+                                        onChange={handleEditUOMChange}
+                                        name="name"
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.name}</p>
+                                      
+                                    </div>
 
-
+                                    <div>
                             
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Convertion Factor:
+                                            Convertion Factor: <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="conversion_factor"  // Must match your formData key
                                                 placeholder="Type here" 
-                                                className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input w-[100%] text-xs bg-white border-gray-300 text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                 style={{paddingLeft:'12px' }}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
+                                                value={editingUOM.conversion_factor}
+                                                onChange={handleEditUOMChange}
                                                 step="1"  // For decimal values if needed
                                                 />
+                                                <p className="text-xs text-red-400">{editErrors.conversion_factor}</p>
+                                      
+                                    </div>
+<div>
+  <label className="font-semibold text-xs text-[#344767] w-[100%]">
+    Usd price : <span className="text-xs text-red-400">*</span>
+  </label>
 
-                                            <label 
-                                            
-                                            className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                            Usd price :
-                                            </label>
+  <input 
+    type="number" 
+    name="usd_price" // <-- FIXED
+    placeholder="Type here" 
+    className="input w-[100%] text-xs rounded-lg border bg-white border-gray-300 text-gray-500 focus:outline-none focus:border-b-2 focus:border-blue-500"
+    style={{ paddingLeft:'12px' }}
+    value={editingUOM.usd_price || ''}
+    onChange={handleEditUOMChange}
+    step="0.01"
+  />
+  
+  <p className="text-xs text-red-400">{editErrors.usd_price}</p>
+</div>
 
-                                            <input 
-                                                type="number" 
-                                                name="input_tax"  // Must match your formData key
-                                                placeholder="Type here" 
-                                                className="input w-[100%] text-xs rounded-lg border bg-white border-gray-300 border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                                style={{ paddingLeft:'12px' }}
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
-                                                step="1"  // For decimal values if needed
-                                                />
 
                                        
+                                                <div className="w-full flex flex-col gap-2">
+                                                  <label className="text-xs font-bold text-[#344767]">
+                                                    Branch <span className="text-xs text-red-400">*</span>
+                                                  </label>
+                                                  <select
+                                                    name="branch"
+                                                    value={editingUOM?.branch || ''}
+                                                    onChange={handleEditUOMChange}
+                                                    className="select select-bordered bg-white text-gray-500 text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                                    style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                                  >
+                                                    <option value="">Select Branch</option>
+                                                    {branches.map((branch) => (
+                                                      <option key={branch.id} value={branch.id}>
+                                                        {branch.name}
+                                                      </option>
+                                                    ))}
+                                                  </select>
+                                                  {editErrors.branch && (
+                                                    <span className="text-red-500 text-xs mt-1">{editErrors.branch}</span>
+                                                  )}
+                                                </div>
 
                                            
                                             <label 
                                                 
-                                                className="font-semibold text-sm text-[#344767] w-[100%]"
+                                                className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{paddingLeft:'25px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 text-gray-500 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                style={{paddingLeft:'12px'}}
+                                                value={String(editingUOM.status)}
+                                                onChange={handleEditUOMChange}
+                                                name='status'
+                                               
                                             >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
             
                                             </div> 
@@ -557,20 +765,21 @@
                                                 >
                                             <button
                                                 type="button"
-                                                className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
+                                                className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
+                                                style={{ backgroundColor:'#8392ab' }}
+                                                onClick={handleEditCloseModal}
                                             >
                                                 Close
                                             </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72E4' }}
+                                                onClick={handleEditSubmitUOM}
+                                                disabled={isSubmitting}
+                                          >
+                                                {isSubmitting ? 'Updating...' : 'Update'}
+                                          </button>
                                             </div>
                                         </div>
                                         </div>

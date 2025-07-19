@@ -10,6 +10,7 @@ const ItemDetails = () => {
           const [preview, setPreview] = useState(null);
           const [purchaseUtils,setPurchaseUtils] =useState([])
           const [goldUtils,setGoldUtils] =useState([])
+          const [DiamondUtils,setDiamondUtils] = useState([])
           const [items, setItems] = useState([{}]);
           console.log(items)
           const newArray = [items]
@@ -68,21 +69,24 @@ const ItemDetails = () => {
           console.log(data)
           console.log(purchaseUtils)
           console.log(goldUtils)
-          console.log(allUtils)
+          console.log(DiamondUtils)
           const uomArray = goldUtils.find(item => item.uom)?.uom || [];
           
           const JewelleryType = goldUtils.find(item => item.jewelley_type)?.jewelley_type || [];
-          const Brand = purchaseUtils.find(item => item.product_brand)?.product_brand || [];
+          const Brand = DiamondUtils.find(item => item.product_brand)?.product_brand || [];
           const Category = goldUtils.find(item=>item.categories)?.categories||[]
-          const occasion = purchaseUtils.find(item=>item.occasion)?.occasion || []
-          const design  = purchaseUtils.find(item=>item.product_design)?.product_design || []
+          const occasion = DiamondUtils.find(item=>item.occasion)?.occasion || []
+          const design  = DiamondUtils.find(item=>item.product_design)?.product_design || []
           const made_in =  purchaseUtils.find(item=>item.product_country)?.product_country || []
-          const size =  purchaseUtils.find(item=>item.product_size)?.product_size || []
-          const style =  purchaseUtils.find(item=>item.product_style)?.product_style || []
-          const gender =  purchaseUtils.find(item=>item.product_gender)?.product_gender || []
-          const color =  purchaseUtils.find(item=>item.product_color)?.product_color || []
-          const item_type =  goldUtils.find(item=>item.item_type)?.item_type || []
+          const size =  DiamondUtils.find(item=>item.product_size)?.product_size || []
+          const style =  DiamondUtils.find(item=>item.product_style)?.product_style || []
+          const gender =  DiamondUtils.find(item=>item.product_gender)?.product_gender || []
+          const color =  DiamondUtils.find(item=>item.product_color)?.product_color || []
+          const item_type =  DiamondUtils.find(item=>item.item_type)?.item_type || []
+          const Stone_type =  DiamondUtils.find(item=>item.stone_type)?.stone_type || []
+          const Item_cut =  DiamondUtils.find(item=>item.item_cut)?.item_cut || []
           const supplier =  allUtils.find(item=>item.supplier_list)?.supplier_list || []
+          const clarity = DiamondUtils.find(item =>item.item_clarity)?.item_clarity || []
           
           const handleImageChange = (e) => {
             const file = e.target.files[0];
@@ -92,7 +96,13 @@ const ItemDetails = () => {
                 setPreview(reader.result);
               };
               reader.readAsDataURL(file);
+              setData(prev => ({
+                    ...prev,
+                    diamond_image: file  // set the actual file, not just base64
+                  }))
+
             }
+
           };
 
           const handleChange = (e) => {
@@ -124,7 +134,15 @@ const ItemDetails = () => {
                console.error(error)
             }
           }
-
+          const fetchDiamondUtils =async () =>{
+              try{
+                   const response = await DiamondModel.GetDiamondUtils()
+                   console.log(response?.data?.data)
+                   setDiamondUtils(response?.data?.data)
+                   }catch(error){
+                     console.log(error)
+                       }
+                  }
 
          const cleanData = (data) => {
               const cleanedData = {};
@@ -239,6 +257,7 @@ const ItemDetails = () => {
 
       fetchGoldUtils()
       fetchPurchaseUtils()
+      fetchDiamondUtils()
       
     },[])
 
@@ -614,11 +633,9 @@ const ItemDetails = () => {
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Item Type --</option>
-  {item_type.map((item) => (
-    <option key={item.id} value={item.id}>
-      {item.name}
-    </option>
-  ))}
+   <option value={item_type.id} className="text-black">
+                {item_type.name}
+              </option>
 </select>
                          
    <label className="text-gray-400 font-semibold text-[11px] mb-1">
@@ -790,14 +807,22 @@ const ItemDetails = () => {
       
       {/* Clarity */}
       <td className="rounded-sm border border-gray-200">
-        <input
+        <select
           type="number"
-                     style={{paddingLeft:'12px'}}
+          style={{paddingLeft:'12px'}}
 
           value={items[rowIndex]?.item_clarity || ''}
           onChange={(e) => handleCellChange(rowIndex, 'item_clarity', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+          className="w-full text-xs text-gray-400 border-none focus:outline-none"
+        > 
+        <option value="">--Select Clarity--</option>
+           {clarity.map((item) => (
+          <option key={item.id} value={ item.id}>
+            {item.name}
+          </option>
+              ))}
+         </select>
+
       </td>
       <td className="rounded-sm border border-gray-200">
         <input
@@ -810,14 +835,21 @@ const ItemDetails = () => {
         />
       </td>
       <td className="rounded-sm border border-gray-200">
-        <input
+        <select
           type="number"
-                     style={{paddingLeft:'12px'}}
+          style={{paddingLeft:'12px'}}
 
           value={items[rowIndex]?.item_cut || ''}
           onChange={(e) => handleCellChange(rowIndex, 'item_cut', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+          className="w-full text-xs text-gray-400 border-none focus:outline-none"
+        >
+           <option value="">--Select Cut--</option>
+           {Item_cut.map((item) => (
+          <option key={item.id} value={ item.id}>
+            {item.name}
+          </option>
+              ))}
+         </select>
       </td>
       
       <td className="rounded-sm border border-gray-200">
@@ -827,13 +859,13 @@ const ItemDetails = () => {
           style={{paddingLeft:'12px'}}
           className="w-full py-1 pl-[12px] border-none focus:outline-none text-gray-400 text-xs bg-white"
         >
-          <option value="">Select Item Type</option>
-          {item_type.map((option) => (
-            <option key={option.id} value={option.name}>
-              {option.name}
-            </option>
-          ))}
-        </select>
+         <option value="">--Select Type--</option>
+           {Stone_type.map((item) => (
+          <option key={item.id} value={ item.id}>
+            {item.name}
+          </option>
+              ))}
+         </select>
       </td>
 
       <td className="rounded-sm border border-gray-200">

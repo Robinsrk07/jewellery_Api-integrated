@@ -112,7 +112,7 @@ const validateForm = () => {
       });
     }
   };
-  const handleSubmit = async() => {
+  const handleSubmit = async(shouldRedirect) => {
   if(!validateForm()){
     toast.error('Please fill all required fields');
     return;
@@ -120,7 +120,48 @@ const validateForm = () => {
   try{
     const response = await PurchaseModel.createPurchase(cleanedData);
     if (response.status === 201) {
-      navigate('/dashboard/purchase')
+       setData({
+        purchase_type: '',
+        items: '',
+        design: '',
+        brand: '',
+        made_in: '',
+        size: '',
+        style: '',
+        occasion: '',
+        metal_color: '',
+        gender: '',
+        stone_type: '',
+        multi_stone_rate: '',
+        gross_weight: '',
+        discount: '',
+        tagline_1: '',
+        tagline_2: '',
+        tagline_3: '',
+        tagline_4: '',
+        tag_defenition: '',
+        alias: '',
+        status: '',
+        description: '',
+        item_type: '',
+        default_currency: '',
+        terms_of_payment: '',
+        due_date: '',
+        supplier: '',
+        reference_no: '',
+        stock_point: '',
+        supplier_currency: '',
+        buyer_currency: '',
+        document_currency: 1,
+        making_rate: '',
+        stone_rate: '',
+        stone_weight: '',
+        multi_stone_weight: '',
+        address: '',
+      });
+       if (shouldRedirect) {
+      navigate('/dashboard/purchase');
+    }
       toast.success("Purchase created successfully!");
     }
   } catch(error){
@@ -790,17 +831,20 @@ const validateForm = () => {
         </div>
       </div>
 
-      <div className="flex w-full h-[20vh] justify-end gap-2 text-white " style={{padding:'20px'}}>
-        <button 
-          onClick={handleSubmit}
-          className="btn border-none text-white text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[10vw] rounded-lg"
-        >
-          Save
-        </button>
-        <button className="btn text-white border-none text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[15vw] rounded-lg">
-          Save & Continue Adding
-        </button>
-      </div>
+       <div className="flex w-full h-[20vh] justify-end gap-2 text-white" style={{ padding: '20px' }}>
+      <button
+        onClick={() => handleSubmit(true)}  // Save and redirect
+        className="btn border-none text-white text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[10vw] rounded-lg"
+      >
+        Save
+      </button>
+      <button
+        onClick={() => handleSubmit(false)} // Save and stay
+        className="btn text-white border-none text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[15vw] rounded-lg"
+      >
+        Save & Continue Adding
+      </button>
+    </div>
     </div>
   );
 };

@@ -6,6 +6,7 @@ import Pagination from "../../../components/Pagination";
 import ItemsPerPageSelector from "../../../components/ItemsPerPageSelector";
 import CreateButton from "../../../components/CreateButton";
 import UtilsGetModel from "../../../models/Utils_getModel";
+import TableSkelton from "../../../components/tableSkelton";
 
 import { Link, useParams } from "react-router";
 import { toast } from "react-toastify";
@@ -14,6 +15,8 @@ import { useSelector } from "react-redux";
 const ListDiamond = () => {
 const [diamondList, setDiamondList] = useState([]);
  const [goldUtils,setGoldUtils] =useState([])
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
 
 const {uuid,id} =useParams()
 //const auth = useSelector((state) => state.auth);
@@ -46,10 +49,14 @@ console.log("check",goldUtils);
             )
             if (response) {
                 setDiamondList(response.data.data)
+                 setTotalPages(response.data.pagination.pages);
             }
 
         } catch(error) {
            console.error(error)
+        }
+        finally{
+          setIsLoading(false)
         }
     }
 
@@ -119,7 +126,15 @@ console.log("check",goldUtils);
             </tr>
           </thead>
           <tbody>
-            {diamondList.map((item, index) => (
+            {isLoading ? (
+  <TableSkelton />
+) : diamondList.length === 0 ? (
+  <tr>
+    <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+      No data available
+    </td>
+  </tr>
+) : diamondList.map((item, index) => (
               <tr key={item.uuid} style={{height:'50px', padding:'0px 20px'}} className="bg-white border-b h-[50px] border-gray-200 hover:bg-gray-50 text-xs">
                 <td className="px-4 py-3 text-center" >{index + 1}</td>
                 <td className="px-4 py-3">{item.diamond_item}</td>
@@ -162,7 +177,7 @@ console.log("check",goldUtils);
           </tbody>
         </table>
 
-        <Pagination />
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
     </>
   );

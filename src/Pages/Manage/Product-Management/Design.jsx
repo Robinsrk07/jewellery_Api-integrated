@@ -8,6 +8,8 @@ import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+import TableSkelton from "../../../components/tableSkelton";
+import { setLogin } from "../../../StateManagement/authSlice";
 
 
 const Design= ()=>{
@@ -21,6 +23,10 @@ const Design= ()=>{
                   const [status, setStatus] = useState('');
                   const [editingDesign, setEditingDesign] = useState(null);
                   const [editErrors, setEditErrors] = useState({});
+                  const [isLoading, setIsLoading] = useState(true);
+                  const [deletingId, setDeletingId] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
+                   const [totalPages, setTotalPages] = useState(1);
                   const [isSubmitting, setIsSubmitting] = useState(false);
                   const auth = useSelector((state) => state.auth);
                   const { login_id, can_manage_user_types } = auth;
@@ -55,14 +61,17 @@ const Design= ()=>{
                             console.log("Response from API:", response);
 
                             if (response.data && response.data.data) {
-                              console.log("Data Received:", response.data.data);
                               setDesigns(response.data.data);
+                               setTotalPages(response.data.pagination.pages);
                             } else {
                               toast.error("Unable to fetch designs");
                             }
                           } catch (error) {
                             console.error("Error fetching designs:", error);
                             toast.error("Failed to load designs");
+                          }
+                          finally{
+                            setIsLoading(false)
                           }
                         };
 
@@ -76,8 +85,6 @@ const Design= ()=>{
                       const validateDesign = () => {
                         const newErrors = {};
                         if (!addDesignData.name.trim()) newErrors.name = 'Please enter name';
-                        if (!addDesignData.description.trim()) newErrors.description = 'Please enter description';
-                        if (addDesignData.status === '') newErrors.status = 'Please select status';
                         return newErrors;
                       };
 
@@ -106,16 +113,11 @@ const Design= ()=>{
                         const payload = {
                           name: addDesignData.name,
                           description: addDesignData.description,
-                          status: addDesignData.status === 'true',
-                          created_by: user_id,
-                          created_by_type: user_types,
                         };
 
-                        console.log("Payload being sent:", payload);
 
                         try {
                           const response = await designModel.createDesign(payload);
-                          console.log("Create Design response:", response);
 
                           if (response.status === 201 || response.status === 200) {
                             fetchDesigns();
@@ -139,18 +141,17 @@ const Design= ()=>{
 
 
                           const handleEditClick = (designObj) => {
-                            console.log("Selected for Edit:", designObj);
                             setEditingDesign({ ...designObj });
                             setEditModal(true);
                           };
                           const handleEditDesignChange = (e) => {
-                            const { name, value } = e.target;
-                            setEditingDesign((prev) => ({
-                              ...prev,
-                              [name]: name === 'status' ? value === 'true' : value,
-                            }));
-                          };
-                          const validateEditDesign = () => {
+                              const { name, value } = e.target;
+                               setEditingDesign((prev) => ({
+                                ...prev,
+                                [name]: name === 'status' ? value === 'true' : value,
+                               }));
+                              };
+                            const validateEditDesign = () => {
                             let valid = true;
                             const newErrors = { name: '', description: '', status: '' };
 
@@ -159,21 +160,10 @@ const Design= ()=>{
                               valid = false;
                             }
 
-                            if (!editingDesign?.description?.trim()) {
-                              newErrors.description = 'Description is required';
-                              valid = false;
-                            }
-
-                            if (editingDesign?.status === undefined || editingDesign.status === '') {
-                              newErrors.status = 'Status is required';
-                              valid = false;
-                            }
-
                             setEditErrors(newErrors);
                             return valid;
                           };
                           const handleEditSubmitDesign = async () => {
-                            console.log("Editing Design:", editingDesign);
 
                             if (!editingDesign?.id) {
                               toast.error("Invalid design selected for editing.");
@@ -232,7 +222,9 @@ const Design= ()=>{
                           } catch (error) {
                             console.error("Error deleting design:", error);
                             toast.error('Failed to delete design');
-                          }
+                          }finally {
+                                  setDeletingId(null);
+                              }
                         };
 
         
@@ -240,6 +232,11 @@ const Design= ()=>{
                     // Handle close modal
                     const handleCloseModal = () => {
                       setModal(false);
+                      setErrors({
+                        name: '',
+                        description: '',
+                        status: '',
+                      })
                     };
                     const handleEditCloseModal = () => {
                       setEditModal(false)
@@ -266,7 +263,7 @@ const Design= ()=>{
                     buttoncontent="+ New Design"
                     onClick={() => setModal(true)}  
                     />                 
-                  {/* <ItemsPerPageSelector items={items} setItems={setItems} /> */}
+                 <ItemsPerPageSelector items={limit} setItems={setLimit} />
 
                         <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
                 style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '1200px' }}>
@@ -280,7 +277,15 @@ const Design= ()=>{
                   </tr>
                 </thead>
                 <tbody>
-                  {designs.map((design, index) => (
+                  {isLoading ? (
+                      <TableSkelton />
+                    ) : designs.length === 0 ? (
+                      <tr >
+                        <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                          No data available
+                        </td>
+                      </tr>
+                    ) :designs.map((design, index) => (
                     <tr key={design.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                       <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
                         {/* {design.id} */}
@@ -304,11 +309,14 @@ const Design= ()=>{
                          <EditButton
                          onClick={()=>handleEditClick(design)}
                          />
-                          <DeleteButton 
-                             buttonText="Delete Design" 
-                             modalId={`delete_modal_${design.id}`} 
-                             onConfirmDelete={() => handleDeleteDesign(design.id)} 
-                                        />
+                         
+                                         <DeleteButton 
+                                            buttonText={deletingId === design.id ? 'Deleting...' : 'Delete'}
+                                            item="Diamond Item"
+                                            onOpenModal={() => setItemToDelete(design.id)}
+                                            onConfirmDelete={() => handleDeleteDesign(itemToDelete)}
+                                            disabled={deletingId === design.id}
+                                          />
                         </div>
                       </td>
                     </tr>
@@ -318,7 +326,7 @@ const Design= ()=>{
                         
                   
                         {/* Pagination */}
-                        <Pagination/>
+                           <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                   
                         {/* Modal */}
            
@@ -341,6 +349,7 @@ const Design= ()=>{
                                       >
                                        Name:
                                       </label>
+                                      <div>
                                       <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -349,8 +358,8 @@ const Design= ()=>{
                                         onChange={handleAddDesignChange}
                                         name="name"
                                       />
-                                      
-                                      
+                                      <p className="text-xs text-red-400">{errors.name}</p>
+                                      </div>
 
                                       <label 
                                         
@@ -391,14 +400,7 @@ const Design= ()=>{
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                               onClick={handleSubmitDesign}
-                                            >
-                                                Submit
-                                            </button>
+                                            
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
@@ -406,6 +408,14 @@ const Design= ()=>{
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                               onClick={handleSubmitDesign}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -430,6 +440,7 @@ const Design= ()=>{
                                       >
                                        Name:
                                       </label>
+                                      <div>
                                       <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -438,6 +449,8 @@ const Design= ()=>{
                                         onChange={(e)=>handleEditDesignChange(e)}
                                         name="name"
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.name}</p>
+                                      </div>
                                       
                                       
 

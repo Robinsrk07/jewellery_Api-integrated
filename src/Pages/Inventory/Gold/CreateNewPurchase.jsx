@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import { toast } from "react-toastify";
 import PurchaseModel from "../../../models/PurchaseModel";
-import { useParams } from "react-router";
+import { useNavigate, useParams } from "react-router";
 const CreateNewPurchase = () => {
+  const navigate = useNavigate()
   const [data, setData] = useState({
     purchase_type: '',
     items: "",
@@ -106,20 +107,72 @@ const validateForm = () => {
       });
     }
   };
-  const handleSubmit = async() => {
-  if(!validateForm()){
-    toast.error('Please fill all required fields');
-    return;
-  }
-  try{
-    const response = await PurchaseModel.createPurchase(data);
+  const handleSubmit = async (shouldRedirect) => {
+  // Filter out empty string, null, and undefined values
+  const cleanedData = Object.fromEntries(
+    Object.entries(data).filter(
+      ([_, value]) => value !== '' && value !== null && value !== undefined
+    )
+  );
+
+  try {
+    const response = await PurchaseModel.createPurchase(cleanedData);
+
     if (response.status === 201) {
       toast.success("Purchase created successfully!");
+
+      // Clear form data
+      setData({
+        purchase_type: '',
+        items: '',
+        design: '',
+        brand: '',
+        made_in: '',
+        size: '',
+        style: '',
+        occasion: '',
+        metal_color: '',
+        gender: '',
+        stone_type: '',
+        multi_stone_rate: '',
+        gross_weight: '',
+        discount: '',
+        tagline_1: '',
+        tagline_2: '',
+        tagline_3: '',
+        tagline_4: '',
+        tag_defenition: '',
+        alias: '',
+        status: '',
+        description: '',
+        item_type: '',
+        default_currency: '',
+        terms_of_payment: '',
+        due_date: '',
+        supplier: '',
+        reference_no: '',
+        stock_point: '',
+        supplier_currency: '',
+        buyer_currency: '',
+        document_currency: 1,
+        making_rate: '',
+        stone_rate: '',
+        stone_weight: '',
+        multi_stone_weight: '',
+        address: '',
+      });
+
+      // Navigate after success
+      if (shouldRedirect) {
+        navigate(`/dashboard/viewpurchase/${id}`);
+      }
     }
-  } catch(error){
-    toast.error("Unable to Create Purchase, Please try again later.");
+  } catch (error) {
+    console.log(error)
+    toast.error(error.errors || 'Unable to create ,Please Try Again with Valid Data');
   }
 };
+
  
 
   useEffect(() => {
@@ -173,7 +226,7 @@ const validateForm = () => {
 
         {/* Document Currency */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Document Currency</label>
+          <label className="text-xs font-bold text-[#344767]">Document Currency<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="document_currency"
             value={data.document_currency}
@@ -242,7 +295,7 @@ const validateForm = () => {
 
         {/* Supplier */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Supplier</label>
+          <label className="text-xs font-bold text-[#344767]">Supplier<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="supplier"
             value={data.supplier}
@@ -280,7 +333,7 @@ const validateForm = () => {
 
         {/* Stock Point */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stock Point</label>
+          <label className="text-xs font-bold text-[#344767]">Stock Point<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="stock_point"
             value={data.stock_point}
@@ -381,7 +434,7 @@ const validateForm = () => {
 
         {/* Items */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Items</label>
+          <label className="text-xs font-bold text-[#344767]">Items<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="items"
             value={data.items}
@@ -573,7 +626,7 @@ const validateForm = () => {
 
         {/* Making Rate */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Making Rate</label>
+          <label className="text-xs font-bold text-[#344767]">Making Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="making_rate"
@@ -588,7 +641,7 @@ const validateForm = () => {
 
         {/* Stone Rate */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stone Rate</label>
+          <label className="text-xs font-bold text-[#344767]">Stone Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="stone_rate"
@@ -618,7 +671,7 @@ const validateForm = () => {
 
         {/* Stone Weight */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Stone Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Stone Weight<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="stone_weight"
@@ -648,7 +701,7 @@ const validateForm = () => {
 
         {/* Gross Weight */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Gross Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Gross Weight<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
             name="gross_weight"
@@ -789,17 +842,20 @@ const validateForm = () => {
         </div>
       </div>
 
-      <div className="flex w-full h-[20vh] justify-end gap-2 text-white " style={{padding:'20px'}}>
-        <button 
-          onClick={handleSubmit}
-          className="btn border-none text-white text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[10vw] rounded-lg"
-        >
-          Save
-        </button>
-        <button className="btn text-white border-none text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[15vw] rounded-lg">
-          Save & Continue Adding
-        </button>
-      </div>
+     <div className="flex w-full h-[20vh] justify-end gap-2 text-white" style={{ padding: '20px' }}>
+      <button
+        onClick={() => handleSubmit(true)}  // Save and redirect
+        className="btn border-none text-white text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[10vw] rounded-lg"
+      >
+        Save
+      </button>
+      <button
+        onClick={() => handleSubmit(false)} // Save and stay
+        className="btn text-white border-none text-xs bg-[#5E72E4] w-full sm:w-1/4 md:w-[15vw] rounded-lg"
+      >
+        Save & Continue Adding
+      </button>
+    </div>
     </div>
   );
 };

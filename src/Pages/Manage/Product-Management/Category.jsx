@@ -9,6 +9,7 @@ import CategoryModel from "../../../models/categoryModel";
 import ItemTypeModel from "../../../models/itemTypeModel";
 import { useSelector } from "react-redux";
 import SuccessToast from "../../../components/SuccessToast";
+import TableSkelton from "../../../components/tableSkelton";
 import { toast } from 'react-toastify';
 
 
@@ -21,7 +22,9 @@ const Category =()=>{
                     const [deletingId, setDeletingId] = useState(null);
                     const [categoryToDelete, setCategoryToDelete] = useState(null);     
                     const auth= useSelector((state) => state.auth);
+                    const [totalPages, setTotalPages] = useState(1);
                     const { login_id ,can_manage_user_types,} = auth;    
+                    const [isLoading, setIsLoading] = useState(true);
                     const[limit,setLimit]=useState(10);  
                     const[page,setPage]=useState(1);  
                     const[search,setSearch]=useState('');
@@ -35,6 +38,7 @@ const Category =()=>{
                       standard_purity:'',
                       is_default:''
                       });
+
                       const [errors, setErrors] = useState({
                           code: '',
                           name: '',
@@ -42,6 +46,7 @@ const Category =()=>{
                           standard_purity:'',
                           is_default:'',
                         });
+
                      const user_id = login_id;
                      const user_types = Object.keys(can_manage_user_types).join(',');
                      const [itemTypeOptions, setItemTypeOptions] = useState([]);
@@ -59,15 +64,31 @@ const Category =()=>{
 
                           if (response.data && response.data.data) {
                             setCategoryData(response.data.data);
+                            setTotalPages(response.data.pagination.pages);
                           }
                         } catch (error) {
                           console.error("Error fetching category data:", error);
                         }
                       };
-                    const handleChange = (e) => {
-                        const { name, value } = e.target;
-                        setaddCategoryData(prev => ({ ...prev, [name]: value }));
-                      };
+                  const handleChange = (e) => {
+                      const { name, value } = e.target;
+
+                      setaddCategoryData(prev => ({ ...prev, [name]: value }));
+
+                    
+                      if (name === 'code') {
+                        const isDuplicate = categoryData.some(
+                          (item) => item.code.toLowerCase().trim() === value.toLowerCase().trim()
+                        );
+
+                        if (isDuplicate) {
+                          setErrors(prev => ({ ...prev, code: "Code already exists" }));
+                        } else {
+                          setErrors(prev => ({ ...prev, code: "" })); 
+                        }
+                      }
+                    };
+
                     const handleSubmit = async () => {
                     // Validate before submission
                     if (!validateForm()) {
@@ -130,12 +151,7 @@ const Category =()=>{
                       console.log(error);
                       
                        toast.error('Failed to update category!');
-                    if (error.response?.data?.errors) {
-                      setErrors(prev => ({
-                        ...prev,
-                        ...error.response.data.errors
-                      }));
-                    }
+               
                   } finally {
                     setIsSubmitting(false);
                   }
@@ -295,11 +311,27 @@ const validateEditForm = () => {
                         is_default:''
                         
                       });
+                      setErrors({
+                        code: '',
+                        name: '',
+                        item_type:'',
+                        standard_purity:'',
+                        is_default:''
+                        
+                      })
                       setModal(false);
                     };
 
                   
                     const handleEditCloseModal = () => {
+                      setErrors({
+                        code: '',
+                        name: '',
+                        item_type:'',
+                        standard_purity:'',
+                        is_default:''
+                        
+                      })
                       setEditModal(false)
                     };
                   
@@ -317,6 +349,8 @@ const validateEditForm = () => {
                         }
                       } catch (error) {
                         console.error("Error fetching item types:", error);
+                      }finally{
+                        setIsLoading( false)
                       }
                     };
 
@@ -341,7 +375,7 @@ const validateEditForm = () => {
                   buttoncontent="+ New Category"
                   onClick={() => setModal(true)}  // This will now work!
                  />                 
-                 <ItemsPerPageSelector items={items} setItems={setItems} />
+                <ItemsPerPageSelector items={limit} setItems={setLimit} />
                   
                         
                      <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
@@ -359,7 +393,15 @@ const validateEditForm = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {categoryData.map((category,index) => (
+                        {isLoading ? (
+                          <TableSkelton />
+                        ) : categoryData.length === 0 ? (
+                          <tr >
+                            <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                              No data available
+                            </td>
+                          </tr>
+                        ) : categoryData.map((category,index) => (
                           console.log(category),
                           <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                             <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
@@ -413,7 +455,7 @@ const validateEditForm = () => {
                     </table>
                                         
                   
-                        <Pagination/>                
+                        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />               
       </div>
        
       {modal && (
@@ -427,7 +469,7 @@ const validateEditForm = () => {
                                       <label      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Code:
+                                       Code: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
                                       <input
                                         type="text"
@@ -448,7 +490,7 @@ const validateEditForm = () => {
                                        <label                                      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
                                      <input
                                       type="text"
@@ -466,7 +508,7 @@ const validateEditForm = () => {
                                     </div>
                                     <div>
                                        <label className="font-semibold text-xs text-[#344767] w-[100%]">
-                                        Item Type:
+                                        Item Type: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
                                       <select
                                         name="item_type"
@@ -475,9 +517,9 @@ const validateEditForm = () => {
                                         className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px', color: '#374151' }}
                                       >
-                                        <option value=""></option>
+                                        <option value="" className="text-xs text-gray-500">--select category--</option>
                                         {itemTypeOptions.map((item) => (
-                                          <option key={item.id} value={item.id}>{item.name}</option>
+                                          <option className="text-xs text-gray-400" key={item.id} value={item.id}>{item.name}</option>
                                         ))}
                                       </select>
                                       {errors.item_type && (
@@ -489,7 +531,7 @@ const validateEditForm = () => {
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Standard Purity:
+                                        Standard Purity: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
 
                                       <input
@@ -502,14 +544,14 @@ const validateEditForm = () => {
                                       onChange={handleChange}
                                     />
                                     {errors.standard_purity && (
-                                              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
+                                              <p className="text-red-500 text-xs mt-1">{errors.standard_purity}</p>
                                             )}
                                     
                                     </div>
 
                                     <div>
                                       <label className="font-semibold text-xs text-[#344767] w-[100%]">
-                                        Is Default:
+                                        Is Default: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
                                       <select
                                         name="is_default"
@@ -518,7 +560,7 @@ const validateEditForm = () => {
                                         className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px', color: '#374151' }}
                                       >
-                                        <option value="">Select</option>
+                                        <option value="" className="text-xs text-gray-400">-- select option --</option>
                                         <option value="true">Yes</option>
                                         <option value="false">No</option>
                                       </select>
@@ -591,7 +633,7 @@ const validateEditForm = () => {
         {/* Code Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[80%]">
-            Code:
+            Code:<span className="text-red-500 text-[14px]">*</span>
           </label>
           <input
             type="text"
@@ -614,7 +656,7 @@ const validateEditForm = () => {
         {/* Name Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[80%]">
-            Name:
+            Name:<span className="text-red-500 text-[14px]">*</span>
           </label>
           <input
             type="text"
@@ -637,7 +679,7 @@ const validateEditForm = () => {
         {/* Item Type Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[100%]">
-            Item Type:
+            Item Type:<span className="text-red-500 text-[14px]">*</span>
           </label>
           <select
             name="item_type"
@@ -661,7 +703,7 @@ const validateEditForm = () => {
         {/* Standard Purity Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[100%]">
-            Standard Purity:
+            Standard Purity:<span className="text-red-500 text-[14px]">*</span>
           </label>
           <input
             type="number"
@@ -682,7 +724,7 @@ const validateEditForm = () => {
         {/* Is Default Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[100%]">
-            Is Default:
+            Is Default:<span className="text-red-500 text-[14px]">*</span>
           </label>
           <select
             name="is_default"
@@ -705,7 +747,7 @@ const validateEditForm = () => {
         {/* Status Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[100%]">
-            Status:
+            Status:<span className="text-red-500 text-[14px]">*</span>
           </label>
           <select
             name="status"

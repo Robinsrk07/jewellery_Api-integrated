@@ -5,6 +5,7 @@ import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+import TableSkelton from "../../../components/tableSkelton";
 import addressTypeModel from "../../../models/addressTypeModel";
 import { useSelector } from "react-redux";
 import { toast } from 'react-toastify';
@@ -33,9 +34,13 @@ const Adress_Type = () => {
   const [addressTypes, setAddressTypes] = useState([]);
   const [editingAddressType, setEditingAddresss] = useState(null);
   const [limit, setLimit] = useState(10);
+  console.log(limit)
+      const [deletingId, setDeletingId] = useState(null);
+    const [itemToDelete, setItemToDelete] = useState(null);
+  
   const [page, setPage] = useState(1);
-   const [purchaseData, setPurchaseData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [modal, setModal] = useState(false)
@@ -60,7 +65,9 @@ const Adress_Type = () => {
          setTotalPages(response.data.pagination.pages);
     } catch (err) {
       toast.error("Failed to load address types");
-    }
+    }finally {
+    setIsLoading(false); // stop loading
+  }
   };
 
 
@@ -152,7 +159,7 @@ const Adress_Type = () => {
 
 
                 const handleEditSubmit = async () => {
-                                    console.log("Editing Address Type:", editingAddressType);
+                                   
 
                 if (!editingAddressType?.id) {
                   toast.error("Invalid address type selected for editing.");
@@ -221,24 +228,19 @@ const Adress_Type = () => {
 
            
           const handleDeleteAddressType = async (id) => {
-          console.log("Deleting address type with ID:", id);
-          if (!id) return;
+          console.log(id)
+          if (!id) toast.error("Please Try Again , Failed to Delete Adress Type")
 
           try {
             await addressTypeModel.deleteAddress(id);
-
-            setAddressTypes(prevData => prevData.filter(address => address.id !== id));
-
-            const modal = document.getElementById('my_modal_8');
-            if (modal && typeof modal.close === 'function') {
-              modal.close();
-            }
-
+            await fetchAddressTypes()
             toast.success('Address type deleted successfully');
           } catch (error) {
-            console.error("Error deleting address type:", error);
+          
             toast.error('Failed to delete address type');
-          }
+          }finally {
+            setDeletingId(null);
+           }
         };
 
 
@@ -262,7 +264,7 @@ const Adress_Type = () => {
           buttoncontent="+ New Address Type"
           onClick={() => setModal(true)}
         />
-        <ItemsPerPageSelector items={items} setItems={setItems} />
+       <ItemsPerPageSelector items={limit} setItems={setLimit} />
 
         <table
           className="table w-full text-sm text-left text-gray-500 border-collapse"
@@ -272,13 +274,21 @@ const Adress_Type = () => {
             <tr>
               <th className="px-6 py-3" style={{ width: '70px', paddingLeft: '20px' }}>SL NO</th>
               <th className="px-6 py-3" style={{ width: '130px' }}>NAME</th>
-              <th className="px-6 py-3" style={{ width: '500px' }}>DESCRIPTION</th>
+              <th className="px-6 py-3" style={{ width: '600px' }}>DESCRIPTION</th>
               <th className="px-6 py-3" style={{ width: '90px' }}>STATUS</th>
               <th className="px-6 py-3" style={{ width: '90px' }}>ACTION</th>
             </tr>
           </thead>
           <tbody>
-            {addressTypes.map((address,index) => (
+            {isLoading ? (
+  <TableSkelton />
+) : addressTypes.length === 0 ? (
+  <tr >
+    <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+      No data available
+    </td>
+  </tr>
+) : addressTypes.map((address,index) => (
               <tr key={address.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                 <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
                   {index+1}
@@ -304,11 +314,13 @@ const Adress_Type = () => {
                     onClick={() => handleEditClick(address)} 
                     />
 
-                    <DeleteButton
-                      buttonText="Delete Adress Type"
-                      modalId={`delete_modal_${address.id}`}  
-                      onConfirmDelete={() => handleDeleteAddressType(address.id)}
-                    />
+                     <DeleteButton 
+                               buttonText={deletingId === address.id ? 'Deleting...' : 'Delete'}
+                                item="Addres Type"
+                                onOpenModal={() => setItemToDelete(address.id)}
+                                onConfirmDelete={() => handleDeleteAddressType(itemToDelete)}
+                                disabled={deletingId === address.id}
+                           />
                   </div>
                 </td>
               </tr>
@@ -331,6 +343,7 @@ const Adress_Type = () => {
               <label className="font-semibold text-xs text-[#344767] w-[80%]">
                 Name:
               </label>
+              <div>
               <input type="text"
                 placeholder="Type here"
                 value={data.name}
@@ -339,11 +352,12 @@ const Adress_Type = () => {
                 onChange={(e) => handleChange(e)}
                 name="name"
               />
-
+               <p className="text-xs text-red-400">{errors.name}</p>
+               </div>
               <label className="font-semibold text-xs text-[#344767] w-[100%]">
                 Description:
               </label>
-
+              <div>
               <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                 placeholder="Description"
                 style={{ paddingLeft: '12px',}}
@@ -351,8 +365,10 @@ const Adress_Type = () => {
                 name="description"
                 value={data.description}
               ></textarea>
+              <p className="text-xs text-red-400">{errors.description}</p>
+              </div>
 
-              <label className="font-semibold text-xs text-[#344767] w-[80%]">
+              {/* <label className="font-semibold text-xs text-[#344767] w-[80%]">
                 Status:
               </label>
               <select
@@ -365,19 +381,12 @@ const Adress_Type = () => {
                 <option value=""  className=" text-gray-600">Select </option>
                 <option value={true} className=" text-gray-600"> Active</option>
                 <option value={false} className=" text-gray-600"> InActive</option>
-              </select>
+              </select> */}
             </div>
 
             {/* Button container positioned 10px above bottom */}
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
-              <button
-                type="button"
-                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                style={{ backgroundColor: '#5E72e4' }}
-                onClick={() =>handleSubmit()}
-              >
-                Submit
-              </button>
+            
               <button
                 type="button"
                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
@@ -385,6 +394,14 @@ const Adress_Type = () => {
                 onClick={handleCloseModal}
               >
                 Close
+              </button>
+                <button
+                type="button"
+                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                style={{ backgroundColor: '#5E72e4' }}
+                onClick={() =>handleSubmit()}
+              >
+                Submit
               </button>
             </div>
           </div>
@@ -403,6 +420,8 @@ const Adress_Type = () => {
               <label className="font-semibold text-xs text-[#344767] w-[80%]">
                 Name:
               </label>
+
+              <div>
               <input type="text"
                 placeholder="Type here"
                 className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
@@ -410,15 +429,17 @@ const Adress_Type = () => {
                 name="name"
                 value={editingAddressType?.name || ''}
                 onChange={(e) => {
-              setEditingAddresss({...editingAddressType, name: e.target.value});
+                setEditingAddresss({...editingAddressType, name: e.target.value});
               if (errors.name) setErrors({...errors, name: ''});
             }}
               />
+                  <p className="text-xs text-red-400">{errors.name}</p>
+              </div>
 
               <label className="font-semibold text-xs text-[#344767] w-[100%]">
                 Description:
               </label>
-
+              <div>
               <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                 placeholder="Description"
                 style={{ paddingLeft: '12px',}}
@@ -430,7 +451,8 @@ const Adress_Type = () => {
             }}
               
               ></textarea>
-
+                <p className="text-xs text-red-400">{errors.description}</p>
+                      </div>
               <label className="font-semibold text-xs text-[#344767] w-[80%]">
                 Status:
               </label>
@@ -447,9 +469,9 @@ const Adress_Type = () => {
               if (errors.status) setErrors({...errors, status: ''});
             }}
               >
-                <option value="" className=" text-gray-600">Select </option>
-                <option value={true} className=" text-gray-600"> Active</option>
-                <option value={false} className=" text-gray-600"> InActive</option>
+                <option value="" className=" text-gray-600 text-xs">--Select-- </option>
+                <option value={true} className=" text-gray-600 text-xs"> Active</option>
+                <option value={false} className=" text-gray-600 text-xs"> InActive</option>
               </select>
             </div>
 

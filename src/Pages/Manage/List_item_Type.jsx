@@ -7,8 +7,8 @@ import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
 import ItemTypeModel from "../../models/itemTypeModel";
 import { useSelector } from "react-redux";
-import SuccessToast from "../../components/SuccessToast";
 import { toast } from 'react-toastify';
+import TableSkelton from "../../components/tableSkelton";
 
 
 
@@ -17,10 +17,13 @@ const ItemType =()=>{
                     const [modal, setModal] = useState(false)   
                     const [editModal,setEditModal]= useState(false)
                     const [itemTypeData, setItemTypeData] = useState([]);
+                    const [isLoading, setIsLoading] = useState(true);
+
                     const [deletingId, setDeletingId] = useState(null);
                     const [itemToDelete, setItemToDelete] = useState(null);     
                     const auth= useSelector((state) => state.auth);
                     const { login_id ,can_manage_user_types,} = auth;    
+                     const [totalPages, setTotalPages] = useState(1);
                     const[limit,setLimit]=useState(10);  
                     const[page,setPage]=useState(1);  
                     const[search,setSearch]=useState('');
@@ -32,10 +35,8 @@ const ItemType =()=>{
                       name: ''
                       });
                       const [errors, setErrors] = useState({
-                          code: '',
-                          name: '',
-                          description: '',
-                          status: ''
+                            code: '',
+                            name: '',
                         });
                      const user_id = login_id;
                      const user_types = Object.keys(can_manage_user_types).join(',');
@@ -53,10 +54,15 @@ const ItemType =()=>{
 
                           if (response.data && response.data.data) {
                             setItemTypeData(response.data.data);
+                            setTotalPages(response.data.pagination.pages);
                           }
                         } catch (error) {
                           console.error("Error fetching item type data:", error);
+                        }finally{
+                          setIsLoading(false)
                         }
+
+
                       };
                     const handleChange = (e) => {
                         const { name, value } = e.target;
@@ -88,10 +94,7 @@ const ItemType =()=>{
                        toast.error('Failed to create item type!');
                        handleCloseModal();    
                       if (error.response?.data?.errors) {
-                        setErrors(prev => ({
-                          ...prev,
-                          ...error.response.data.errors
-                        }));
+                        console.log(error.response?.data?.errors)
                       }
                     }
                   };
@@ -131,69 +134,69 @@ const ItemType =()=>{
                   }
                 };
 
-  const validateForm = () => {
-  let valid = true;
-  const newErrors = { code: '', name: '' };
+              const validateForm = () => {
+              let valid = true;
+              const newErrors = { code: '', name: '' };
 
-  // Updated country code validation
-  if (!addItemTypeData.code) {
-    newErrors.code = 'Item type code is required';
-    valid = false;
-  } else if (addItemTypeData.code.length < 2) {
-    newErrors.code = 'Must be 2-3 letters or valid item type code';
-    valid = false;
-  }
+              // Updated country code validation
+              if (!addItemTypeData.code) {
+                newErrors.code = 'Item type code is required';
+                valid = false;
+              } else if (addItemTypeData.code.length < 2) {
+                newErrors.code = 'Must be 2-3 letters or valid item type code';
+                valid = false;
+              }
 
-  // Name validation remains same
-  if (!addItemTypeData.name) {
-    newErrors.name = 'Item type name is required';
-    valid = false;
-  } else if (addItemTypeData.name.length < 2) {
-    newErrors.name = 'Must be at least 2 characters';
-    valid = false;
-  }
+              // Name validation remains same
+              if (!addItemTypeData.name) {
+                newErrors.name = 'Item type name is required';
+                valid = false;
+              } else if (addItemTypeData.name.length < 2) {
+                newErrors.name = 'Must be at least 2 characters';
+                valid = false;
+              }
 
-  setErrors(newErrors);
-  return valid;
-};
+              setErrors(newErrors);
+              return valid;
+            };
 
-const validateEditForm = () => {
-  let valid = true;
-  const newErrors = { code: '', name: '',description:'', status: '' };
+            const validateEditForm = () => {
+              let valid = true;
+              const newErrors = { code: '', name: '',description:'', status: '' };
 
-  // Updated country code validation
-  if (!editingItemType?.code) {
-    newErrors.code = 'Item type code is required';
-    valid = false;
-  } else if (editingItemType.code.length < 2) {
-    newErrors.code = 'Must be 2-3 letters or valid item type code ';
-    valid = false;
-  }
+              // Updated country code validation
+              if (!editingItemType?.code) {
+                newErrors.code = 'Item type code is required';
+                valid = false;
+              } else if (editingItemType.code.length < 2) {
+                newErrors.code = 'Must be 2-3 letters or valid item type code ';
+                valid = false;
+              }
 
-  if (!editingItemType?.name) {
-    newErrors.name = 'Item type name is required';
-    valid = false;
-  } else if (editingItemType.name.length < 2) {
-    newErrors.name = 'Must be at least 2 characters';
-    valid = false;
-  }
+              if (!editingItemType?.name) {
+                newErrors.name = 'Item type name is required';
+                valid = false;
+              } else if (editingItemType.name.length < 2) {
+                newErrors.name = 'Must be at least 2 characters';
+                valid = false;
+              }
 
-  if (!editingItemType?.description) {
-    newErrors.description = 'Item type description is required';
-    valid = false;
-  } else if (editingItemType.description.length < 2) {
-    newErrors.description = 'Must be at least 2 characters';
-    valid = false;
-  }
+              if (!editingItemType?.description) {
+                newErrors.description = 'Item type description is required';
+                valid = false;
+              } else if (editingItemType.description.length < 2) {
+                newErrors.description = 'Must be at least 2 characters';
+                valid = false;
+              }
 
-  if (editingItemType?.status === undefined) {
-    newErrors.status = 'Status is required';
-    valid = false;
-  }
+              if (editingItemType?.status === undefined) {
+                newErrors.status = 'Status is required';
+                valid = false;
+              }
 
-  setErrors(newErrors);
-  return valid;
-};
+              setErrors(newErrors);
+              return valid;
+            };
 
             const handleDeleteItemType = async (id) => {
               if (!id) return toast.error("No item selected for deletion");
@@ -219,12 +222,24 @@ const validateEditForm = () => {
                         name: '',
                         
                       });
+                      setErrors(
+                        {
+                        code: '',
+                        name: '',
+                        
+                      }
+                      )
                       setModal(false);
                     };
 
                   
                     const handleEditCloseModal = () => {
                       setEditModal(false)
+                      setErrors( {
+                        code: '',
+                        name: '',
+                        
+                      })
                     };
                   
                   
@@ -250,7 +265,7 @@ const validateEditForm = () => {
                   buttoncontent="+ New Item Type"
                   onClick={() => setModal(true)}  // This will now work!
                  />                 
-                 <ItemsPerPageSelector items={items} setItems={setItems} />
+                <ItemsPerPageSelector items={limit} setItems={setLimit} />
                   
                         
                      <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
@@ -266,7 +281,18 @@ const validateEditForm = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {itemTypeData.map((itemType,index) => (
+                        {
+                        isLoading ? (
+                          <TableSkelton />
+                        ) : itemTypeData.length === 0 ? (
+                          <tr >
+                            <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                              No data available
+                            </td>
+                          </tr>
+                        ) :
+                        
+                        itemTypeData.map((itemType,index) => (
                           console.log(itemType),
                           <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                             <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
@@ -308,7 +334,7 @@ const validateEditForm = () => {
                     </table>
                                         
                   
-                        <Pagination/>                
+                       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />         
       </div>
        
       {modal && (
@@ -335,7 +361,7 @@ const validateEditForm = () => {
                                         onChange={handleChange}
                                       />
                                       {errors.code && (
-                                              <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+                                              <p className="text-red-500 text-xs ">{errors.code}</p>
                                             )}
                                       
                                       
@@ -374,12 +400,10 @@ const validateEditForm = () => {
                                         onChange={handleChange}
                                         placeholder="Description"
                                         className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                        style={{ paddingLeft: '12px', color: '#374151' }}
+                                        style={{ padding: '12px', color: '#374151' }}
                                       ></textarea>
 
-                                    {errors.description && (
-                                              <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                                            )}
+                                    
                                     
                                     </div>
                                     {/* <div>
@@ -505,12 +529,10 @@ const validateEditForm = () => {
                 value={editingItemType?.description || ''}
             onChange={(e) => {
               setEditingItemType({...editingItemType, description: e.target.value});
-              if (errors.description) setErrors({...errors, description: ''});
+              
             }}
             ></textarea>
-              {errors.description && (
-                <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-              )}
+             
                                     
         </div>
 

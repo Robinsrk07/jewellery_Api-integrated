@@ -8,6 +8,7 @@ import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import PurchaseFixModel from "../../../models/PurchaseFixModel";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
+import TableSkelton from "../../../components/tableSkelton";
      
      const  ListPurchase = () => {
      
@@ -28,7 +29,9 @@ import { useSelector } from "react-redux";
                     const [limit, setLimit] = useState(10);
                     const [page, setPage] = useState(1);
                     const [search, setSearch] = useState('');
-                    const [status, setStatus] = useState('');   
+                    const [status, setStatus] = useState('');  
+                     const [totalPages, setTotalPages] = useState(1);
+                     const [isLoading, setIsLoading] = useState(true); 
                     const [purchaseData,setPurchaseData] =useState([])
                   const [utils, setUtils] = useState({
                     uom: [],
@@ -116,14 +119,17 @@ import { useSelector } from "react-redux";
                       
                       if(response.data.data){
                         setPurchaseData(response.data.data)
+
                       }
-                      
+                       setTotalPages(response.data.pagination.pages)
                         toast.success("data retrived ")
                       
                   }catch(error){
                                           console.log(error);
 
                        toast.error(" faild to load data")
+                  }finally{
+                    setIsLoading(false)
                   }
 
                 }
@@ -176,6 +182,7 @@ import { useSelector } from "react-redux";
                       }} className="w-[110px] h-[30px] bg-red-200 text-sm  rounded-lg">Search</button>
 
                   </div>  
+                  <Link to={'/dashboard/ListPurchase'}>
                      <button style={{
                         width: '180px',
                         height: '33px',
@@ -184,7 +191,7 @@ import { useSelector } from "react-redux";
                         color: 'white',
                         transition: 'background-color 0.3s ease',
                         cursor: 'pointer',
-                      }}  className="w-[110px] h-[30px] text-xs font-semibold bg-red-200 rounded-lg">Create New Purchse Fix</button>
+                      }}  className="w-[110px] h-[30px] text-xs font-semibold bg-red-200 rounded-lg">Create New Purchse Fix</button></Link>
                 </div>
                  
                      <ItemsPerPageSelector items={items} setItems={setItems} />
@@ -204,7 +211,15 @@ import { useSelector } from "react-redux";
                            </tr>
                          </thead>
                        <tbody>
-                            {purchaseData.length > 0 ? (
+                            {isLoading ? (
+                        <TableSkelton />
+                      ) : purchaseData.length === 0 ? (
+                        <tr>
+                          <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                            No data available
+                          </td>
+                        </tr>
+                      ) : (
                               purchaseData.map((item, index) => (
                                 <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
@@ -218,18 +233,14 @@ import { useSelector } from "react-redux";
                                   <td className="px-6 py-5 border-b border-gray-200 text-xs">#{item.reference_no}</td>
                                 </tr>
                               ))
-                            ) : (
-                              <tr>
-                                <td colSpan="7" className="text-center py-5 text-gray-400">No data available</td>
-                              </tr>
-                            )}
+                            ) }
                           </tbody>
 
                        </table>
                        
                  
                        {/* Pagination */}
-                      <Pagination/>
+                    <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                  
                        {/* Modal */}
       

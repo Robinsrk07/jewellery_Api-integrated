@@ -3,62 +3,6 @@ import './App.css';
 import DashBoard from './components/DashBoard';
 import Body from './components/Body';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
-// import List_item_Type from './components/Manage/List_item_Type';
-// import Jewellery_Type from './components/Manage/Jewellery_Type';
-// import Category from './components/Manage/Product-Management/Category';
-// import SubCategory from './components/Manage/Product-Management/SubCategory';
-// import Brand from './components/Manage/Product-Management/Brand';
-// import Color from './components/Manage/Product-Management/Color';
-// import Login from './components/LoginPage';
-// import List_return_Type from './components/Manage/Product-Management/List_return_Type';
-// import Product_Size from './components/Manage/Product-Management/Product_size';
-// import Gender from './components/Manage/Product-Management/Gender';
-// import Diamond_Type from './components/Manage/Product-Management/Diamond_Type';
-// import StoneType from './components/Manage/Product-Management/StoneType';
-// import Occasion from './components/Manage/Product-Management/Occasion';
-// import Stock_point from './components/Manage/Product-Management/Stock_point';
-// import Style from './components/Manage/Product-Management/Style';
-// import Design from './components/Manage/Product-Management/Design';
-// import Country from './components/Manage/Location-Management/Country';
-// import City from './components/Manage/Location-Management/City';
-// import Adress_Type from './components/Manage/Location-Management/AdressType';
-// import ControllAccount from './components/Supplier/ControllAccount';
-// import Group from './components/Supplier/Group';
-// import Tax from './components/Supplier/Tax';
-// import List_supplier from './components/Supplier/List_supplier';
-// import CreateSupplier from './components/Supplier/CreateSupplier';
-// import Departments from './components/Employees/Departments';
-// import EmployeeList from './components/Employees/EmployeeList';
-// import PaymentMethodes from './components/Employees/PaymentMethodes';
-// import Genders from './components/Employees/Genders';
-// import Positions from './components/Employees/Postitions';
-// import CustomersList from './components/Cutomers/CustomersList.jsx';
-// import Item from './components/Inventory/Item.jsx';
-// import CreateItem from './components/Inventory/CreateItem.jsx';
-// import Purchase from './components/Inventory/Gold/Purchase.jsx';
-// import PurchaseFix from './components/Inventory/Gold/PurchaseFix.jsx';
-// import ListPurchase from './components/Inventory/Gold/ListPurchase.jsx';
-// import CreateGoldPurchase from './components/Inventory/Gold/CreateGoldPurchase.jsx';
-// import CreateNewPurchase from './components/Inventory/Gold/CreateNewPurchase.jsx';
-// import ViewPurchase from './components/Inventory/Gold/ViewPurchase.jsx';
-// import UpdateGoldPurchase from './components/Inventory/Gold/UpdateGoldPurchase.jsx';
-// import UpdateItem from './components/Inventory/UpdateItem.jsx';
-// import SettingsTax from './components/Settings/SettingsTax.jsx';
-// import Currency from './components/Settings/Currency.jsx';
-// import UnitOfMeasures from './components/Settings/UnitOfMeasures.jsx';
-// import TermsOfPayment from './components/Settings/TermsOfPayment.jsx';
-// import GroupAndPermission from './components/Group&Permission/GroupAndPermission.jsx';
-// import ManagePermissions from './components/Group&Permission/ManagePermissions.jsx';
-// import DiamondPurchhase from './components/Inventory/Diamond/DiamondPurchhase.jsx';
-// import CreateDiamondPurchase from './components/Inventory/Diamond/CreateDiamondPurchase.jsx';
-// import ItemDetials from './components/Inventory/Diamond/ItemDetials.jsx';
-// import PaySlip from './components/Employees/PaySlip.jsx';
-// import Pos from './components/Pos.jsx';
-// import { Provider } from 'react-redux';
-// import store from './StateManagement/store.js';
-// import Branches from './components/Branch/Branches.jsx';
-// import BranchWiseEmployee from './components/Branch/BranchWiseEmployee.jsx';
-// import Stock_Transfer from './components/Inventory/Stock-Transfer.jsx';
 import List_item_Type from './Pages/Manage/List_item_Type';
 import Jewellery_Type from './Pages/Manage/Jewellery_Type';
 import Category from './Pages/Manage/Product-Management/Category';
@@ -124,6 +68,13 @@ import Tagging from './Pages/Inventory/Diamond/Tagging.jsx';
 import CompletePayment from './Pages/CompletePayment.jsx';
 import PaymentSuccessPage from './Pages/PaymentCompleteSucces.jsx';
 import { ToastContainer } from 'react-toastify';
+import EditSupplier from './Pages/Supplier/EditSupplier.jsx';
+import CreatePayslip from './Pages/Employees/CreatePaySlip.jsx';
+import PayslipList from './Pages/Employees/PayslipList.jsx';
+import City_Area from './Pages/Manage/Location-Management/CityArea.jsx';
+import State from "./Pages/Manage/Location-Management/State.jsx"
+import District from "./Pages/Manage/Location-Management/District.jsx"
+import EditPayslip from './Pages/Employees/EditPaySlip.jsx';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
@@ -132,7 +83,7 @@ function App() {
       <ToastContainer position="top-right" autoClose={3000} />
       <BrowserRouter>
         <Routes>
-           <Route path="/" element={<AuthRedirect />} />
+          <Route path="/" element={<AuthRedirect />} />
           <Route path='/login' element={<Login />} />
           <Route path="/logout" element={<Logout />} />
 
@@ -147,6 +98,9 @@ function App() {
                 <Route path='address_type' element={<Adress_Type/>} />
                 <Route path='stock_point' element={<Stock_point/>} />
                 <Route path='return_type' element={<List_return_Type />} />
+                <Route path='city area' element={<City_Area/>} />
+                <Route path='state' element={<State/>} />
+                <Route path='district' element={<District/>} />
 
           {/*  product management */}
                 <Route path='item_type' element={<List_item_Type />} />
@@ -216,14 +170,24 @@ function App() {
                 <Route path='group_permission' element={<GroupAndPermission/>} />
                 <Route path='permission' element={<ManagePermissions/>} />
 
+                <Route path='payslip' element={<PaySlip/>} />
+                <Route path='createPayslip' element={<CreatePayslip/>} />
+                <Route path='paysliplist/:id' element={<PayslipList/>} />
+                <Route path='editPayslip/:id' element={<EditPayslip/>} />
+
+                {/* branch */}
+                            <Route path='branch' element={<Branches/>} />
+
+
 
 
             <Route path='manage'>
-                <Route path='payslip' element={<PaySlip/>} />
+              
                 <Route path='style' element={<Style/>} />
             </Route>
 
             <Route path='supplier'>
+              <Route path="update_supplier/:supplierId" element={<EditSupplier />} />
               <Route path='Create_supplier' element={<CreateSupplier/>} />
             </Route>
  

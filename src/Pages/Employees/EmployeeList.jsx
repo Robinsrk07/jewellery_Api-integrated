@@ -1,621 +1,2057 @@
  
-     import { useState } from "react";
+     import { useEffect, useRef, useState } from "react";
      import CustomScrollbar from "../../components/CustomScrollbar";
       import EditButton from '../../components/EditButton';
       import DeleteButton from '../../components/DeleteButton';
       import CreateButton from '../../components/CreateButton';
       import Pagination from '../../components/Pagination';
       import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+      import countryModel from '../../models/countryModel'
+      import CityModel from "../../models/CityModel"
+      import employeePositionModel from "../../models/employeePositionModel";
+      import CurrencyModel from "../../models/CurrencyModel";
+      import StateModel from "../../models/stateModel";
+      import DistrictModel from '../../models/districtModel'
+      import CityAreaModel from "../../models/cityAreaModel";
+      import BranchModel from "../../models/branchModel";
+       import { useSelector } from "react-redux";
+       import employeeDepartmentModel from "../../models/employeeDepartmentModel";
+       import employeeGenderModel from "../../models/employeeGenderModel";
+      import employeeModel from "../../models/employeeModel";
+     import { toast } from "react-toastify";
+     import TableSkelton from "../../components/tableSkelton";
+import React from "react";
+ 
+// issue is that files are not approved 
 
-     const apiUrl = import.meta.env.VITE_API_BASE_URL;
      const  EmployeeList = () => {
 
-      const [branches,setBranches] =useState(['MANAMA','DUBAI',"KOCHI",'RIYAD'])
+              const [isLoading, setIsLoading] = useState(true);
+                  const [modal, setModal] = useState(false)   
+                  const [editModal,setEditModal]= useState(false)
+                  const [countries, setCountries] = useState([]);
+                  const [states, setStates] = useState([]);
+                  const [districts, setDistricts] = useState([]);
+                  const [gender, setGender] = useState([]);
+                  const [cities, setCities] = useState([]);
+                  const [cityAreas, setCityAreas] = useState([]);
+                  const [positions, setPositions] = useState([]);
+                  const [branches, setBranchesList] = useState([]);
+                  const [currencies, setCurrencies] = useState([]);
+                  const [departments, setDepartments] = useState([]);
+                  const [employees, setEmployees] = useState([])
+                   const [totalPages, setTotalPages] = useState(1);
+                  const [limit, setLimit] = useState(10);
+                  const [page, setPage] = useState(1);
+                  const [deletingId, setDeletingId] = useState(null);
+                  const [itemToDelete, setItemToDelete] = useState(null);
+                  const [status, setStatus] = useState('');
+                  const [search, setSearch] = useState('');
+                  const [formErrors, setFormErrors] = useState([]);
+ 
+                  const auth = useSelector((state) => state.auth || {});
+                  const { login_id ,can_manage_user_types,} = auth;    
+                  const user_id = login_id 
+                  const user_types = Object.keys(can_manage_user_types).join(',');
+                  const [editEmployee,setEditEmployee] = useState({})
+                  const [employeeForm, setEmployeeForm] = useState({
+                    name: "",
+                    gender: "",
+                    date_of_birth: "",
+                    marital_status: "",
+                    profile_picture: null,
+                    email: "",
+                    phone_number: "",
+                    country: "",
+                    state: "",
+                    district: "",
+                    city: "",
+                    city_area: "",
+                    pincode: "",
+                    address: "",
+                    department: "",
+                    position: "",
+                    joining_date: "",
+                    resignation_date: "",
+                    branch: "",
+                    currency: "",
+                    salary: "",
+                    bank_account: "",
+                    pan_number: "",
+                    aadhaar_number: "",
+                    document: null,
+                    other_document: null,
+                    extra_document: null,
+                    emergency_contact_name: "",
+                    emergency_contact_number: "",
+                    blood_group: "",
+                    education: "",
+                    work_experience: "",
+                    default_language: "",
+                    time_zone: "",
+                    is_probation: "",
+                    is_branch: "",
+                    group_id: 1,
+                    probation_end_date: "",
+                    status: "",
+                  });
 
-      
-     
-          
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
+                  const allFields = Object.keys(employeeForm);
+
+                  const fieldRefs = useRef(
+                    allFields.reduce((acc, field) => {
+                      acc[field] = React.createRef();
+                      return acc;
+                    }, {})
+                  );
                  
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
+
+                  const handleInputChange = (e) => {
+                    const { name, value, type, files } = e.target;
+                    setEmployeeForm((prev) => ({
+                      ...prev,
+                      [name]: type === "file" ? files[0] : value,
+                    }));
+                  };
                   
-                   // Handle close modal
-                   const handleCloseModal = () => {
-                     setModal(false);
-                     setEditModal(false)
-                   };
-                 
-                 
-                 
-                 
-                 
-                   return (
-                     
-                 <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
-                <div className="bg-white w-full
-                    max-w-[99vw] 
-                    xl:max-w-[90vw] 
-                    2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
-                    rounded-xl px-4 md:px-8 lg:px-12
-                    mx-auto overflow-auto  custom-scrollbar"
-                 style={{ fontFamily: 'Open Sans',overflow:'auto'}}
-                   >
-                                  <CreateButton
-            buttoncontent="+ New Employee"
-            onClick={() => setModal(true)}  // This will now work!
-             />                 
-         <ItemsPerPageSelector items={items} setItems={setItems} />
-                 
-                       
-                 
-                       <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1220px]  " style={{ borderSpacing: '0 12px', borderCollapse: 'separate', }}>
-                         <thead className="text-xs text-[#AFB9C9] uppercase bg-white">
-                           <tr>
-                             <th className="px-6 py-3" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
-                             <th className="px-6 py-3" style={{width:'100px'}} >NAME </th>
-                             <th className="px-6 py-3" style={{width:'100px'}} >GENDER </th>
-                             <th className="px-6 py-3" style={{width:'90px'}}>DEPARTMENT</th>
-                             <th className="px-6 py-3" style={{width:'90px'}} >POSITION</th>
-                             <th className="px-6 py-3" style={{width:'90px'}} >SALARY</th>
-                             <th className="px-6 py-3" style={{width:'100px'}} >BANK ACCOUNT</th>
-                             <th className="px-6 py-3" style={{width:'100px'}} >STATUS</th>
-                             <th className="px-6 py-3" style={{width:'90px'}} >ACTION</th>
-                           </tr>
-                         </thead>
-                         <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Arjun </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Male </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Sales </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">Maneger </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">57000 </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">457844578575545 </td>
+                  const handleEditInputChange = (e) => {
+                    const { name, value, type, files } = e.target;
+                    setEditEmployee((prev) => ({
+                      ...prev,
+                      [name]: type === "file" ? files[0] : value,
+                    }));
+                  };
+
+
+                  console.log(employees)
+                  console.log(employeeForm)
+                  console.log(gender)
+                  console.log(departments)
+                  console.log(positions)
+                  console.log('edit',editEmployee)
+                  console.log('formerrors',formErrors)
+
+                const buildFormData = (formObj) => {
+                    const formData = new FormData();
+
+                    Object.entries(formObj).forEach(([key, value]) => {
+                      if (value === null || value === undefined || value === '') return;
+
+                      if (value instanceof File) {
+                        formData.append(key, value);
+                      } else {
+                        formData.append(key, value);
+                      }
+                    });
+
+                    return formData;
+                  };
+
+
+                 const getValueFromId = (id, field, key = 'name') => {
+                  if (!Array.isArray(field)) return '—'; // Ensure it's a valid array
+                  const item = field.find((entry) => entry?.id === id);
+                  return item?.[key] || '—'; // Safe access
+                };
+
+                const fetchEmployees = async ()=>{
+                      try{
+                          const res = await  employeeModel.getEmployees(user_id, user_types, limit, page, search, status)
+                          setEmployees(res?.data?.data)
+                          setTotalPages(res.data.pagination.pages);
+                      }catch(error){ 
+                        console.error("Error loading employees:", error);
+                      }finally{
+                        setIsLoading(false)
+                      }
+                    }
+
+
+                  
+                       const handleSubmit = async (e) => {
+                          e.preventDefault();
+                           const validationErrors = validateForm(employeeForm);
+                        if (Object.keys(validationErrors).length > 0) {
+                          setFormErrors(validationErrors);
+
+                      const firstInvalidField = Object.keys(validationErrors)[0];
+                      const ref = fieldRefs.current[firstInvalidField];
+                      if (ref?.current) {
+                        // Use setTimeout to ensure the input is mounted
+                        setTimeout(() => {
+                          ref.current.focus();
+                          ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }, 0);
+                      }
+
+                      return;
+                    }
+
+
+                          try {
+                            const formData = buildFormData(employeeForm);
+
+                            const response = await employeeModel.createEmployee(formData);
+
+                            if (response?.status === 201 || response?.status === 200) {
+                              toast.success("Employee created successfully!");
+
+                              // Optional: Reset form or close modal
+                              setEmployeeForm({
+                                  name: "",
+                                  gender: "",
+                                  date_of_birth: "",
+                                  marital_status: "",
+                                  profile_picture: null,
+                                  email: "",
+                                  phone_number: "",
+                                  country: "",
+                                  state: "",
+                                  district: "",
+                                  city: "",
+                                  city_area: "",
+                                  pincode: "",
+                                  address: "",
+                                  department: "",
+                                  position: "",
+                                  joining_date: "",
+                                  resignation_date: "",
+                                  branch: "",
+                                  currency: "",
+                                  salary: "",
+                                  bank_account: "",
+                                  pan_number: "",
+                                  aadhaar_number: "",
+                                  document: null,
+                                  other_document: null,
+                                  extra_document: null,
+                                  emergency_contact_name: "",
+                                  emergency_contact_number: "",
+                                  blood_group: "",
+                                  education: "",
+                                  work_experience: "",
+                                  default_language: "",
+                                  time_zone: "",
+                                  is_probation: "",
+                                  is_branch: "",
+                                  group_id: 1,
+                                  probation_end_date: "",
+                                  status: "",
+                                });
+                              setModal(false);
+                            } else {
+                              toast.error("Unexpected response from server.");
+                            }
+
+                          } catch (error) {
+                            console.error("Failed to create employee:", error);
+
+                            toast.error(
+                             
+                                "Something went wrong while submitting."
                               
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
+                            );
+                          }
+                        };
+
+                        const handleEditSubmit = async (e)=>{
+                          e.preventDefault();
+
+                          try{
+                             const formData = buildFormData(editEmployee);
+                               const response = await employeeModel.updateEmployee(editEmployee.id,formData);
+                          }catch(error){
+                                console.log(error)
+                          }
+                        }
+
+
+                        const handleDeleteEmployee = async (uuid) => {
+                            if (!uuid) return toast.error("Sorry We Are Unable to Delete Item");
+                            try {
+                                setDeletingId(uuid);
+                                await employeeModel.deleteEmployee(uuid);
+                                await fetchEmployees()
+                                toast.success("Diamond Item Deleted Successfully");
+                            } catch {
+                                toast.error("Sorry, Unable to delete Diamond Item");
+                            } finally {
+                                setDeletingId(null);
+                            }
+                        };
+
+
+                    const handleCloseModal =()=>{
+                      setEmployeeForm({
+                                  name: "",
+                                  gender: "",
+                                  date_of_birth: "",
+                                  marital_status: "",
+                                  profile_picture: null,
+                                  email: "",
+                                  phone_number: "",
+                                  country: "",
+                                  state: "",
+                                  district: "",
+                                  city: "",
+                                  city_area: "",
+                                  pincode: "",
+                                  address: "",
+                                  department: "",
+                                  position: "",
+                                  joining_date: "",
+                                  resignation_date: "",
+                                  branch: "",
+                                  currency: "",
+                                  salary: "",
+                                  bank_account: "",
+                                  pan_number: "",
+                                  aadhaar_number: "",
+                                  document: null,
+                                  other_document: null,
+                                  extra_document: null,
+                                  emergency_contact_name: "",
+                                  emergency_contact_number: "",
+                                  blood_group: "",
+                                  education: "",
+                                  work_experience: "",
+                                  default_language: "",
+                                  time_zone: "",
+                                  is_probation: "",
+                                  is_branch: "",
+                                  group_id: 1,
+                                  probation_end_date: "",
+                                  status: "",
+                                })
+
+                     setModal(false)
+                     setFormErrors({})
+                    }
+
+                     const handleEdit = (emp) => {
+                      console.log(emp)
+                      setEditModal(true)
+                      setEditEmployee({
+                      name: emp.name || "",
+                      gender: emp.gender || "",
+                      date_of_birth: emp.date_of_birth || "",
+                      marital_status: emp.marital_status || "",
+                      profile_picture: emp.profile_picture || null,
+                      email: emp.email || "",
+                      phone_number: emp.phone_number || "",
+                      country: emp.country || "",
+                      state: emp.state || "",
+                      district: emp.district || "",
+                      city: emp.city || "",
+                      city_area: emp.city_area || "",
+                      pincode: emp.pincode || "",
+                      address: emp.address || "",
+                      department: emp.department || "",
+                      position: emp.position || "",
+                      joining_date: emp.joining_date || "",
+                      resignation_date: emp.resignation_date || "",
+                      branch: emp.branch || "",
+                      currency: emp.currency || "",
+                      salary: emp.salary || "",
+                      bank_account: emp.bank_account || "",
+                      pan_number: emp.pan_number || "",
+                      aadhaar_number: emp.aadhaar_number || "",
+                      document: emp.document || null,
+                      other_document: emp.other_document || null,
+                      extra_document: emp.extra_document || null,
+                      emergency_contact_name: emp.emergency_contact_name || "",
+                      emergency_contact_number: emp.emergency_contact_number || "",
+                      blood_group: emp.blood_group || "",
+                      education: emp.education || "",
+                      work_experience: emp.work_experience || "",
+                      default_language: emp.default_language || "",
+                      time_zone: emp.time_zone || "",
+                      is_branch: emp.is_branch === true ? "True" : emp.is_branch === false ? "False" : "",
+                      is_probation: emp.is_probation === true ? "True" : emp.is_probation === false ? "False" : "",
+                      group_id: emp.group_id ?? 1,  
+                      probation_end_date: emp.probation_end_date || "",
+                      status: emp.status === true ? "True" : emp.status === false ? "False" : "",
+                    });
+
+                     }
+             const validateForm = (form) => {
+                  const errors = {};
+
+                  // Required fields
+                  const requiredFields = [
+                    "name",
+                    "gender",
+                    "email",
+                    "phone_number",
+                    "country",
+                    "state",
+                    "department",
+                    "position",
+                    "is_branch",
+                    "group_id"
+                  ];
+
+                  requiredFields.forEach((field) => {
+                    if (!form[field] || form[field].toString().trim() === "") {
+                      errors[field] = `${field.replaceAll("_", " ")} is required`;
+                    }
+                  });
+
+                  // Format validations
+                  if (form.pincode && !/^\d{6}$/.test(form.pincode)) {
+                    errors.pincode = "Pincode must be 6 digits";
+                  }
+
+                  if (form.pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(form.pan_number)) {
+                    errors.pan_number = "PAN number format is invalid";
+                  }
+
+                  if (form.aadhaar_number && !/^\d{12}$/.test(form.aadhaar_number)) {
+                    errors.aadhaar_number = "Aadhaar number must be 12 digits";
+                  }
+
+                  if (form.bank_account && !/^\d{9,18}$/.test(form.bank_account)) {
+                    errors.bank_account = "Bank account must be 9–18 digits";
+                  }
+
+                  if (
+                    form.email &&
+                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
+                  ) {
+                    errors.email = "Email is invalid";
+                  }
+
+                  if (
+                    form.phone_number &&
+                    !/^\d{10}$/.test(form.phone_number)
+                  ) {
+                    errors.phone_number = "Phone number must be 10 digits";
+                  }
+
+                  return errors;
+                };
+
+
+
+                  useEffect(()=>{
+                    
+                    fetchEmployees()
+                  },[])
+                
+               
+                    useEffect(() => {
+                        const fetchCountries = async () => {
+                          try {
+                            const res = await countryModel.getCountries(user_id, user_types, limit, page, search, status);
+                            setCountries(res?.data?.data || res?.data || []);
+                          } catch (err) {
+                            console.error("Error loading countries:", err);
+                          }
+                        };
+                        fetchCountries();
+                       }, []);
+
+                    useEffect(() => {
+                      const fetchStates = async () => {
+                        try {
+                          const res = await StateModel.getStates(user_id, user_types, limit, page, search, status);
+                          setStates(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading states:", err);
+                        }
+                      };
+                      fetchStates();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchDistricts = async () => {
+                        try {
+                          const res = await DistrictModel.getDistricts(user_id, user_types, limit, page, search, status);
+                          setDistricts(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading districts:", err);
+                        }
+                      };
+                      fetchDistricts();
+                    }, []);
+                    useEffect(() => {
+                      const fetchGender = async () => {
+                        try {
+                          const res = await employeeGenderModel.getGenders(user_id, user_types, limit, page, search, status);
+                          setGender(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading districts:", err);
+                        }
+                      };
+                      fetchGender();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchCities = async () => {
+                        try {
+                          const res = await CityModel.getCities(user_id, user_types, limit, page, search, status);
+                          setCities(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading cities:", err);
+                        }
+                      };
+                      fetchCities();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchCityAreas = async () => {
+                        try {
+                          const res = await CityAreaModel.getCityAreas(user_id, user_types, limit, page, search, status);
+                          setCityAreas(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading city areas:", err);
+                        }
+                      };
+                      fetchCityAreas();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchPositions = async () => {
+                        try {
+                          const res = await employeePositionModel.getPositions(user_id, user_types, limit, page, search, status);
+                          setPositions(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading positions:", err);
+                        }
+                      };
+                      fetchPositions();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchBranches = async () => {
+                        try {
+                          const res = await BranchModel.getBranches(user_id, user_types, limit, page, search, status);
+                          setBranchesList(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading branches:", err);
+                        }
+                      };
+                      fetchBranches();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchCurrencies = async () => {
+                        try {
+                          const res = await CurrencyModel.getCurrency(user_id, user_types, limit, page, search, status);
+                          setCurrencies(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading currencies:", err);
+                        }
+                      };
+                      fetchCurrencies();
+                    }, []);
+
+                    useEffect(() => {
+                      const fetchDepartments = async () => {
+                        try {
+                          const res = await employeeDepartmentModel.getDepartments(user_id, user_types, limit, page, search, status);
+                          setDepartments(res?.data?.data || res?.data || []);
+                        } catch (err) {
+                          console.error("Error loading departments:", err);
+                        }
+                      };
+                      fetchDepartments();
+                    }, []);
+
+     
+                    useEffect(() => {
+                      console.log("Updated Countries:", countries);
+                    }, [countries]);
+
+                    useEffect(() => {
+                      console.log("Updated States:", states);
+                    }, [states]);
+
+
+                 
+                  return (
+                    <>
+                      <style jsx global>{`
+                        .custom-scrollbar::-webkit-scrollbar {
+                          width: 6px;
+                          height: 6px;
+                        }
+                        .custom-scrollbar::-webkit-scrollbar-track {
+                          background: #f1f1f1;
+                          border-radius: 3px;
+                        }
+                        .custom-scrollbar::-webkit-scrollbar-thumb {
+                          background: rgb(218, 216, 216);
+                          border-radius: 3px;
+                          border: 1px solid rgb(206, 198, 198);
+                        }
+                        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                          background: rgb(202, 190, 190);
+                        }
+                        .custom-scrollbar {
+                          scrollbar-width: thin; 
+                          scrollbar-color: rgb(226, 215, 215) #f1f1f1;
+                        }
+                      `}</style>
+                      <div
+                        className="bg-white w-full max-w-[99vw] xl:max-w-[90vw] 2xl:max-w-[95vw] h-auto max-h-[70vh] rounded-xl px-4 md:px-8 lg:px-12 mx-auto overflow-auto  custom-scrollbar"
+                        style={{ fontFamily: 'Open Sans', overflow: 'auto' }}
+                      >
+                        <CreateButton buttoncontent="+ New Employee" onClick={() => setModal(true)} />
+                       <ItemsPerPageSelector items={limit} setItems={setLimit} />
+                        <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1220px]" style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}>
+                          <thead className="text-xs text-[#AFB9C9] uppercase bg-white">
+                            <tr>
+                              <th className="px-6 py-3" style={{ width: '90px', paddingLeft: '20px' }}>SL NO</th>
+                              <th className="px-6 py-3" style={{ width: '100px' }}>NAME </th>
+                              <th className="px-6 py-3" style={{ width: '100px' }}>GENDER </th>
+                              <th className="px-6 py-3" style={{ width: '90px' }}>DEPARTMENT</th>
+                              <th className="px-6 py-3" style={{ width: '90px' }}>POSITION</th>
+                              <th className="px-6 py-3" style={{ width: '90px' }}>SALARY</th>
+                              <th className="px-6 py-3" style={{ width: '100px' }}>BANK ACCOUNT</th>
+                              <th className="px-6 py-3" style={{ width: '100px' }}>STATUS</th>
+                              <th className="px-6 py-3" style={{ width: '90px' }}>ACTION</th>
+                            </tr>
+                          </thead>
+                         <tbody>
+                            {isLoading ? (
+                          <TableSkelton />
+                        ) : employees.length === 0 ? (
+                          <tr >
+                            <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                              No data available
+                            </td>
+                          </tr>
+                        ) : employees.map((emp, index) => (
+                                                      <tr
+                                key={emp.id}
+                                className="bg-white hover:bg-gray-50 h-[44px] text-gray-400"
+                              >
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                                  {index + 1}
+                                </td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{emp.name || '-'}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">                                
+                                  {getValueFromId(emp.gender,gender)}
+                                </td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                                  {getValueFromId(emp.department,departments)}
+                                </td>
+                                
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{getValueFromId(emp.position, positions)}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{emp.salary || '-'}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{emp.bank_account || '-'}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                                  <span
+                                    className={`font-bold text-[10px] px-2 py-0.5 rounded ${
+                                      emp.status ? 'bg-green-300 text-green-700' : 'bg-red-200 text-red-700'
+                                    }`}
+                                  >
+                                    {emp.status ? 'ACTIVE' : 'INACTIVE'}
+                                  </span>
+                                </td>
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                  <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                       <EditButton
-                                        onClick={()=>setEditModal(true)}
-                                          />
-              
-                                       <DeleteButton 
-                                        buttonText="Delete  Employee" 
-                                          modalId="my_modal_8" 
-                                      />
+                                  <div className="flex gap-2 items-center">
+                                    <EditButton onClick={() => handleEdit(emp)} />
+                                    <DeleteButton 
+                                      buttonText={deletingId === emp.uuid ? 'Deleting...' : 'Delete'}
+                                      item="Employee"
+                                      onOpenModal={() => setItemToDelete(emp.uuid)}
+                                      onConfirmDelete={() => handleDeleteEmployee(itemToDelete)}
+                                      disabled={deletingId === emp.uuid}
+                                    />
                                   </div>
-                                  </td>
-                             </tr>
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
-                       </table>
-                       
-                 
-                       {/* Pagination */}
-                       <div className="flex gap-1 justify-center">
-                         <button className="btn bg-white border-gray-200 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'<'}
-                         </button>
-                         <button className="btn border-none rounded-full w-[40px] h-[40px] flex items-center justify-center font-semibold bg-blue-500 text-white">
-                           1
-                         </button>
-                         <button className="btn bg-white border-gray-200 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'>'}
-                         </button>
-                       </div>
-                 
-                       {/* Modal */}
-      
-      
-                       <dialog id="my_modal_8" className="modal">
-      
-      
-                       <div className="modal-box bg-white text-center py-8 px-6 rounded-xl relative font-[Open_Sans]
-                         w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                        "
-      
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+
+                        </table>
+                        {/* Pagination */}
+                         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                        
+                      
+                      </div>
+                      {/* CREATE MODAL */}
+                      {modal && (
+                        <div className="fixed text-gray-400 inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+                          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[700px] h-[95vh] max-h-[90vh] flex flex-col overflow-y-auto gap-3 p-6" style={{ padding: '20px' }}>
+                            <h3 className="font-bold text-[22px] text-[#344767]">Create Employee</h3>
+                            <hr className="my-4 border-gray-300" />
+                            {/* BASIC INFO */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Basic Info</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-xs text-gray-600" > Name:<span className="text-red-500 text-[14px]">*</span></label>
+                                  <input type="text" 
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  name="name"
+                                  value={employeeForm.name}
+                                  onChange={handleInputChange}
+                                  placeholder="Full Name" 
+                                  ref={fieldRefs.current["name"]}
+                                />
+                                  <p className="text-xs text-red-400">{formErrors.name}</p>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600" >Gender:<span className="text-red-500 text-[14px]">*</span></label>
+                                  <select style={{ paddingLeft: '12px' }}
+                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                   name="gender"
+                                   value={employeeForm.gender}
+                                   onChange={handleInputChange}
+                                   ref={fieldRefs.current["gender"]}
+                                   >          
+                                          
+                                   <option value="">--Select Gender--</option>
+
+                                       {gender.map((country) => (
+                                      <option key={country.id} value={country.id}>
+                                        {country.name}
+                                      </option>
+                                    ))}
+                                   
+                                  </select>
+                                  <p className="text-xs text-red-400">{formErrors.gender}</p>   
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600" >Date of Birth:</label>
+                                  <input type="date" style={{ paddingLeft: '12px' }} value={employeeForm.date_of_birth}
+                                  onChange={handleInputChange} className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500" name="date_of_birth" 
+                                  ref={fieldRefs.current["date_of_birth"]}
+                                />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600" >Marital Status:</label>
+                                  <select style={{ paddingLeft: '12px' }} value={employeeForm.marital_status} onChange={handleInputChange} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="marital_status"
+                                  ref={fieldRefs.current["marital_status"]}
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                  </select>
+                                </div>
+                                <div>
+                                      <label className="text-xs text-gray-600" >
+                                        Profile Picture:
+                                      </label>
+                                      <input
+                                        type="file"
+                                        name="profile_picture"
+                                        accept="image/*"
+                                        onChange={handleInputChange}
+                                        style={{ padding: '12px' }}
+                                        className="input bg-white border border-gray-200 w-full text-xs"
+                                        ref={fieldRefs.current["profile_picture"]}
+                                      />
+                                    </div>
+
+                              </div>
+                            </div>
+                            {/* CONTACT INFO */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Contact Info</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                <label className="text-xs text-gray-600" >
+                                  Email:<span className="text-red-500 text-[14px]">*</span>
+                                </label>
+                                <input
+                                  type="email"
+                                  name="email"
+                                  placeholder="Email"
+                                  value={employeeForm.email}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["email"]}
+                                />
+                                <p className="text-xs text-red-400">{formErrors.email}</p>   
+                              </div>
+
+                               <div>
+                                    <label className="text-xs text-gray-600" >
+                                      Phone Number:<span className="text-red-500 text-[14px]">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="phone_number"
+                                      placeholder="Phone Number"
+                                      value={employeeForm.phone_number}
+                                      onChange={handleInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["phone_number"]}
+                                    />
+                                    <p className="text-xs text-red-400">{formErrors.phone_number}</p>   
+                                  </div>
+
+                                <div>
+                                        <label className="text-xs text-gray-600" >
+                                          Country:<span className="text-red-500 text-[14px]">*</span>
+                                        </label>
+                                        <select
+                                          name="country"
+                                          value={employeeForm.country}
+                                          onChange={handleInputChange}
+                                          style={{ paddingLeft: '12px' }}
+                                          className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                          ref={fieldRefs.current["country"]}
+                                        >
+                                          <option value="">Select Country</option>
+                                          {countries.map((country) => (
+                                            <option key={country.id} value={country.id}>
+                                              {country.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        <p className="text-xs text-red-400">{formErrors.country}</p>   
+                                      </div>
+
+                               <div>
+                                    <label className="text-xs text-gray-600" >
+                                      State:<span className="text-red-500 text-[14px]">*</span>
+                                    </label>
+                                    <select
+                                      name="state"
+                                      value={employeeForm.state}
+                                      onChange={handleInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["state"]}
+                                    >
+                                      <option value="">Select State</option>
+                                      {states.map((state) => (
+                                        <option key={state.id} value={state.id}>
+                                          {state.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                    <p className="text-xs text-red-400">{formErrors.state}</p>   
+                                  </div>
+
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  District:
+                                </label>
+                                <select
+                                  name="district"
+                                  value={employeeForm.district}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["district"]}
+                                >
+                                  <option value="">Select District</option>
+                                  {districts.map((district) => (
+                                    <option key={district.id} value={district.id}>
+                                      {district.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                                <div>
+                                    <label className="text-xs text-gray-600" >
+                                      City:
+                                    </label>
+                                    <select
+                                      name="city"
+                                      value={employeeForm.city}
+                                      onChange={handleInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["city"]}
+                                    >
+                                      <option value="">Select City</option>
+                                      {cities.map((city) => (
+                                        <option key={city.id} value={city.id}>
+                                          {city.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                               <div>
+                                    <label className="text-xs text-gray-600" >
+                                      City Area:
+                                    </label>
+                                    <select
+                                      name="city_area"
+                                      value={employeeForm.city_area}
+                                      onChange={handleInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["city_area"]}
+                                    >
+                                      <option value="">Select City Area</option>
+                                      {cityAreas.map((cityArea) => (
+                                        <option key={cityArea.id} value={cityArea.id}>
+                                          {cityArea.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                               <div>
+                                      <label className="text-xs text-gray-600">
+                                        Pincode:
+                                      </label>
+                                      <input
+                                        type="text"
+                                        name="pincode"
+                                        placeholder="Pincode"
+                                        value={employeeForm.pincode}
+                                        onChange={handleInputChange}
+                                        style={{ paddingLeft: '12px' }}
+                                        className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                        ref={fieldRefs.current["pincode"]}
+                                      />
+                                    <p className="text-xs text-red-400">{formErrors.pincode}</p>   
+
+                                    </div>
+
+                               <div className="md:col-span-2">
+                                    <label className="text-xs text-gray-600" >
+                                      Address:
+                                    </label>
+                                    <textarea
+                                      name="address"
+                                      placeholder="Address"
+                                      value={employeeForm.address}
+                                      onChange={handleInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["address"]}
+                                    />
+                                  </div>
+
+                              </div>
+                            </div>
+                            {/* JOB DETAILS */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Job Details</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  Department:<span className="text-red-500 text-[14px]">*</span>
+                                </label>
+                                <select
+                                  name="department"
+                                  value={employeeForm.department}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["department"]}
+                                >
+                                  <option value="">Select Department</option>
+                                  {departments.map((department) => (
+                                    <option key={department.id} value={department.id}>
+                                      {department.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                 <p className="text-xs text-red-400">{formErrors.department}</p> 
+                              </div>
+
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  Position:<span className="text-red-500 text-[14px]">*</span>
+                                </label>
+                                <select
+                                  name="position"
+                                  value={employeeForm.position}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["position"]}
+                                >
+                                  <option value="">Select Position</option>
+                                  {positions.map((position) => (
+                                    <option key={position.id} value={position.id}>
+                                      {position.name}
+                                    </option>
+                                  ))}
+                                </select>
+                                <p className="text-xs text-red-400">{formErrors.position}</p>   
+                              </div>
+
+                                <div>
+                                <label className="text-xs text-gray-600">
+                                  Joining Date:
+                                </label>
+                                <input
+                                  type="date"
+                                  name="joining_date"
+                                  value={employeeForm.joining_date}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["joining_date"]}
+                                />
+                              </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Resignation Date:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    name="resignation_date"
+                                    value={employeeForm.resignation_date}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["resignation_date"]}
+                                  />
+                                </div>
+
+                               <div>
+                                  <label className="text-xs text-gray-600">
+                                    Branch:
+                                  </label>
+                                  <select
+                                    name="branch"
+                                    value={employeeForm.branch}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["branch"]}
+                                  >
+                                    <option value="">Select Branch</option>
+                                    {branches.map((branch) => (
+                                      <option key={branch.id} value={branch.id}>
+                                        {branch.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                        <label className="text-xs text-gray-600" >
+                                          Currency:
+                                        </label>
+                                        <select
+                                          name="currency"
+                                          value={employeeForm.currency}
+                                          onChange={handleInputChange}
+                                          style={{ paddingLeft: '12px' }}
+                                          className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                          ref={fieldRefs.current["currency"]}
+                                        >
+                                          <option value="">Select Currency</option>
+                                          {currencies.map((currency) => (
+                                            <option key={currency.id} value={currency.id}>
+                                              {currency.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                <div>
+                                <label className="text-xs text-gray-600" >
+                                  Salary:
+                                </label>
+                                <input
+                                  type="number"
+                                  name="salary"
+                                  placeholder="Salary"
+                                  value={employeeForm.salary}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["salary"]}
+                                />
+                              </div>
+
+                              </div>
+                            </div>
+                            {/* BANK & ID */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Bank & ID</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  Bank Account:
+                                </label>
+                                <input
+                                  type="text"
+                                  name="bank_account"
+                                  placeholder="Bank Account"
+                                  value={employeeForm.bank_account}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["bank_account"]}
+                                />
+                                   <p className="text-xs text-red-400">{formErrors.bank_account}</p>   
+                              </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >PAN Number:</label>
+                                  <input
+                                    type="text"
+                                    name="pan_number"
+                                    placeholder="PAN Number"
+                                    value={employeeForm.pan_number}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["pan_number"]}
+                                  />
+                                   <p className="text-xs text-red-400">{formErrors.pan_number}</p>   
+
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >Aadhaar Number:</label>
+                                  <input
+                                    type="text"
+                                    name="aadhaar_number"
+                                    placeholder="Aadhaar Number"
+                                    value={employeeForm.aadhaar_number}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["aadhaar_number"]}
+                                  />
+                                   <p className="text-xs text-red-400">{formErrors.aadhaar_number}</p>   
+
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600">Document:</label>
+                                  <input
+                                    type="file"
+                                    name="document"
+                                    accept="*/*"
+                                    onChange={handleInputChange}
+                                    style={{ padding: '12px' }}
+                                    className="input w-full bg-white border-gray-200 text-xs"
+                                    ref={fieldRefs.current["document"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >Other Document:</label>
+                                  <input
+                                    type="file"
+                                    name="other_document"
+                                    accept="*/*"
+                                    onChange={handleInputChange}
+                                    style={{ padding: '12px' }}
+                                    className="input w-full bg-white border-gray-200 text-xs"
+                                    ref={fieldRefs.current["other_document"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >Extra Document:</label>
+                                  <input
+                                    type="file"
+                                    name="extra_document"
+                                    onChange={handleInputChange}
+                                    style={{ padding: '12px' }}
+                                    className="input w-full bg-white border-gray-200 text-xs"
+                                    ref={fieldRefs.current["extra_document"]}
+                                  />
+                                </div>
+
+                              </div>
+                            </div>
+                            {/* EMERGENCY */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Emergency</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Emergency Contact Name:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="emergency_contact_name"
+                                    placeholder="Contact Name"
+                                    value={employeeForm.emergency_contact_name}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["emergency_contact_name"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Emergency Contact Number:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="emergency_contact_number"
+                                    placeholder="Contact Number"
+                                    value={employeeForm.emergency_contact_number}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["emergency_contact_number"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Blood Group:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="blood_group"
+                                    placeholder="Blood Group"
+                                    value={employeeForm.blood_group}
+                                    onChange={handleInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["blood_group"]}
+                                  />
+                                </div>
+
+                              </div>
+                            </div>
+                            {/* OTHER */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Other</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                <label className="text-xs text-gray-600" >Education:</label>
+                                <textarea
+                                  name="education"
+                                  placeholder="Education"
+                                  value={employeeForm.education}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["education"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Work Experience:</label>
+                                <textarea
+                                  name="work_experience"
+                                  placeholder="Work Experience"
+                                  value={employeeForm.work_experience}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["work_experience"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Default Language:</label>
+                                <input
+                                  type="text"
+                                  name="default_language"
+                                  placeholder="Default Language"
+                                  value={employeeForm.default_language}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["default_language"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Time Zone:</label>
+                                <input
+                                  type="text"
+                                  name="time_zone"
+                                  placeholder="Time Zone"
+                                  value={employeeForm.time_zone}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["time_zone"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Is Probation?</label>
+                                <select
+                                  name="is_probation"
+                                  value={employeeForm.is_probation}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["is_probation"]}
+                                >
+                                  <option value="">Select Probation</option>
+                                  <option value="True">Yes</option>
+                                  <option value="False">No</option>
+                                </select>
+                              </div>
+
+                             <div>
+                                <label className="text-xs text-gray-600" >Is Branch</label>
+                                <select
+                                  name="is_branch"
+                                  value={employeeForm.is_branch}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["is_branch"]}
+                                >
+                                
+                               
+                                  <option value="">Select Branch</option>
+                                  <option value="True">Yes</option>
+                                  <option value="False">No</option>
+                                </select>
+                              </div>
+
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Group ID</label>
+                                <select
+                                  name="group_id"
+                                  value={employeeForm.group_id}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["group_id"]}
+                                >
+                                  <option value="">Select Group</option>
+                                  <option value={1}>1</option>
+                                  <option value={2}>2</option>
+                                  <option value={3}>3</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600">Probation End Date:</label>
+                                <input
+                                  type="date"
+                                  name="probation_end_date"
+                                  value={employeeForm.probation_end_date}
+                                  onChange={handleInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["probation_end_date"]}
+                                />
+                              </div>
+
+                              </div>
+                            </div>
+                            {/* STATUS */}
+                            <div className="mb-4">
+                              <label className="text-xs text-gray-600" >Status:</label>
+                              <select style={{ paddingLeft: '12px' }}  onChange={handleInputChange} value={employeeForm.status} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="status"
+                              ref={fieldRefs.current["status"]}
+                              >
+                                <option value="">Select Status</option>
+                                <option value="True">Active</option>
+                                <option value="False">Inactive</option>
+                              </select>
+                            </div>
+                            {/* BUTTONS */}
+                            <div className="flex flex-col sm:flex-row justify-end items-end gap-3">
+                              <button type="button" className="btn border-none w-[100px] rounded-lg text-white" style={{ backgroundColor: '#8392ab' }} onClick={handleCloseModal}>
+                                Close
+                              </button>
+                             <button
+                                type="button"
+                                className=" btn w-[100px] border-none rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition"
+                                onClick={handleSubmit}
+                              >
+                                Submit
+                              </button>
+
+                            </div>
                           </div>
                         </div>
-      
-                        {/* Title & Message */}
-                        <h3 className="text-lg text-gray-500 font-semibold " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs border-none bg-green-500 font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
+                      )}
+                      {/* EDIT MODAL */}
+                      {editModal && (
+                        <div className="fixed text-gray-400 inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+                          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[700px] h-[95vh] max-h-[90vh] flex flex-col overflow-y-auto gap-3 p-6" style={{ padding: '20px' }}>
+                            <h3 className="font-bold text-[22px] text-[#344767]">Create Employee</h3>
+                            <hr className="my-4 border-gray-300" />
+                            {/* BASIC INFO */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Basic Info</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                  <label className="text-xs text-gray-600" > Name:<span className="text-red-500 text-[14px]">*</span></label>
+                                  <input type="text" 
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  name="name"
+                                  value={editEmployee.name}
+                                  onChange={handleEditInputChange}
+                                  placeholder="Full Name" 
+                                  ref={fieldRefs.current["name"]}
+                                />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600" >Gender:<span className="text-red-500 text-[14px]">*</span></label>
+                                  <select style={{ paddingLeft: '12px' }}
+                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                   name="gender"
+                                   value={editEmployee.gender}
+                                   onChange={handleEditInputChange}
+                                   ref={fieldRefs.current["gender"]}
+                                   >          
+                                   <option value="">--Select Gender--</option>
+
+                                       {gender.map((country) => (
+                                      <option key={country.id} value={country.id}>
+                                        {country.name}
+                                      </option>
+                                    ))}
+                                   
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600" >Date of Birth:</label>
+                                  <input type="date" style={{ paddingLeft: '12px' }} value={editEmployee.date_of_birth}
+                                  onChange={handleEditInputChange} className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500" name="date_of_birth" 
+                                  ref={fieldRefs.current["date_of_birth"]}
+                                />
+                                </div>
+                                <div>
+                                  <label className="text-xs text-gray-600" >Marital Status:</label>
+                                  <select style={{ paddingLeft: '12px' }} value={editEmployee.marital_status} onChange={handleEditInputChange} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="marital_status"
+                                  ref={fieldRefs.current["marital_status"]}
+                                  >
+                                    <option value="">Select</option>
+                                    <option value="Single">Single</option>
+                                    <option value="Married">Married</option>
+                                    <option value="Divorced">Divorced</option>
+                                    <option value="Widowed">Widowed</option>
+                                  </select>
+                                </div>
+                                <div>
+                                      <label className="text-xs text-gray-600" >
+                                        Profile Picture:
+                                      </label>
+                                      <input
+                                        type="file"
+                                        name="profile_picture"
+                                        accept="image/*"
+                                        onChange={handleEditInputChange}
+                                        style={{ padding: '12px' }}
+                                        className="input bg-white border border-gray-200 w-full text-xs"
+                                        ref={fieldRefs.current["profile_picture"]}
+                                      />
+                                    </div>
+
+                              </div>
+                            </div>
+                            {/* CONTACT INFO */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Contact Info</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                <label className="text-xs text-gray-600" >
+                                  Email:<span className="text-red-500 text-[14px]">*</span>
+                                </label>
+                                <input
+                                  type="email"
+                                  name="email"
+                                  placeholder="Email"
+                                  value={editEmployee.email}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["email"]}
+                                />
+                              </div>
+
+                               <div>
+                                    <label className="text-xs text-gray-600" >
+                                      Phone Number:<span className="text-red-500 text-[14px]">*</span>
+                                    </label>
+                                    <input
+                                      type="text"
+                                      name="phone_number"
+                                      placeholder="Phone Number"
+                                      value={editEmployee.phone_number}
+                                      onChange={handleEditInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["phone_number"]}
+                                    />
+                                  </div>
+
+                                <div>
+                                        <label className="text-xs text-gray-600" >
+                                          Country:<span className="text-red-500 text-[14px]">*</span>
+                                        </label>
+                                        <select
+                                          name="country"
+                                          value={editEmployee.country}
+                                          onChange={handleEditInputChange}
+                                          style={{ paddingLeft: '12px' }}
+                                          className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                          ref={fieldRefs.current["country"]}
+                                        >
+                                          <option value="">Select Country</option>
+                                          {countries.map((country) => (
+                                            <option key={country.id} value={country.id}>
+                                              {country.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                               <div>
+                                    <label className="text-xs text-gray-600" >
+                                      State:<span className="text-red-500 text-[14px]">*</span>
+                                    </label>
+                                    <select
+                                      name="state"
+                                      value={editEmployee.state}
+                                      onChange={handleEditInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["state"]}
+                                    >
+                                      <option value="">Select State</option>
+                                      {states.map((state) => (
+                                        <option key={state.id} value={state.id}>
+                                          {state.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  District:
+                                </label>
+                                <select
+                                  name="district"
+                                  value={editEmployee.district}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["district"]}
+                                >
+                                  <option value="">Select District</option>
+                                  {districts.map((district) => (
+                                    <option key={district.id} value={district.id}>
+                                      {district.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                                <div>
+                                    <label className="text-xs text-gray-600" >
+                                      City:
+                                    </label>
+                                    <select
+                                      name="city"
+                                      value={editEmployee.city}
+                                      onChange={handleEditInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["city"]}
+                                    >
+                                      <option value="">Select City</option>
+                                      {cities.map((city) => (
+                                        <option key={city.id} value={city.id}>
+                                          {city.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                               <div>
+                                    <label className="text-xs text-gray-600" >
+                                      City Area:
+                                    </label>
+                                    <select
+                                      name="city_area"
+                                      value={editEmployee.city_area}
+                                      onChange={handleEditInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["city_area"]}
+                                    >
+                                      <option value="">Select City Area</option>
+                                      {cityAreas.map((cityArea) => (
+                                        <option key={cityArea.id} value={cityArea.id}>
+                                          {cityArea.name}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
+
+                               <div>
+                                      <label className="text-xs text-gray-600">
+                                        Pincode:
+                                      </label>
+                                      <input
+                                        type="text"
+                                        name="pincode"
+                                        placeholder="Pincode"
+                                        value={editEmployee.pincode}
+                                        onChange={handleEditInputChange}
+                                        style={{ paddingLeft: '12px' }}
+                                        className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                        ref={fieldRefs.current["pincode"]}
+                                      />
+                                    </div>
+
+                               <div className="md:col-span-2">
+                                    <label className="text-xs text-gray-600" >
+                                      Address:
+                                    </label>
+                                    <textarea
+                                      name="address"
+                                      placeholder="Address"
+                                      value={editEmployee.address}
+                                      onChange={handleEditInputChange}
+                                      style={{ paddingLeft: '12px' }}
+                                      className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                      ref={fieldRefs.current["address"]}
+                                    />
+                                  </div>
+
+                              </div>
+                            </div>
+                            {/* JOB DETAILS */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Job Details</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  Department:
+                                </label>
+                                <select
+                                  name="department"
+                                  value={editEmployee.department}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["department"]}
+                                >
+                                  <option value="">Select Department</option>
+                                  {departments.map((department) => (
+                                    <option key={department.id} value={department.id}>
+                                      {department.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  Position:<span className="text-red-500 text-[14px]">*</span>
+                                </label>
+                                <select
+                                  name="position"
+                                  value={editEmployee.position}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["position"]}
+                                >
+                                  <option value="">Select Position</option>
+                                  {positions.map((position) => (
+                                    <option key={position.id} value={position.id}>
+                                      {position.name}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                                <div>
+                                <label className="text-xs text-gray-600">
+                                  Joining Date:
+                                </label>
+                                <input
+                                  type="date"
+                                  name="joining_date"
+                                  value={editEmployee.joining_date}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["joining_date"]}
+                                />
+                              </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Resignation Date:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    name="resignation_date"
+                                    value={editEmployee.resignation_date}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["resignation_date"]}
+                                  />
+                                </div>
+
+                               <div>
+                                  <label className="text-xs text-gray-600">
+                                    Branch:
+                                  </label>
+                                  <select
+                                    name="branch"
+                                    value={editEmployee.branch}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["branch"]}
+                                  >
+                                    <option value="">Select Branch</option>
+                                    {branches.map((branch) => (
+                                      <option key={branch.id} value={branch.id}>
+                                        {branch.name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
+
+                                <div>
+                                        <label className="text-xs text-gray-600" >
+                                          Currency:
+                                        </label>
+                                        <select
+                                          name="currency"
+                                          value={editEmployee.currency}
+                                          onChange={handleEditInputChange}
+                                          style={{ paddingLeft: '12px' }}
+                                          className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                          ref={fieldRefs.current["currency"]}
+                                        >
+                                          <option value="">Select Currency</option>
+                                          {currencies.map((currency) => (
+                                            <option key={currency.id} value={currency.id}>
+                                              {currency.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+
+                                <div>
+                                <label className="text-xs text-gray-600" >
+                                  Salary:
+                                </label>
+                                <input
+                                  type="number"
+                                  name="salary"
+                                  placeholder="Salary"
+                                  value={editEmployee.salary}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["salary"]}
+                                />
+                              </div>
+
+                              </div>
+                            </div>
+                            {/* BANK & ID */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Bank & ID</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                <label className="text-xs text-gray-600" >
+                                  Bank Account:
+                                </label>
+                                <input
+                                  type="text"
+                                  name="bank_account"
+                                  placeholder="Bank Account"
+                                  value={editEmployee.bank_account}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["bank_account"]}
+                                />
+                              </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >PAN Number:</label>
+                                  <input
+                                    type="text"
+                                    name="pan_number"
+                                    placeholder="PAN Number"
+                                    value={editEmployee.pan_number}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["pan_number"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >Aadhaar Number:</label>
+                                  <input
+                                    type="text"
+                                    name="aadhaar_number"
+                                    placeholder="Aadhaar Number"
+                                    value={editEmployee.aadhaar_number}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["aadhaar_number"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600">Document:</label>
+                                  <input
+                                    type="file"
+                                    name="document"
+                                    accept="*/*"
+                                    onChange={handleEditInputChange}
+                                    style={{ padding: '12px' }}
+                                    className="input w-full bg-white border-gray-200 text-xs"
+                                    ref={fieldRefs.current["document"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >Other Document:</label>
+                                  <input
+                                    type="file"
+                                    name="other_document"
+                                    accept="*/*"
+                                    onChange={handleEditInputChange}
+                                    style={{ padding: '12px' }}
+                                    className="input w-full bg-white border-gray-200 text-xs"
+                                    ref={fieldRefs.current["other_document"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >Extra Document:</label>
+                                  <input
+                                    type="file"
+                                    name="extra_document"
+                                    onChange={handleEditInputChange}
+                                    style={{ padding: '12px' }}
+                                    className="input w-full bg-white border-gray-200 text-xs"
+                                    ref={fieldRefs.current["extra_document"]}
+                                  />
+                                </div>
+
+                              </div>
+                            </div>
+                            {/* EMERGENCY */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Emergency</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Emergency Contact Name:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="emergency_contact_name"
+                                    placeholder="Contact Name"
+                                    value={editEmployee.emergency_contact_name}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["emergency_contact_name"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Emergency Contact Number:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="emergency_contact_number"
+                                    placeholder="Contact Number"
+                                    value={editEmployee.emergency_contact_number}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["emergency_contact_number"]}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className="text-xs text-gray-600" >
+                                    Blood Group:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    name="blood_group"
+                                    placeholder="Blood Group"
+                                    value={editEmployee.blood_group}
+                                    onChange={handleEditInputChange}
+                                    style={{ paddingLeft: '12px' }}
+                                    className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                    ref={fieldRefs.current["blood_group"]}
+                                  />
+                                </div>
+
+                              </div>
+                            </div>
+                            {/* OTHER */}
+                            <div className="mb-4">
+                              <h4 className="font-semibold text-[#5E72E4] mb-2 text-[16px]">Other</h4>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                               <div>
+                                <label className="text-xs text-gray-600" >Education:</label>
+                                <textarea
+                                  name="education"
+                                  placeholder="Education"
+                                  value={editEmployee.education}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["education"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Work Experience:</label>
+                                <textarea
+                                  name="work_experience"
+                                  placeholder="Work Experience"
+                                  value={editEmployee.work_experience}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["work_experience"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Default Language:</label>
+                                <input
+                                  type="text"
+                                  name="default_language"
+                                  placeholder="Default Language"
+                                  value={editEmployee.default_language}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["default_language"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Time Zone:</label>
+                                <input
+                                  type="text"
+                                  name="time_zone"
+                                  placeholder="Time Zone"
+                                  value={editEmployee.time_zone}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["time_zone"]}
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Is Probation?</label>
+                                <select
+                                  name="is_probation"
+                                  value={editEmployee.is_probation}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["is_probation"]}
+                                >
+                                  <option value="">Select Probation</option>
+                                  <option value="True">Yes</option>
+                                  <option value="False">No</option>
+                                </select>
+                              </div>
+
+                             <div>
+                                <label className="text-xs text-gray-600" >Is Branch</label>
+                                <select
+                                  name="is_branch"
+                                  value={editEmployee.is_branch}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["is_branch"]}
+                                >
+                                
+                               
+                                  <option value="">Select Branch</option>
+                                  <option value="True">Yes</option>
+                                  <option value="False">No</option>
+                                </select>
+                              </div>
+
+
+                              <div>
+                                <label className="text-xs text-gray-600" >Group ID</label>
+                                <select
+                                  name="group_id"
+                                  value={editEmployee.group_id}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["group_id"]}
+                                >
+                                  <option value="">Select Group</option>
+                                  <option value={1}>1</option>
+                                  <option value={2}>2</option>
+                                  <option value={3}>3</option>
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="text-xs text-gray-600">Probation End Date:</label>
+                                <input
+                                  type="date"
+                                  name="probation_end_date"
+                                  value={editEmployee.probation_end_date}
+                                  onChange={handleEditInputChange}
+                                  style={{ paddingLeft: '12px' }}
+                                  className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
+                                  ref={fieldRefs.current["probation_end_date"]}
+                                />
+                              </div>
+
+                              </div>
+                            </div>
+                            {/* STATUS */}
+                            <div className="mb-4">
+                              <label className="text-xs text-gray-600" >Status:</label>
+                              <select style={{ paddingLeft: '12px' }}  onChange={handleEditInputChange} value={editEmployee.status} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="status"
+                              ref={fieldRefs.current["status"]}
+                              >
+                                <option value="">Select Status</option>
+                                <option value="True">Active</option>
+                                <option value="False">Inactive</option>
+                              </select>
+                            </div>
+                            {/* BUTTONS */}
+                            <div className="flex flex-col sm:flex-row justify-end items-end gap-3">
+                              <button type="button" className="btn border-none w-[100px] rounded-lg text-white" style={{ backgroundColor: '#8392ab' }} onClick={handleCloseModal}>
+                                Close
+                              </button>
+                             <button
+                                type="button"
+                                className="w-[100px] rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition"
+                                onClick={handleEditSubmit}
+                              >
+                                Submit
+                              </button>
+
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center py-10 px-8 w-[90vw] bg-white max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Empolyee is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
-                      </div>
-      
-                       {modal && (
-                                <div className="fixed text-gray-400 inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md  w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
-                                                
-                                                {/* Added flex-col */}
-                                    <h3 className="font-bold text-[22px] text-[#344767] "
-                                        >
-                                         Create Employee                           </h3>
-                                    <hr className="my-4 border-gray-300" />
-      
-                                    <div className="flex flex-col flex-grow gap-3 justify-center items-center"> {/* Added flex-grow */}
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Name:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg bg-white border-gray-200 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        name="name"
-                                      />
-                                      {/* {errors.name && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.name}</span>} */}
-      
-                                    
-      
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Gender:
-                                      </label>
-                                      <select defaultValue=" select Status"
-                                        className="select w-[100%] bg-white border-gray-200 focus:outline-none text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                        //alue={formData.status}
-                                        name='gender'
-                                        //onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option className=" text-gray-400">select Status</option>
-                                        <option className=" text-gray-400">male </option>
-                                        <option className=" text-gray-400">female</option>
-                                      </select>
-                                      {/* {errors.gender && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.gender}</span>} */}
-                                     
-                                     
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%] "
-                                      >
-                                       Department:
-                                      </label>
-                                     <select defaultValue="select Department"
-                                        className="select w-[100%] focus:outline-none bg-white border-gray-200 text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                         style={{paddingLeft:'12px'}}
-                                      //  value={formData.department}
-                                        name='position'
-                                        //onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option  className=" text-gray-400">select Position</option>
-                                        <option className=" text-gray-400">ABC </option>
-                                        <option className=" text-gray-400">EFG</option>
-                                      </select>
-                                      {/* {errors.department && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.department}</span>} */}
-
-                                      
-                                    
-                                      {/* {errors.department && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.department}</span>} */}
-                                      
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%] "
-                                      >
-                                       Position:
-                                      </label>
-                                      <select defaultValue="select Position"
-                                        className="select w-[100%] focus:outline-none bg-white border-gray-200 text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                       // value={formData.department}
-                                        name='position'
-                                       // onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option  className=" text-gray-400">select Position</option>
-                                        <option className=" text-gray-400">ABC </option>
-                                        <option className=" text-gray-400">EFG</option>
-                                      </select>
-                                      {/* {errors.position && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.position}</span>} */}
-
-
-                                      <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Salary:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg bg-white border-gray-200 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                         style={{paddingLeft:'12px'}}
-                                       // value={formData.salary}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name="salary"
-                                      />
-                                      {/* {errors.salary && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.salary}</span>} */}
-                                     
-                                     
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Bank Account Number:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg bg-white border-gray-200 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                         style={{paddingLeft:'12px'}}
-                                        //value={formData.bankaccountnumber}
-                                       // onChange={(e)=>handleChange(e)}
-                                        name="bankaccountnumber"
-                                      />
-                                      {/* {errors.bankaccountnumber && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.bankaccountnumber}</span>} */}
-                                        
-                                         
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Status:
-                                      </label>
-                                      <select defaultValue="select Position"
-                                        className="select w-[100%] focus:outline-none bg-white border-gray-200 text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                       // value={formData.status}
-                                        name='status'
-                                       // onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option  className=" text-gray-400">select status</option>
-                                        <option className=" text-gray-400">Active </option>
-                                        <option className=" text-gray-400">Inactive</option>
-                                      </select>
-                                     {/* // {errors.status && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.status}</span>} */}
-                                      
-                                    </div> 
-      
-
-
-                                    {/* Button container positioned 10px above bottom */}
-                                    <div className="flex flex-col sm:flex-row justify-end items-end gap-3  " 
-                                        >
-                                      <button
-                                        type="button"
-                                        className="btn border-none w-[100px] rounded-lg text-white"
-                                        style={{ backgroundColor: '#8392ab' }}
-                                        //onClick={(e) => handleSubmit(e)}
-                                      >
-                                        Submit
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="btn border-none w-[100px] rounded-lg text-white"
-                                        style={{ backgroundColor: '#5E72e4' }}
-                                        onClick={()=>setModal(false)}
-                                      >
-                                        Close
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                         )}
-                         {editModal && (
-                                 <div className="fixed text-gray-400 inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md  w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
-                                                
-                                                {/* Added flex-col */}
-                                    <h3 className="font-bold text-[22px] text-[#344767] "
-                                        >
-                                      Edit Employee                           </h3>
-                                    <hr className="my-4 border-gray-300" />
-      
-                                    <div className="flex flex-col flex-grow gap-3 justify-center items-center"> {/* Added flex-grow */}
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Name:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg bg-white border-gray-200 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                        style={{paddingLeft:'12px'}}
-                                        name="name"
-                                      />
-                                      {/* {errors.name && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.name}</span>} */}
-      
-                                    
-      
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Gender:
-                                      </label>
-                                      <select defaultValue=" select Status"
-                                        className="select w-[100%] bg-white border-gray-200 focus:outline-none text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                        //alue={formData.status}
-                                        name='gender'
-                                        //onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option className=" text-gray-400">select Status</option>
-                                        <option className=" text-gray-400">male </option>
-                                        <option className=" text-gray-400">female</option>
-                                      </select>
-                                      {/* {errors.gender && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.gender}</span>} */}
-                                     
-                                     
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%] "
-                                      >
-                                       Department:
-                                      </label>
-                                     <select defaultValue="select Department"
-                                        className="select w-[100%] focus:outline-none bg-white border-gray-200 text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                         style={{paddingLeft:'12px'}}
-                                      //  value={formData.department}
-                                        name='position'
-                                        //onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option  className=" text-gray-400">select Position</option>
-                                        <option className=" text-gray-400">ABC </option>
-                                        <option className=" text-gray-400">EFG</option>
-                                      </select>
-                                      {/* {errors.department && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.department}</span>} */}
-
-                                     
-                                    
-                                      {/* {errors.department && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.department}</span>} */}
-                                      
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%] "
-                                      >
-                                       Position:
-                                      </label>
-                                      <select defaultValue="select Position"
-                                        className="select w-[100%] focus:outline-none bg-white border-gray-200 text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                       // value={formData.department}
-                                        name='position'
-                                       // onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option  className=" text-gray-400">select Position</option>
-                                        <option className=" text-gray-400">ABC </option>
-                                        <option className=" text-gray-400">EFG</option>
-                                      </select>
-                                      {/* {errors.position && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.position}</span>} */}
-
-
-                                      <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Salary:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg bg-white border-gray-200 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                         style={{paddingLeft:'12px'}}
-                                       // value={formData.salary}
-                                        //onChange={(e)=>handleChange(e)}
-                                        name="salary"
-                                      />
-                                      {/* {errors.salary && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.salary}</span>} */}
-                                     
-                                     
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                        Bank Account Number:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg bg-white border-gray-200 focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                         style={{paddingLeft:'12px'}}
-                                        //value={formData.bankaccountnumber}
-                                       // onChange={(e)=>handleChange(e)}
-                                        name="bankaccountnumber"
-                                      />
-                                      {/* {errors.bankaccountnumber && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.bankaccountnumber}</span>} */}
-                                        
-                                         
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Status:
-                                      </label>
-                                      <select defaultValue="select Position"
-                                        className="select w-[100%] focus:outline-none bg-white border-gray-200 text-gray-400  focus:border-b-2 focus:border-blue-500" 
-                                        style={{paddingLeft:'12px'}}
-                                       // value={formData.status}
-                                        name='status'
-                                       // onChange={(e)=>handleChange(e)}
-                                      >
-                                        <option  className=" text-gray-400">select status</option>
-                                        <option className=" text-gray-400">Active </option>
-                                        <option className=" text-gray-400">Inactive</option>
-                                      </select>
-                                     {/* // {errors.status && <span className="text-red-500 text-xs" style={{marginLeft:'25px'}}>{errors.status}</span>} */}
-                                      
-                                    </div> 
-      
-
-
-                                    {/* Button container positioned 10px above bottom */}
-                                    <div className="flex flex-col sm:flex-row justify-end items-end gap-3  " 
-                                        >
-                                      <button
-                                        type="button"
-                                        className="btn border-none w-[100px] rounded-lg text-white"
-                                        style={{ backgroundColor: '#8392ab' }}
-                                        //onClick={(e) => handleSubmit(e)}
-                                      >
-                                        Submit
-                                      </button>
-                                      <button
-                                        type="button"
-                                        className="btn border-none w-[100px] rounded-lg text-white"
-                                        style={{ backgroundColor: '#5E72e4' }}
-                                        onClick={()=>setEditModal(false)}
-                                      >
-                                        Close
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                         )}
+                      )}
       
                          
                     </>)

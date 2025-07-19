@@ -3,6 +3,7 @@ import Default from "../../../assets/images/stock-CfGxyh0i.jpg"
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import UtilsGetModel from "../../../models/Utils_getModel";
 import DiamondModel from "../../../models/DiamondModel";
+
 import { toast } from "react-toastify";
 import { useLocation } from 'react-router-dom';
 
@@ -11,6 +12,8 @@ const Tagging = () => {
           const [preview, setPreview] = useState(null);
           const [purchaseUtils,setPurchaseUtils] =useState([])
           const [goldUtils,setGoldUtils] =useState([])
+          const [DiamondUtils,setDiamondUtils] = useState([])
+          
           const [items, setItems] = useState([{}]);
           const location = useLocation();
           const item = location.state?.item;
@@ -64,18 +67,21 @@ const Tagging = () => {
           console.log(allUtils)
           const uomArray = goldUtils.find(item => item.uom)?.uom || [];
           
-          const JewelleryType = goldUtils.find(item => item.jewelley_type)?.jewelley_type || [];
-          const Brand = purchaseUtils.find(item => item.product_brand)?.product_brand || [];
+         const JewelleryType = goldUtils.find(item => item.jewelley_type)?.jewelley_type || [];
+          const Brand = DiamondUtils.find(item => item.product_brand)?.product_brand || [];
           const Category = goldUtils.find(item=>item.categories)?.categories||[]
-          const occasion = purchaseUtils.find(item=>item.occasion)?.occasion || []
-          const design  = purchaseUtils.find(item=>item.product_design)?.product_design || []
+          const occasion = DiamondUtils.find(item=>item.occasion)?.occasion || []
+          const design  = DiamondUtils.find(item=>item.product_design)?.product_design || []
           const made_in =  purchaseUtils.find(item=>item.product_country)?.product_country || []
-          const size =  purchaseUtils.find(item=>item.product_size)?.product_size || []
-          const style =  purchaseUtils.find(item=>item.product_style)?.product_style || []
-          const gender =  purchaseUtils.find(item=>item.product_gender)?.product_gender || []
-          const color =  purchaseUtils.find(item=>item.product_color)?.product_color || []
-          const item_type =  goldUtils.find(item=>item.item_type)?.item_type || []
+          const size =  DiamondUtils.find(item=>item.product_size)?.product_size || []
+          const style =  DiamondUtils.find(item=>item.product_style)?.product_style || []
+          const gender =  DiamondUtils.find(item=>item.product_gender)?.product_gender || []
+          const color =  DiamondUtils.find(item=>item.product_color)?.product_color || []
+          const item_type =  DiamondUtils.find(item=>item.item_type)?.item_type || []
+          const Stone_type =  DiamondUtils.find(item=>item.stone_type)?.stone_type || []
+          const Item_cut =  DiamondUtils.find(item=>item.item_cut)?.item_cut || []
           const supplier =  allUtils.find(item=>item.supplier_list)?.supplier_list || []
+          const clarity = DiamondUtils.find(item =>item.item_clarity)?.item_clarity || []
 
  const getId = (field, selectedValue) => {
             const matchedGroup = allUtils.find(item => Object.keys(item)[0] === field);
@@ -120,6 +126,11 @@ const Tagging = () => {
                 setPreview(reader.result);
               };
               reader.readAsDataURL(file);
+              setData(prev => ({
+                    ...prev,
+                    diamond_image: file  // set the actual file, not just base64
+                  }))
+
             }
           };
 
@@ -163,6 +174,15 @@ const Tagging = () => {
                console.error(error)
             }
           }
+           const fetchDiamondUtils =async () =>{
+                        try{
+                             const response = await DiamondModel.GetDiamondUtils()
+                             console.log(response?.data?.data)
+                             setDiamondUtils(response?.data?.data)
+                             }catch(error){
+                               console.log(error)
+                                 }
+                            }
 
 
          const cleanData = (data) => {
@@ -263,6 +283,7 @@ const Tagging = () => {
 
       fetchGoldUtils()
       fetchPurchaseUtils()
+      fetchDiamondUtils()
       
     },[])
 
@@ -320,8 +341,12 @@ const Tagging = () => {
                     </label>
                     <input 
                         type="text" 
-                        className="border w-[200px] rounded-sm h-[30px] bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                        className="border w-[200px] text-xs text-gray-400 rounded-sm h-[30px] bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                        value={'Diamond'}
+                        style={{paddingLeft:'12px'}}
+
                     />
+
                 </div>
                 
                 <div className="flex flex-col gap-2">
@@ -619,15 +644,13 @@ const Tagging = () => {
 <select
   name="item_type"
   onChange={handleChange}
-  value={findOptionValue(item_type, data.item_type)}
+  //value={findOptionValue(item_type, data.item_type)}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
 >
   <option value="">-- Select Item Type --</option>
-  {item_type.map((item) => (
-    <option key={item.id} value={item.id}>
-      {item.name}
-    </option>
-  ))}
+   <option value={item_type.id} className="text-black">
+                {item_type.name}
+              </option>
 </select>
                          
    <label className="text-gray-400 font-semibold text-[11px] mb-1">
@@ -762,7 +785,6 @@ const Tagging = () => {
             <th className=" text-center align-middle" style={{width:'200px'}}>Type</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>color</th>
             <th className=" text-center align-middle" style={{width:'200px'}}>Cert.No</th>
-            <th className=" text-center align-middle" style={{width:'200px'}}>Item</th>
           </tr>
         </thead>
        {rows.map((row, rowIndex) => (
@@ -794,36 +816,68 @@ const Tagging = () => {
       
       {/* Clarity */}
       <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-          value={items[rowIndex]?.clarity || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'clarity', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+       <select
+          type="number"
+          style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.item_clarity || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_clarity', e.target.value)}
+          className="w-full text-xs text-gray-400 border-none focus:outline-none"
+        > 
+        <option value="">--Select Clarity--</option>
+           {clarity.map((item) => (
+          <option key={item.id} value={ item.id}>
+            {item.name}
+          </option>
+              ))}
+         </select>
       </td>
       <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-          value={items[rowIndex]?.cut || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'cut', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+       <select
+          type="number"
+          style={{paddingLeft:'12px'}}
+
+          value={items[rowIndex]?.item_cut || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_cut', e.target.value)}
+          className="w-full text-xs text-gray-400 border-none focus:outline-none"
+        >
+           <option value="">--Select Cut--</option>
+           {Item_cut.map((item) => (
+          <option key={item.id} value={ item.id}>
+            {item.name}
+          </option>
+              ))}
+         </select>
       </td>
       <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-          value={items[rowIndex]?.type || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'type', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+         <select
+          value={items[rowIndex]?.item_type || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_type', e.target.value)}
+          style={{paddingLeft:'12px'}}
+          className="w-full py-1 pl-[12px] border-none focus:outline-none text-gray-400 text-xs bg-white"
+        >
+         <option value="">--Select Type--</option>
+           {Stone_type.map((item) => (
+          <option key={item.id} value={ item.id}>
+            {item.name}
+          </option>
+              ))}
+         </select>
       </td>
       <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-          value={items[rowIndex]?.color || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'color', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+        <select
+          value={items[rowIndex]?.item_color || ''}
+          onChange={(e) => handleCellChange(rowIndex, 'item_color', e.target.value)}
+          style={{paddingLeft:'12px'}}
+          className="w-full py-1 pl-[12px]  border-none focus:outline-none text-xs text-gray-400 bg-white"
+        >
+          <option value="">--Select Color--</option>
+          {color.map((option) => (
+            <option key={option.id} value={option.name}>
+              {option.name}
+            </option>
+          ))}
+        </select>
       </td>
       <td className="rounded-sm border border-gray-200">
         <input

@@ -17,6 +17,11 @@ import UtilsGetModel from "../../../models/Utils_getModel";
 const DiamondPurchhase = () => {
 
     const [diamondItem, setDiamondItem] = useState([])
+     const [DiamondUtils,setDiamondUtils] = useState([])
+    //  const [purchaseUtils,setPurchaseUtils] =useState([])
+    //  const [goldUtils,setGoldUtils] =useState([])
+    //  const [allUtils,setAllUtils]=useState([])
+    
     const auth = useSelector((state) => state.auth);
     const { login_id, can_manage_user_types } = auth
      const [limit, setLimit] = useState(10);
@@ -70,17 +75,31 @@ const DiamondPurchhase = () => {
            'branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
             }
             ]
+console.log(utils)
+console.log(DiamondUtils)
+
+
+
            
 
-            const getNameFromId = (field, id) => {
-        for (const group of utils) {
-          if (group[field]) {
-            const match = group[field].find(item => item.id === id);
-            return match ? match.name : null;
-          }
-        }
-        return null;
-      };
+     const getNameFromId = (field, id) => {
+  for (const group of DiamondUtils) {
+    if (group[field]) {
+      const data = group[field];
+
+      if (Array.isArray(data)) {
+        const match = data.find(item => item.id === id);
+        if (match) return match.name;
+      }
+
+      if (typeof data === 'object' && !Array.isArray(data)) {
+        if (data.id === id) return data.name;
+      }
+    }
+  }
+  return null;
+};
+
 
 
     const handleDeleteDiamondItem = async (uuid) => {
@@ -96,6 +115,21 @@ const DiamondPurchhase = () => {
             setDeletingId(null);
         }
     };
+
+    
+  const fetchDiamondUtils =async () =>{
+          try{
+             const response = await DiamondModel.GetDiamondUtils()
+             console.log(response?.data?.data)
+             setDiamondUtils(response?.data?.data)
+             }catch(error){
+         console.log(error)
+      }
+    }
+
+    useEffect(() => {
+        fetchDiamondUtils()
+    }, [])  
 
     useEffect(() => {
         fetchDiamondItems()
@@ -147,25 +181,28 @@ const DiamondPurchhase = () => {
    {isLoading ? (
   <TableSkelton />
 ) : diamondItem.length === 0 ? (
-  <tr>
+  <tr >
     <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
       No data available
     </td>
   </tr>
 ) : (
   diamondItem.map((item, index) => (
-    <tr key={item.uuid} className="bg-white hover:bg-gray-50 text-gray-400 border-b border-gray-200">
+    <tr key={item.uuid} className="bg-white hover:bg-gray-50 text-gray-400 border-b border-gray-200 h-16">
       <td className="px-4 py-3 border-b border-gray-200 text-xs text-center">
         {index + 1}
       </td>
       <td className="px-4 py-3 border-b border-gray-200 text-xs">
         {getNameFromId('item_type', item.item_type)}
       </td>
-      <td className="px-4 py-3 border-b border-gray-200 text-xs">
+    
+      <td className="border-b border-gray-200 text-xs    hover:text-blue-500 cursor-pointer" >
         <Link to={`/dashboard/listDiamond/${item.uuid}/${item.created_by}`}>
-          {item.item_name}
+        {item.item_name}
         </Link>
       </td>
+   
+
       <td className="px-4 py-3 border-b border-gray-200 text-xs">
         {item.item_code || 'N/A'}
       </td>

@@ -1,73 +1,347 @@
 
-
-
- 
-     import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import CurrencyModel from "../../models/currencyModel";
+import BranchModel from "../../models/branchModel";
+import CustomScrollbar from "../../components/CustomScrollbar";
+import EditButton from '../../components/EditButton';
+import DeleteButton from '../../components/DeleteButton';
+import CreateButton from '../../components/CreateButton';
+import Pagination from '../../components/Pagination';
+import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
      
-     const  Currency = () => {
+const  Currency = () => {
      
           
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                 
-                   //validation 
+                        const [isHovered, setIsHovered] = useState(false);
+                        const [modal, setModal] = useState(false);
+                        const [editModal, setEditModal] = useState(false);
+
+                        const [currencyData, setCurrencyData] = useState([]);
+
+                        const [limit, setLimit] = useState(10);
+                        const [page, setPage] = useState(1);
+                        const [status, setStatus] = useState('');
+                        const [search, setSearch] = useState('');
+                        const [isSubmitting, setIsSubmitting] = useState(false);
+
+                        const [errors, setErrors] = useState({
+                          code: '',
+                        name: '',
+                        exchange_rate: '',
+                        symbol: '',
+                        branch: '',
+                        status: '',
+                        });
+                        const [editErrors, setEditErrors] = useState({});
+
+                        const [addCurrencyData, setAddCurrencyData] = useState({
+                        code: '',
+                        name: '',
+                        exchange_rate: '',
+                        symbol: '',
+                        branch: '',
+                        status: '',
+                      });
+
+
+                        const [editingCurrency, setEditingCurrency] = useState(null);
+
+                        const auth = useSelector((state) => state.auth);
+                        const { login_id, can_manage_user_types } = auth;
+                        const user_id = login_id;
+                        const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+                        const fetchCurrencies = async () => {
+                          try {
+                            const response = await CurrencyModel.getCurrency(user_id, user_types, limit, page, search, status);
+
+                            if (response?.data?.data) {
+                              setCurrencyData(response.data.data);
+                            } else {
+                              toast.error("Unable to fetch currencies");
+                            }
+                          } catch (error) {
+                            console.error("Error fetching currencies:", error);
+                            toast.error("Failed to load currencies");
+                          }
+                        };
+
+                        useEffect(() => {
+                          fetchCurrencies();
+                        }, [limit, page, search, status]);
+                                      
+                          
+                        
+
+                        const [branches, setBranches] = useState([]);
+
+
+
                    
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
+
+
+                      const fetchBranches = async () => {
+                        try {
+                          const response = await BranchModel.getBranches(user_id, user_types);
+                          if (response?.data?.data) {
+                            setBranches(response.data.data);
+                          } else {
+                            toast.error("Failed to load branches");
+                          }
+                        } catch (error) {
+                          console.error("Error fetching branches:", error);
+                          toast.error("Error fetching branches");
+                        }
+                      };
+
+
+                                            const getBranchName = (id) => {
+                                              const branch = branches.find((b) => b.id === id);
+                                              return branch ? branch.name : "N/A";
+                                            };
+
+
+                      const validateCurrency = () => {
+                        const newErrors = {};
+
+                        if (!addCurrencyData.code.trim()) {
+                          newErrors.code = 'Please enter currency code';
+                        }
+
+                        if (!addCurrencyData.name.trim()) {
+                          newErrors.name = 'Please enter currency name';
+                        }
+
+                        if (!addCurrencyData.exchange_rate || isNaN(addCurrencyData.exchange_rate)) {
+                          newErrors.exchange_rate = 'Please enter valid exchange rate';
+                        }
+
+                        if (!addCurrencyData.symbol.trim()) {
+                          newErrors.symbol = 'Please enter symbol';
+                        }
+
+                        if (!addCurrencyData.branch) {
+                          newErrors.branch = 'Please select branch';
+                        }
+
+                       
+
+                        return newErrors;
+                      };
+
+
+
+                      const handleAddCurrencyChange = (e) => {
+                        const { name, value } = e.target;
+                        setAddCurrencyData((prev) => ({
+                          ...prev,
+                          [name]: name === 'status' ? value === 'true' : value,
+                        }));
+                      };
+
+
+                      const handleSubmitCurrency = async () => {
+                        const validationErrors = validateCurrency();
+
+                        if (Object.keys(validationErrors).length > 0) {
+                          setErrors(validationErrors);
+                          return;
+                        }
+
+                        const payload = {
+                          code: addCurrencyData.code.trim(),
+                          name: addCurrencyData.name.trim(),
+                          exchange_rate: parseFloat(addCurrencyData.exchange_rate),
+                          symbol: addCurrencyData.symbol.trim(),
+                          branch: parseInt(addCurrencyData.branch),
+                          status: addCurrencyData.status === true || addCurrencyData.status === 'true',
+                        };
+
+                        console.log("Currency Payload being sent:", payload);
+
+                        try {
+                          const response = await CurrencyModel.createCurrency(payload);
+                          console.log("Create Currency response:", response);
+
+                          if (response.status === 201 || response.status === 200) {
+                            fetchCurrencies();
+                            handleCloseModal();
+                            toast.success('Currency created successfully!');
+                          }
+                        } catch (error) {
+                          console.error("Create currency error:", error);
+                          toast.error('Failed to create currency!');
+                          handleCloseModal();
+
+                          if (error.response?.data?.errors) {
+                            setErrors((prev) => ({
+                              ...prev,
+                              ...error.response.data.errors,
+                            }));
+                          }
+                        }
+                      };
+
+
+
+                        
+  
+ const validateEditCurrency = () => {
+  let valid = true;
+  const errors = {};
+
+  if (!editingCurrency?.code?.trim()) {
+    errors.code = 'Currency code is required';
+    valid = false;
+  }
+
+  if (!editingCurrency?.name?.trim()) {
+    errors.name = 'Currency name is required';
+    valid = false;
+  }
+
+  if (!editingCurrency?.exchange_rate?.toString().trim() || isNaN(editingCurrency.exchange_rate)) {
+    errors.exchange_rate = 'Valid exchange rate is required';
+    valid = false;
+  }
+
+  if (!editingCurrency?.symbol?.trim()) {
+    errors.symbol = 'Currency symbol is required';
+    valid = false;
+  }
+
+  if (!editingCurrency?.branch) {
+    errors.branch = 'Please select a branch';
+    valid = false;
+  }
+  setEditErrors(errors);
+  return valid;
+};
+
+
+const handleEditClickCurrency = (currencyObj) => {
+  if (!currencyObj || typeof currencyObj !== 'object' || !currencyObj.id) {
+    toast.error("Invalid currency selected.");
+    return;
+  }
+
+  setEditingCurrency({
+    id: currencyObj.id,
+    code: currencyObj.code,
+    name: currencyObj.name,
+    exchange_rate: currencyObj.exchange_rate,
+    symbol: currencyObj.symbol,
+    branch: currencyObj.branch?.toString(),
+    status: currencyObj.status?.toString(),
+  });
+
+  setEditModal(true);
+};
+
+
+const handleEditCurrencyChange = (e) => {
+  const { name, value } = e.target;
+
+  setEditingCurrency((prev) => ({
+    ...prev,
+    [name]: name === 'status' ? value === 'true' : value,
+  }));
+};
+
+
+const handleEditSubmitCurrency = async () => {
+  if (!editingCurrency?.id) {
+    toast.error("Invalid currency selected for editing.");
+    return;
+  }
+
+  if (!validateEditCurrency()) return;
+
+  setIsSubmitting(true);
+
+  const payload = {
+    code: editingCurrency.code.trim(),
+    name: editingCurrency.name.trim(),
+    exchange_rate: parseFloat(editingCurrency.exchange_rate),
+    symbol: editingCurrency.symbol.trim(),
+    branch: parseInt(editingCurrency.branch),
+    status: editingCurrency.status === true || editingCurrency.status === 'true',
+  };
+
+  try {
+    const response = await CurrencyModel.updateCurrency(editingCurrency.id, payload);
+
+    if (response.status === 200 || response.status === 201) {
+      fetchCurrencies();
+      toast.success('Currency updated successfully!');
+      setEditModal(false);
+    }
+  } catch (error) {
+    console.error("Update currency error:", error);
+    toast.error('Failed to update currency!');
+    if (error.response?.data?.errors) {
+      setEditErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+                                            const handleEditCloseModal = () => {
+                                                      setEditModal(false);
+                                                      setEditingCurrency(null);
+                                                      setEditErrors({
+                                                        code: '',
+                                                        name: '',
+                                                        exchange_rate: '',
+                                                        symbol: '',
+                                                        branch: '',
+                                                        status: '',
+                                                      });
+                                                    };
+
+
+
+const handleDeleteCurrency = async (id) => {
+  if (!id) return;
+
+  try {
+    await CurrencyModel.deleteCurrency(id);
+
+    setCurrencyData((prevData) => prevData.filter((item) => item.id !== id));
+
+    if (modal && typeof modal.close === 'function') {
+      modal.close();
+    }
+
+    toast.success('Currency deleted successfully');
+  } catch (error) {
+    console.error("Error deleting Currency:", error);
+    toast.error('Failed to delete Currency');
+  }
+};
+
                   
                    // Handle close modal
                    const handleCloseModal = () => {
+                    setErrors({
+                        code: '',
+                        name: '',
+                        exchange_rate: '',
+                        symbol: '',
+                        branch: '',
+                        status: '',
+                    })
                      setModal(false);
                      setEditModal(false)
                    };
-                 
+              useEffect(() => {
+                        fetchBranches();
+                      }, []);       
                  
                  
                  
@@ -75,33 +349,7 @@
                    return (
                      
                  <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
+                <CustomScrollbar/>
                 <div className="bg-white w-full
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
@@ -122,8 +370,8 @@
                               boxSizing: 'border-box',
                               display: 'flex',
                               justifyContent: 'flex-end',
-                              width: 'fit-content', // Changed from 100%
-                              minWidth: '100%' // Ensures it matches table width
+                              width: 'fit-content', 
+                              minWidth: '100%' 
                               }}
                           >
                               <button
@@ -145,187 +393,74 @@
                               </button>
                           </div>
                  
-                       <div className="text-gray-400" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
-                         <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {items}</p>
-                         <select
-                           className="border border-gray-300 rounded-lg w-[114px] h-[35px] px-2"
-                           style={{
-                             appearance: 'none',
-                             WebkitAppearance: 'none',
-                             MozAppearance: 'none',
-                             backgroundColor: 'white',
-                             backgroundImage: 'none',
-                             paddingLeft: '5px',
-                           }}
-                           onChange={(e) => setItems(Number(e.target.value))}
-                           value={items}
-                         >
-                           <option value={10}>10</option>
-                           <option value={25}>25</option>
-                           <option value={50}>50</option>
-                         </select>
-                       </div>
+                      
                  
                        
                  
                        <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1100px]  " style={{ borderSpacing: '0 12px', borderCollapse: 'separate', }}>
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
-                             <th className="px-6 py-3"  >CODE</th>
-                             <th className="px-6 py-3"  >NAME </th>
-                             <th className="px-6 py-3" >EXCHANGE RATE </th>
-                             <th className="px-6 py-3"  >SYMBOL</th>
-                             <th className="px-6 py-3"  >STATUS</th>
-                             <th className="px-6 py-3"  >ACTION</th>
+                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
+                             <th className="px-6 py-3 w-[80px]"  >CODE</th>
+                             <th className="px-6 py-3 w-[120px]"  >NAME </th>
+                             <th className="px-6 py-3 w-[120px]" >EXCHANGE RATE </th>
+                             <th className="px-6 py-3 w-[80px]"  >SYMBOL</th>
+                             <th className="px-6 py-3 w-[100px]"  >BRANCH</th>
+                             <th className="px-6 py-3 w-[100px]"  >STATUS</th>
+                             <th className="px-6 py-3 w-[100px]"  >ACTION</th>
                            </tr>
                          </thead>
                          <tbody>
-                           
-                             <tr  className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{paddingLeft:'20px'}}>1</td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">USD </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">US Dollar </td>
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">1.0000</td>
-                               <td className="px-6 py-5 border-b border-gray-200  text-red-500 text-xs">$</td>
-                              
-                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                               <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{padding: '2px 6px'}}>ACTIVE</span>
-                               </td> 
-      
+                            {currencyData.map((currency, index) => (
+                              <tr key={currency.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400">
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                                  {index + 1}
+                                </td>
+
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{currency.code}</td>
+
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{currency.name}</td>
+
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">{currency.exchange_rate || '1.0000'}</td>
+
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs ">{currency.symbol}</td>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs ">{getBranchName(currency.branch)}</td>
+
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                                  {currency.status ? (
+                                    <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                      ACTIVE
+                                    </span>
+                                  ) : (
+                                    <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                      INACTIVE
+                                    </span>
+                                  )}
+                                </td>
+
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                      <button
-                                      type="button"
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '100px',
-                                          padding: '5px',
-                                          backgroundColor: '#696BE4',
-                                      }}                              
-                                      onClick={()=>setEditModal(true)}
-                                      >
-                                      Edit
-                                      </button>
-              
-                                      <button
-                                      className="btn border-none text-white font-bold text-xs rounded-lg"
-                                      style={{
-                                          width: '150px',
-                                          padding: '5px',
-                                          background: 'linear-gradient(to right, #A1B1D1, #697C9B)',
-                                      }}
-                                      onClick={()=>document.getElementById('my_modal_8').showModal()}
-      
-                                      >
-                                      Delete Currency
-                                      </button>
+                                    <EditButton onClick={() => handleEditClickCurrency(currency)} />
+                                    <DeleteButton
+                                      buttonText="Delete Currency"
+                                      modalId={`delete_currency_modal_${currency.id}`}
+                                      onConfirmDelete={() => handleDeleteCurrency(currency.id)}
+                                    />
                                   </div>
-                                  </td>
-                             </tr>
-                             
-                            
-                            
-                             
-                             
-                             
-                             
-                            
-                          
-                         </tbody>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+
                        </table>
                        
                  
                        {/* Pagination */}
-                       <div className="flex gap-1 justify-center">
-                         <button className="btn border-none bg-gray-100 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'<'}
-                         </button>
-                         <button className="btn border-none   rounded-full w-[40px] h-[40px] flex items-center justify-center font-semibold bg-blue-500 text-white">
-                           1
-                         </button>
-                         <button className="btn  border-none bg-gray-100 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'>'}
-                         </button>
-                       </div>
-                 
+                       <Pagination/>
+                       
                        {/* Modal */}
       
       
-                        <dialog id="my_modal_8" className="modal">
-                       <div className="modal-box text-center py-8 px-6 rounded-xl bg-white relative font-[Open_Sans]
-                          w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                         
-                    "
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-                        {/* Title & Message */}
-                        <h3 className="text-lg font-semibold text-gray-500 " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs bg-green-500 border-none font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center bg-white py-10 px-8 w-[90vw] max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
-                      onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Currecy is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
-                  </div>
-                  </dialog>
                       </div>
       
                       {modal && (
@@ -338,109 +473,130 @@
                                          Create Currency                           </h3>
                                     <hr className="my-4 border-gray-300" />
       
-                                    <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                   
+                                 <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
+                                    <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       code:
+                                       code:<span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%]  text-xs border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%]  text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addCurrencyData.code}
+                                        onChange={handleAddCurrencyChange}
+                                        name="code"
                                       />
+                                      <p className="text-xs text-red-400">{errors.code}</p>
+                                    </div>
+
+                                    <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-full text-xs border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-full text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={addCurrencyData.name}
+                                        onChange={handleAddCurrencyChange}
+                                        name="name"
                                       />
+                                       <p className="text-xs text-red-400">{errors.name}</p>
+                                    </div>  
 
 
-                            
+                                    <div>
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Exchange rate:
+                                            Exchange rate: <span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="exchange_rate"  
                                                 placeholder="Type here" 
-                                                className="input border-gray-300 text-xs bg-white w-full rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input border-gray-300 text-xs bg-white w-full rounded-lg border text-gray-500 border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                  style={{paddingLeft:'12px'}}
 
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
-                                                step="1"  // For decimal values if needed
+                                                value={addCurrencyData.exchange_rate}
+                                                onChange={handleAddCurrencyChange}
+                                                
+                                                step="1"  
                                                 />
+                                                <p className="text-xs text-red-400">{errors.exchange_rate}</p>
+                                    </div>
+
+                                    <div>
 
                                         <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                      Symbol:
+                                      Symbol: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-full text-xs border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-full text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                       value={addCurrencyData.symbol}
+                                       onChange={handleAddCurrencyChange}
+                                        name="symbol"
                                       />
+                                      <p className="text-xs text-red-400">{errors.symbol}</p>
+                                    </div>
+
+                                
+                                      <div className="w-full flex flex-col gap-2">
+                                        <label className="text-xs font-bold text-[#344767]">Branch <span className="text-xs text-red-400">*</span></label>
+                                        <select
+                                          name="branch"
+                                          value={addCurrencyData.branch}
+                                          onChange={handleAddCurrencyChange}
+                                          className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                          style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                        >
+                                          <option value="">Select Branch</option>
+                                          {branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                              {branch.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                       <p className="text-xs text-red-400">{errors.branch}</p>
+                                    
+                                      </div>
 
                                            
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%]  border-gray-300 text-gray-300 bg-white h-[35px] focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{padding:'12px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600">status</option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                >
-                                            <button
-                                                type="button"
-                                                className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
+                                                <button
                                                 type="button"
                                                 className="btn w-[100px] h-[33px] border-none  rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
+                                                style={{ backgroundColor: '#8392ab' }}
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
                                             </button>
+                                            <button
+                                                type="button"
+                                                className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
+                                                style={{ backgroundColor:'#5E72e4' }}
+                                                onClick={handleSubmitCurrency}
+                                            >
+                                                Submit
+                                            </button>
+                                            
                                             </div>
                                         </div>
                                         </div>
@@ -458,109 +614,152 @@
                                     <hr className="my-4 border-gray-300" />
       
                                     <div className="flex flex-col flex-grow gap-2"> {/* Added flex-grow */}
-                                   
+                                     <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       code:
+                                       code:<span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-[100%]  text-xs border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%]  text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingCurrency.code || ''}
+                                        onChange={handleEditCurrencyChange}
+                                        name="code"
                                       />
+                                       <p className="text-xs text-red-400">{editErrors.code}</p>
+                                    </div>
+
+                                    <div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-full text-xs border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-full text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingCurrency.name || ''}
+                                        name="name"
+                                        onChange={handleEditCurrencyChange}
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.name}</p>
+                                    </div>
 
 
-                            
+                                     <div>
                                             <label 
                                             
                                             className="font-semibold text-xs text-[#344767] w-[100%]"
                                             >
-                                            Exchange rate:
+                                            Exchange rate:<span className="text-xs text-red-400">*</span>
                                             </label>
 
                                             <input 
                                                 type="number" 
-                                                name="input_tax"  // Must match your formData key
+                                                name="exchange_rate"  // Must match your formData key
                                                 placeholder="Type here" 
-                                                className="input border-gray-300 text-xs bg-white w-full rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                                className="input text-gray-500 text-xs bg-white w-full rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                  style={{paddingLeft:'12px'}}
 
-                                                value={formData.input_tax || ''}
-                                                onChange={handleChange}
+                                                value={editingCurrency.exchange_rate || ''}
+                                                onChange={handleEditCurrencyChange}
                                                 step="1"  // For decimal values if needed
                                                 />
+                                                <p className="text-xs text-red-400">{editErrors.exchange_rate}</p>
+                                      </div> 
 
+                                      <div>
                                         <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                      Symbol:
+                                      Symbol:  <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
-                                        className="input w-full text-xs border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
+                                        className="input w-full text-xs tex-gray-500 border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
-                                        onChange={(e)=>handleChange(e)}
-                                        name=""
+                                        value={editingCurrency.symbol || ''}
+                                        name="symbol"
+                                        onChange={handleEditCurrencyChange}
+                                        
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.symbol}</p>
+                                    </div>
+                                      
+
+
+                                      <div className="w-full flex flex-col gap-2">
+                                        <label className="text-xs font-bold text-[#344767]">Branch  <span className="text-xs text-red-400">*</span>
+                                        </label>
+                                        <select
+                                          name="branch"
+                                          value={editingCurrency?.branch || ""}
+                                          onChange={handleEditCurrencyChange}
+                                          className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                          style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                        >
+                                          <option value="">Select Branch</option>
+                                          {branches.map((branch) => (
+                                            <option key={branch.id} value={branch.id}>
+                                              {branch.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                        {editErrors.branch && (
+                                          <span className="text-red-500 text-xs mt-1">{editErrors.branch}</span>
+                                        )}
+                                      </div>
 
                                            
-                                            <label 
+                                           <label 
                                                 
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
+                                                className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%]  border-gray-300 text-gray-300 bg-white h-[35px] focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{padding:'12px'}}
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                style={{paddingLeft:'12px'}}
+                                                value={String(editingCurrency.status)}
+                                                onChange={handleEditCurrencyChange}
+                                                name='status'
+                                               
                                             >
-                                                <option className=" text-gray-600">status</option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
+                                                <option value="" className=" text-gray-600">Select </option>
+                                                <option value={true} className=" text-gray-600"> Active</option>
+                                                <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
+                                            
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
-                                               >
+                                                >
                                             <button
                                                 type="button"
-                                                className="btn border-none w-[100px] h-[33px] rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[33px] border-none  rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
+                                                className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
+                                                style={{ backgroundColor:'#8392ab' }}
+                                                onClick={handleEditCloseModal}
                                             >
                                                 Close
                                             </button>
+                                            <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72E4' }}
+                                                onClick={handleEditSubmitCurrency}
+                                                disabled={isSubmitting}
+                                          >
+                                                {isSubmitting ? 'Updating...' : 'Update'}
+                                          </button>
                                             </div>
+                                           
                                         </div>
                                         </div>
                                 )}

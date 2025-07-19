@@ -7,7 +7,7 @@ import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import  CountryModel from '../../../models/countryModel';
 import { useSelector } from "react-redux";
-import SuccessToast from "../../../components/SuccessToast";
+import TableSkelton from "../../../components/tableSkelton";
 import { toast } from 'react-toastify';
 
 
@@ -21,14 +21,18 @@ const Country =()=>{
                      const [modal, setModal] = useState(false)   
                      const [editModal,setEditModal]= useState(false)
                      const [countryData, setCountryData] = useState([]);
+                     const [totalPages, setTotalPages] = useState(1);
                      const auth= useSelector((state) => state.auth);
                      const { login_id ,can_manage_user_types,} = auth;    
                      const[limit,setLimit]=useState(10);  
+                     const [deletingId, setDeletingId] = useState(null);
+                     const [itemToDelete, setItemToDelete] = useState(null);
                      const[page,setPage]=useState(1);  
                      const[search,setSearch]=useState('');
                      const[status,setStatus]=useState('');
                      const [isSubmitting, setIsSubmitting] = useState(false);
                      const [editingCountry, setEditingCountry] = useState(null);
+                     const [isLoading, setIsLoading] = useState(true);
                      const [addCountryData, setaddCountryData] = useState({
                       code: '',
                       name: ''
@@ -41,7 +45,6 @@ const Country =()=>{
                      const user_id = login_id;
                      const user_types = Object.keys(can_manage_user_types).join(','); 
                    
-                        console.log(countryData)
                       const FetchCountry = async () => {
                         try {
                           const response = await CountryModel.getCountries(
@@ -54,11 +57,16 @@ const Country =()=>{
                           );
 
                           if (response.data && response.data.data) {
-                            setCountryData(response.data.data);
+                            console.log(response)
+                            setCountryData(response?.data?.data);
+                             setTotalPages(response?.data?.pagination?.pages);
                           }
                         } catch (error) {
                           console.error("Error fetching country data:", error);
                         }
+                          finally {
+                              setIsLoading(false); // stop loading
+                            }
                       };
 
                   const handleChange = (e) => {
@@ -189,27 +197,24 @@ const Country =()=>{
               setErrors(newErrors);
               return valid;
             };
+           
+           
 
-            const handleDeleteCountry = async (id) => {
-              console.log("Deleting country with ID:", id);
-              if (!id) return;
-              
+
+            const handleDeleteCountry = async (id) => {            
+              if (!id) toast.error("Sorry We Are Unable to Delete Item")
               try {
+                setDeletingId(id)
                 await CountryModel.deleteCountry(id);
-                
-              
                 setCountryData(prevData => prevData.filter(country => country.id !== id));
-                
-                
-                document.getElementById('my_modal_8').close();
-                
-                
-                alert('Country deleted successfully');
+                await FetchCountry()
+                toast.success("Country Deleted Succefully")
               } catch (error) {
-                console.error("Error deleting country:", error);
-                alert('Failed to delete country');
-              }
-            };
+                toast.error("Please Try Again ,Failed to Delete Country")
+              }finally {
+                setDeletingId(null);
+                }
+             };
                    
                     // Handle close modal
                    const handleCloseModal = () => {
@@ -229,7 +234,7 @@ const Country =()=>{
                   
                   useEffect(() => {
                     FetchCountry(); 
-                  },[])
+                  },[limit,status,search,page])
                   
                   
                     return (
@@ -249,7 +254,7 @@ const Country =()=>{
                   buttoncontent="+ New Country"
                   onClick={() => setModal(true)}  // This will now work!
                  />                 
-                 <ItemsPerPageSelector items={items} setItems={setItems} />
+                 <ItemsPerPageSelector items={limit} setItems={setLimit} />
                   
                         
                      <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
@@ -264,8 +269,16 @@ const Country =()=>{
                         </tr>
                       </thead>
                       <tbody>
-                        {countryData.map((country,index) => (
-                          console.log(country),
+                        {isLoading ? (
+                          <TableSkelton />
+                        ) : countryData.length === 0 ? (
+                          <tr >
+                            <td  className="text-center py-4 text-gray-500 text-sm">
+                              No data available
+                            </td>
+                          </tr>
+                        ) :countryData.map((country,index) => (
+                       
                           <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                             <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
                               {index+1}
@@ -291,11 +304,14 @@ const Country =()=>{
                                     setEditModal(true);
                                   }}
                                 />
-                              <DeleteButton
-                                buttonText="Delete"
-                                modalId="my_modal_8"
-                                onConfirmDelete={() => handleDeleteCountry(country.id)}
-                              />
+                             
+                              <DeleteButton 
+                                          buttonText={deletingId === country.id ? 'Deleting...' : 'Delete'}
+                                          item="Country"
+                                          onOpenModal={() => setItemToDelete(country.id)}
+                                          onConfirmDelete={() => handleDeleteCountry(itemToDelete)}
+                                          disabled={deletingId === country.id}
+                                        />
 
                               </div>
                             </td>
@@ -305,7 +321,7 @@ const Country =()=>{
                     </table>
                                         
                   
-                        <Pagination/>
+                     <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                   
        
        
@@ -333,7 +349,7 @@ const Country =()=>{
                                       <input
                                         type="text"
                                         placeholder="Type here"
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
                                         name="code"
                                         value={addCountryData.code}
@@ -354,7 +370,7 @@ const Country =()=>{
                                      <input
                                       type="text"
                                       placeholder="Type here"
-                                      className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                      className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
                                       name="name"
                                       value={addCountryData.name}
@@ -380,6 +396,7 @@ const Country =()=>{
                                            type="button"
                                            className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
                                            style={{ backgroundColor: '#5E72E4' }}
+                                           
                                            onClick={handleSubmit}
                                           >
                                           Create

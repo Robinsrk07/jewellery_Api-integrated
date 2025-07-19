@@ -11,7 +11,7 @@ import Pagination from '../../../components/Pagination';
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import BrandModel from "../../../models/brandModel"; 
-
+import TableSkelton from "../../../components/tableSkelton";
      const  Brand = () => {
 
 
@@ -21,12 +21,16 @@ import BrandModel from "../../../models/brandModel";
               const user_id = login_id;
               const user_types = Object.keys(can_manage_user_types || {}).join(',');
     
-      
+       
                     const [modal, setModal] = useState(false)   
+                    const [totalPages, setTotalPages] = useState(1);
+
                     const [editModal,setEditModal]= useState(false)
-                    const [items, setItems] = useState(10);
+                    const [deletingId, setDeletingId] = useState(null);
+                    const [itemToDelete, setItemToDelete] = useState(null);
                     const [brandData, setBrandData] = useState([]); 
                     const [editingBrand, setEditingBrand] = useState(null); 
+                     const [isLoading, setIsLoading] = useState(true);
                     const [limit, setLimit] = useState(10);
                     const [page, setPage] = useState(1);
                     const [search, setSearch] = useState('');
@@ -38,7 +42,7 @@ import BrandModel from "../../../models/brandModel";
                       name: '',
                       code: '',
                       description: '',
-                      status: 'true',
+                      
                     });
 
                     
@@ -65,14 +69,17 @@ import BrandModel from "../../../models/brandModel";
                         console.log("Response from API:", response);
 
                         if (response.data && response.data.data) {
-                          console.log("Data Received:", response.data.data);
-                          setBrandData(response.data.data); // Make sure to define `brandData` state
+                         
+                          setBrandData(response.data.data); 
+                           setTotalPages(response.data.pagination.pages);
                         } else {
                           toast.error("Unable to fetch brands");
                         }
                       } catch (error) {
                         console.error("Error fetching brands:", error);
                         toast.error("Failed to load brands");
+                      }finally{
+                        setIsLoading(false)
                       }
                     };
 
@@ -115,12 +122,9 @@ import BrandModel from "../../../models/brandModel";
                       name: addBrandData.name,
                       code: addBrandData.code,
                       description: addBrandData.description,
-                      status: addBrandData.status === 'true ',
-                      created_by: user_id,
-                      created_by_type: user_types,
+                      status: addBrandData.status === 'true '
                     };
 
-                    console.log("Payload being sent:", payload);
 
 
                     try {
@@ -183,15 +187,9 @@ import BrandModel from "../../../models/brandModel";
                         valid = false;
                       }
 
-                      if (!editingBrand?.description?.trim()) {
-                        newErrors.description = 'Description is required';
-                        valid = false;
-                      }
+                     
 
-                      if (editingBrand?.status === undefined || editingBrand.status === '') {
-                        newErrors.status = 'Status is required';
-                        valid = false;
-                      }
+                      
 
                       setEditErrors(newErrors);
                       return valid;
@@ -240,25 +238,21 @@ import BrandModel from "../../../models/brandModel";
 
                     
                     const handleDeleteBrand = async (id) => {
-                      console.log("Deleting brand with ID:", id);
-                      if (!id) return;
+                      
+                      if (!id) toast.error("Please Try Again Failed to Delete")
 
                       try {
                         await BrandModel.deleteBrand(id); // Call the delete API
 
-                        setBrandData(prevData => prevData.filter(item => item.id !== id)); // Remove from state
-
-                        // Close modal if it exists
-                        const modal = document.getElementById('my_modal_8');
-                        if (modal && typeof modal.close === 'function') {
-                          modal.close();
-                        }
+                        await fetchBrands()
 
                         toast.success('Brand deleted successfully');
                       } catch (error) {
                         console.error("Error deleting brand:", error);
                         toast.error('Failed to delete brand');
-                      }
+                      }finally {
+                            setDeletingId(null);
+                        }
                     };
                                         
                   
@@ -268,6 +262,23 @@ import BrandModel from "../../../models/brandModel";
                   
                    // Handle close modal
                    const handleCloseModal = () => {
+                      setErrors({name: '',
+                      code: '',
+                      description: '',
+                      status: '',})
+                      setAddBrandData({
+                      name: '',
+                      code: '',
+                      description: '',
+                      status: '',
+                      })
+                      setEditErrors({
+                      name: '',
+                      code: '',
+                      description: '',
+                      status: '',
+                    })
+
                      setModal(false);
                      setEditModal(false)
                    };
@@ -293,7 +304,7 @@ import BrandModel from "../../../models/brandModel";
                           buttoncontent="+ New Brand"
                             onClick={() => setModal(true)}  // This will now work!
                       />                 
-                      <ItemsPerPageSelector items={items} setItems={setItems} />
+                      <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
                        
                  
@@ -310,7 +321,15 @@ import BrandModel from "../../../models/brandModel";
                             </tr>
                           </thead>
                           <tbody>
-                            {brandData.map((brand, index) => (
+                            {isLoading ? (
+                          <TableSkelton />
+                        ) : brandData.length === 0 ? (
+                          <tr >
+                            <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                              No data available
+                            </td>
+                          </tr>
+                        ) : brandData.map((brand, index) => (
                               <tr key={brand.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index+1}</td>
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs">{brand.code}</td>
@@ -334,10 +353,13 @@ import BrandModel from "../../../models/brandModel";
                                         onClick={()=>handleEditClick(brand)}
                                         />
 
+                                       
                                         <DeleteButton 
-                                           buttonText="Delete Type" 
-                                           modalId={`delete_modal_${brand.id}`} 
-                                           onConfirmDelete={() => handleDeleteBrand(brand.id)} 
+                                          buttonText={deletingId === brand.id ? 'Deleting...' : 'Delete'}
+                                          item="Diamond Item"
+                                          onOpenModal={() => setItemToDelete(brand.id)}
+                                          onConfirmDelete={() => handleDeleteBrand(itemToDelete)}
+                                          disabled={deletingId === brand.id}
                                         />
                                   </div>
                                 </td>
@@ -348,7 +370,7 @@ import BrandModel from "../../../models/brandModel";
                                               
                  
                        {/* Pagination */}
-                       <Pagination/>
+                      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                  
                        {/* Modal */}
                       </div>
@@ -368,8 +390,9 @@ import BrandModel from "../../../models/brandModel";
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name:<span className="text-red-500 text-[14px]">*</span>
                                       </label>
+                                      <div>
                                       <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -377,13 +400,16 @@ import BrandModel from "../../../models/brandModel";
                                         onChange={(e)=>handleAddBrandChange(e)}
                                         name="name"
                                       />
+                                       <p className="text-xs text-red-400">{errors.name}</p>
+                                       </div>
                                       <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Code:
+                                       Code:<span className="text-red-500 text-[14px]">*</span>
                                       </label>
-                                    <input type="text" 
+                                      <div>
+                                     <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
@@ -391,8 +417,8 @@ import BrandModel from "../../../models/brandModel";
                                         onChange={handleAddBrandChange}
                                         name="code"
                                       />
-                                      
-
+                                       <p className="text-xs text-red-400">{errors.code}</p>
+                                      </div>
                                       <label 
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
@@ -409,7 +435,7 @@ import BrandModel from "../../../models/brandModel";
                                       ></textarea>
                             
                                            
-                                            <label 
+                                            {/* <label 
                                                 
                                                 className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
@@ -426,20 +452,13 @@ import BrandModel from "../../../models/brandModel";
                                                 <option value="" className="text-gray-600">Select</option>
                                                 <option value="true" className="text-gray-600">Active</option>
                                                 <option value="false" className="text-gray-600">InActive</option>
-                                            </select>
+                                            </select> */}
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                                 >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleSubmitBrand}
-                                            >
-                                                Submit
-                                            </button>
+                                           
                                             <button
                                                 type="button"
                                                 className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
@@ -447,6 +466,14 @@ import BrandModel from "../../../models/brandModel";
                                                 onClick={handleCloseModal}
                                             >
                                                 Close
+                                            </button>
+                                             <button
+                                                type="button"
+                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                                style={{ backgroundColor: '#5E72e4' }}
+                                                onClick={handleSubmitBrand}
+                                            >
+                                                Submit
                                             </button>
                                             </div>
                                         </div>
@@ -466,8 +493,9 @@ import BrandModel from "../../../models/brandModel";
                                       <label 
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
+                                      <div>
                                       <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -476,12 +504,15 @@ import BrandModel from "../../../models/brandModel";
                                         onChange={(e)=>handleEditBrandChange(e)}
                                         name="name"
                                       />
+                                      <p className="text-xs text-red-400">{editErrors.name}</p>
+                                      </div>
                                       <label 
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Code:
+                                       Code: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
+                                      <div>
                                     <input type="text" 
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
@@ -490,7 +521,8 @@ import BrandModel from "../../../models/brandModel";
                                         onChange={handleEditBrandChange}
                                         name="code"
                                       />
-                                      
+                                      <p className="text-xs text-red-400">{editErrors.code}</p>
+                                      </div>
 
                                       <label 
                                         
