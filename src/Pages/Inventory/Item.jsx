@@ -19,7 +19,7 @@ const {login_type,login_id} =auth
 const [limit, setLimit] = useState(10);
 const [page, setPage] = useState(1);
  const [purchaseData, setPurchaseData] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
+ const [totalPages, setTotalPages] = useState(1);
 const [search, setSearch] = useState('');
 const [status, setStatus] = useState('');
 const [goldItemData, setGoldItemData] = useState([]);
@@ -108,9 +108,13 @@ useEffect(() => {
                               <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
                                 {item.code}
                               </td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                             <td
+                                className="px-6 py-5 border-b border-gray-200 text-xs text-blue-500 cursor-pointer hover:underline hover:text-blue-600 transition-all duration-200"
+                                style={{ paddingLeft: '30px' }}
+                              >
                                 {item.unique_id}
                               </td>
+
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.jewellery_type}</td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.uom}</td>

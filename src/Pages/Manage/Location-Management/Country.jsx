@@ -344,7 +344,7 @@ const Country =()=>{
                                       <label      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Code:
+                                       Code:<span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input
                                         type="text"
@@ -365,7 +365,7 @@ const Country =()=>{
                                        <label                                      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                      <input
                                       type="text"
@@ -419,14 +419,12 @@ const Country =()=>{
         {/* Code Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[80%]">
-            Code:
+            Code:<span className="text-xs text-red-400">*</span>
           </label>
           <input
             type="text"
             placeholder="Type here"
-            className={`input w-[100%] rounded-lg focus:outline-none bg-white border ${
-              errors.code ? 'border-red-500' : 'border-gray-300'
-            } focus:border-b-2 focus:border-blue-500`}
+            className={`input w-[100%] rounded-lg text-gray-500 border-gray-300 focus:outline-none bg-white border focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="code"
           value={editingCountry?.code || ''}
@@ -443,14 +441,12 @@ const Country =()=>{
         {/* Name Field */}
         <div>
           <label className="font-semibold text-xs text-[#344767] w-[80%]">
-            Name:
+            Name: <span className="text-xs text-red-400">*</span>
           </label>
           <input
             type="text"
             placeholder="Type here"
-            className={`input w-[100%] rounded-lg focus:outline-none bg-white border ${
-              errors.name ? 'border-red-500' : 'border-gray-300'
-            } focus:border-b-2 focus:border-blue-500`}
+            className={`input w-[100%] rounded-lg text-gray-500 border-gray-300 focus:outline-none bg-white border focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="name"
            value={editingCountry?.name || ''}
@@ -470,9 +466,7 @@ const Country =()=>{
             Status:
           </label>
           <select
-            className={`select w-[100%] h-[35px] bg-white border ${
-              errors.status ? 'border-red-500' : 'border-gray-300'
-            } focus:outline-none rounded-lg focus:border-b-2 focus:border-blue-500`}
+            className={`select w-[100%] h-[35px] text-gray-500 border-gray-300 bg-white border focus:outline-none rounded-lg focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             value={editingCountry?.status ? 'Active' : 'InActive'}
             onChange={(e) => {

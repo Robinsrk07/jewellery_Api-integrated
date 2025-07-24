@@ -10,6 +10,8 @@ const BreadCrumb = () => {
   const [menuData, setMenuData] = useState([]);
   const [breadcrumbs, setBreadcrumbs] = useState([]);
 
+
+  console.log(breadcrumbs)
   const fetchMenuData = async () => {
     try {
       const response = await MenuListModel.getMenuList();
@@ -75,6 +77,29 @@ const BreadCrumb = () => {
         if (found) break;
       }
   
+      if (!found) {
+        const pathSegments = location.pathname.split('/').filter(Boolean);
+        let currentPath = "";
+        pathSegments.forEach(segment => {
+          // Always build the full path for correct linking
+          currentPath += `/${segment}`;
+
+          // Check if the segment is numeric (ID) or a UUID
+          const isNumericId = /^\d+$/.test(segment);
+          const isUuid = /^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$/.test(segment);
+
+          // Only create a crumb if it's NOT an ID
+          if (segment !== 'dashboard' && !isNumericId && !isUuid) {
+            const name = decodeURIComponent(segment)
+              .replace(/-/g, ' ')
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, char => char.toUpperCase());
+            
+            crumbs.push({ name, path: currentPath });
+          }
+        });
+      }
+
       setBreadcrumbs(crumbs);
     }
   }, [location, menuData]);

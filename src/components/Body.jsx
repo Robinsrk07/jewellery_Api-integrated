@@ -113,23 +113,23 @@ const Body = () => {
           >
             <div className='flex flex-col gap-4 items-center' style={{ paddingTop: '90px' }}>
               <Link to="/test-print" className="w-[80%]">
-                <button className="btn btn-primary rounded-lg bg-[#5e72e4] w-full">
+                <button className="btn btn-primary border-none rounded-lg bg-[#5e72e4] w-full">
                   TEST PRINT
                 </button>
               </Link>
               <Link to="/pos" className="w-[80%]">
-                <button className="btn btn-primary rounded-lg bg-[#5e72e4] w-full">
+                <button className="btn btn-primary border-none rounded-lg bg-[#5e72e4] w-full">
                   POS
                 </button>
               </Link>
-              <Link to="/profile" className="w-[80%]">
-                <button className="btn btn-primary rounded-lg bg-[#344767] w-full">
+              <Link to="/dashboard/profile" className="w-[80%]">
+                <button className="btn btn-primary border-none rounded-lg bg-[#344767] w-full">
                   Profile
                 </button>
               </Link>
               <div  className="w-[20vw]" style={{ marginTop: '250px'}}>
                 <button
-                  className="btn btn-primary border border-blue-900 text-blue-900 rounded-lg w-full"
+                  className="btn btn-primary  text-white rounded-lg w-full"
                   onClick={handleLogout}
                 >
                   Logout

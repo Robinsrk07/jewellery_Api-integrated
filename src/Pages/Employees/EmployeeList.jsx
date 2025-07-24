@@ -171,17 +171,14 @@ import React from "react";
                        const handleSubmit = async (e) => {
                           e.preventDefault();
                            const validationErrors = validateForm(employeeForm);
-                        if (Object.keys(validationErrors).length > 0) {
-                          setFormErrors(validationErrors);
+                    if (Object.keys(validationErrors).length > 0) {
+                      setFormErrors(validationErrors);
 
                       const firstInvalidField = Object.keys(validationErrors)[0];
                       const ref = fieldRefs.current[firstInvalidField];
                       if (ref?.current) {
-                        // Use setTimeout to ensure the input is mounted
-                        setTimeout(() => {
-                          ref.current.focus();
-                          ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }, 0);
+                        ref.current.focus();
+                        ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
                       }
 
                       return;
@@ -690,9 +687,7 @@ import React from "react";
                                   name="name"
                                   value={employeeForm.name}
                                   onChange={handleInputChange}
-                                  placeholder="Full Name" 
-                                  ref={fieldRefs.current["name"]}
-                                />
+                                  placeholder="Full Name" />
                                   <p className="text-xs text-red-400">{formErrors.name}</p>
                                 </div>
                                 <div>
@@ -702,8 +697,7 @@ import React from "react";
                                    name="gender"
                                    value={employeeForm.gender}
                                    onChange={handleInputChange}
-                                   ref={fieldRefs.current["gender"]}
-                                   >          
+                                   > 
                                           
                                    <option value="">--Select Gender--</option>
 
@@ -719,15 +713,11 @@ import React from "react";
                                 <div>
                                   <label className="text-xs text-gray-600" >Date of Birth:</label>
                                   <input type="date" style={{ paddingLeft: '12px' }} value={employeeForm.date_of_birth}
-                                  onChange={handleInputChange} className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500" name="date_of_birth" 
-                                  ref={fieldRefs.current["date_of_birth"]}
-                                />
+                                  onChange={handleInputChange} className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500" name="date_of_birth" />
                                 </div>
                                 <div>
                                   <label className="text-xs text-gray-600" >Marital Status:</label>
-                                  <select style={{ paddingLeft: '12px' }} value={employeeForm.marital_status} onChange={handleInputChange} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="marital_status"
-                                  ref={fieldRefs.current["marital_status"]}
-                                  >
+                                  <select style={{ paddingLeft: '12px' }} value={employeeForm.marital_status} onChange={handleInputChange} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="marital_status">
                                     <option value="">Select</option>
                                     <option value="Single">Single</option>
                                     <option value="Married">Married</option>
@@ -746,7 +736,6 @@ import React from "react";
                                         onChange={handleInputChange}
                                         style={{ padding: '12px' }}
                                         className="input bg-white border border-gray-200 w-full text-xs"
-                                        ref={fieldRefs.current["profile_picture"]}
                                       />
                                     </div>
 
@@ -768,7 +757,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["email"]}
                                 />
                                 <p className="text-xs text-red-400">{formErrors.email}</p>   
                               </div>
@@ -785,7 +773,6 @@ import React from "react";
                                       onChange={handleInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["phone_number"]}
                                     />
                                     <p className="text-xs text-red-400">{formErrors.phone_number}</p>   
                                   </div>
@@ -800,7 +787,6 @@ import React from "react";
                                           onChange={handleInputChange}
                                           style={{ paddingLeft: '12px' }}
                                           className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                          ref={fieldRefs.current["country"]}
                                         >
                                           <option value="">Select Country</option>
                                           {countries.map((country) => (
@@ -822,7 +808,6 @@ import React from "react";
                                       onChange={handleInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["state"]}
                                     >
                                       <option value="">Select State</option>
                                       {states.map((state) => (
@@ -844,7 +829,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["district"]}
                                 >
                                   <option value="">Select District</option>
                                   {districts.map((district) => (
@@ -865,7 +849,6 @@ import React from "react";
                                       onChange={handleInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["city"]}
                                     >
                                       <option value="">Select City</option>
                                       {cities.map((city) => (
@@ -886,7 +869,6 @@ import React from "react";
                                       onChange={handleInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["city_area"]}
                                     >
                                       <option value="">Select City Area</option>
                                       {cityAreas.map((cityArea) => (
@@ -909,7 +891,6 @@ import React from "react";
                                         onChange={handleInputChange}
                                         style={{ paddingLeft: '12px' }}
                                         className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                        ref={fieldRefs.current["pincode"]}
                                       />
                                     <p className="text-xs text-red-400">{formErrors.pincode}</p>   
 
@@ -926,7 +907,6 @@ import React from "react";
                                       onChange={handleInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["address"]}
                                     />
                                   </div>
 
@@ -946,7 +926,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["department"]}
                                 >
                                   <option value="">Select Department</option>
                                   {departments.map((department) => (
@@ -968,7 +947,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["position"]}
                                 >
                                   <option value="">Select Position</option>
                                   {positions.map((position) => (
@@ -991,7 +969,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["joining_date"]}
                                 />
                               </div>
 
@@ -1006,7 +983,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["resignation_date"]}
                                   />
                                 </div>
 
@@ -1020,7 +996,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["branch"]}
                                   >
                                     <option value="">Select Branch</option>
                                     {branches.map((branch) => (
@@ -1041,7 +1016,6 @@ import React from "react";
                                           onChange={handleInputChange}
                                           style={{ paddingLeft: '12px' }}
                                           className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                          ref={fieldRefs.current["currency"]}
                                         >
                                           <option value="">Select Currency</option>
                                           {currencies.map((currency) => (
@@ -1064,7 +1038,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["salary"]}
                                 />
                               </div>
 
@@ -1086,7 +1059,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["bank_account"]}
                                 />
                                    <p className="text-xs text-red-400">{formErrors.bank_account}</p>   
                               </div>
@@ -1101,7 +1073,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["pan_number"]}
                                   />
                                    <p className="text-xs text-red-400">{formErrors.pan_number}</p>   
 
@@ -1117,7 +1088,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["aadhaar_number"]}
                                   />
                                    <p className="text-xs text-red-400">{formErrors.aadhaar_number}</p>   
 
@@ -1132,7 +1102,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ padding: '12px' }}
                                     className="input w-full bg-white border-gray-200 text-xs"
-                                    ref={fieldRefs.current["document"]}
                                   />
                                 </div>
 
@@ -1145,7 +1114,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ padding: '12px' }}
                                     className="input w-full bg-white border-gray-200 text-xs"
-                                    ref={fieldRefs.current["other_document"]}
                                   />
                                 </div>
 
@@ -1157,7 +1125,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ padding: '12px' }}
                                     className="input w-full bg-white border-gray-200 text-xs"
-                                    ref={fieldRefs.current["extra_document"]}
                                   />
                                 </div>
 
@@ -1179,7 +1146,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["emergency_contact_name"]}
                                   />
                                 </div>
 
@@ -1195,7 +1161,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["emergency_contact_number"]}
                                   />
                                 </div>
 
@@ -1211,7 +1176,6 @@ import React from "react";
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["blood_group"]}
                                   />
                                 </div>
 
@@ -1230,7 +1194,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["education"]}
                                 />
                               </div>
 
@@ -1243,7 +1206,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["work_experience"]}
                                 />
                               </div>
 
@@ -1257,7 +1219,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["default_language"]}
                                 />
                               </div>
 
@@ -1271,7 +1232,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["time_zone"]}
                                 />
                               </div>
 
@@ -1283,7 +1243,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["is_probation"]}
                                 >
                                   <option value="">Select Probation</option>
                                   <option value="True">Yes</option>
@@ -1299,7 +1258,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["is_branch"]}
                                 >
                                 
                                
@@ -1318,7 +1276,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["group_id"]}
                                 >
                                   <option value="">Select Group</option>
                                   <option value={1}>1</option>
@@ -1336,7 +1293,6 @@ import React from "react";
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["probation_end_date"]}
                                 />
                               </div>
 
@@ -1345,9 +1301,7 @@ import React from "react";
                             {/* STATUS */}
                             <div className="mb-4">
                               <label className="text-xs text-gray-600" >Status:</label>
-                              <select style={{ paddingLeft: '12px' }}  onChange={handleInputChange} value={employeeForm.status} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="status"
-                              ref={fieldRefs.current["status"]}
-                              >
+                              <select style={{ paddingLeft: '12px' }}  onChange={handleInputChange} value={employeeForm.status} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="status">
                                 <option value="">Select Status</option>
                                 <option value="True">Active</option>
                                 <option value="False">Inactive</option>
@@ -1360,7 +1314,7 @@ import React from "react";
                               </button>
                              <button
                                 type="button"
-                                className=" btn w-[100px] border-none rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition"
+                                className="w-[100px] btn border-none rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition"
                                 onClick={handleSubmit}
                               >
                                 Submit
@@ -1388,9 +1342,7 @@ import React from "react";
                                   name="name"
                                   value={editEmployee.name}
                                   onChange={handleEditInputChange}
-                                  placeholder="Full Name" 
-                                  ref={fieldRefs.current["name"]}
-                                />
+                                  placeholder="Full Name" />
                                 </div>
                                 <div>
                                   <label className="text-xs text-gray-600" >Gender:<span className="text-red-500 text-[14px]">*</span></label>
@@ -1399,7 +1351,6 @@ import React from "react";
                                    name="gender"
                                    value={editEmployee.gender}
                                    onChange={handleEditInputChange}
-                                   ref={fieldRefs.current["gender"]}
                                    >          
                                    <option value="">--Select Gender--</option>
 
@@ -1414,15 +1365,11 @@ import React from "react";
                                 <div>
                                   <label className="text-xs text-gray-600" >Date of Birth:</label>
                                   <input type="date" style={{ paddingLeft: '12px' }} value={editEmployee.date_of_birth}
-                                  onChange={handleEditInputChange} className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500" name="date_of_birth" 
-                                  ref={fieldRefs.current["date_of_birth"]}
-                                />
+                                  onChange={handleEditInputChange} className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500" name="date_of_birth" />
                                 </div>
                                 <div>
                                   <label className="text-xs text-gray-600" >Marital Status:</label>
-                                  <select style={{ paddingLeft: '12px' }} value={editEmployee.marital_status} onChange={handleEditInputChange} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="marital_status"
-                                  ref={fieldRefs.current["marital_status"]}
-                                  >
+                                  <select style={{ paddingLeft: '12px' }} value={editEmployee.marital_status} onChange={handleEditInputChange} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="marital_status">
                                     <option value="">Select</option>
                                     <option value="Single">Single</option>
                                     <option value="Married">Married</option>
@@ -1441,7 +1388,6 @@ import React from "react";
                                         onChange={handleEditInputChange}
                                         style={{ padding: '12px' }}
                                         className="input bg-white border border-gray-200 w-full text-xs"
-                                        ref={fieldRefs.current["profile_picture"]}
                                       />
                                     </div>
 
@@ -1463,7 +1409,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["email"]}
                                 />
                               </div>
 
@@ -1479,7 +1424,6 @@ import React from "react";
                                       onChange={handleEditInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["phone_number"]}
                                     />
                                   </div>
 
@@ -1493,7 +1437,6 @@ import React from "react";
                                           onChange={handleEditInputChange}
                                           style={{ paddingLeft: '12px' }}
                                           className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                          ref={fieldRefs.current["country"]}
                                         >
                                           <option value="">Select Country</option>
                                           {countries.map((country) => (
@@ -1514,7 +1457,6 @@ import React from "react";
                                       onChange={handleEditInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["state"]}
                                     >
                                       <option value="">Select State</option>
                                       {states.map((state) => (
@@ -1535,7 +1477,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["district"]}
                                 >
                                   <option value="">Select District</option>
                                   {districts.map((district) => (
@@ -1556,7 +1497,6 @@ import React from "react";
                                       onChange={handleEditInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["city"]}
                                     >
                                       <option value="">Select City</option>
                                       {cities.map((city) => (
@@ -1577,7 +1517,6 @@ import React from "react";
                                       onChange={handleEditInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["city_area"]}
                                     >
                                       <option value="">Select City Area</option>
                                       {cityAreas.map((cityArea) => (
@@ -1600,7 +1539,6 @@ import React from "react";
                                         onChange={handleEditInputChange}
                                         style={{ paddingLeft: '12px' }}
                                         className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                        ref={fieldRefs.current["pincode"]}
                                       />
                                     </div>
 
@@ -1615,7 +1553,6 @@ import React from "react";
                                       onChange={handleEditInputChange}
                                       style={{ paddingLeft: '12px' }}
                                       className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                      ref={fieldRefs.current["address"]}
                                     />
                                   </div>
 
@@ -1635,7 +1572,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["department"]}
                                 >
                                   <option value="">Select Department</option>
                                   {departments.map((department) => (
@@ -1656,7 +1592,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["position"]}
                                 >
                                   <option value="">Select Position</option>
                                   {positions.map((position) => (
@@ -1678,7 +1613,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["joining_date"]}
                                 />
                               </div>
 
@@ -1693,7 +1627,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["resignation_date"]}
                                   />
                                 </div>
 
@@ -1707,7 +1640,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["branch"]}
                                   >
                                     <option value="">Select Branch</option>
                                     {branches.map((branch) => (
@@ -1728,7 +1660,6 @@ import React from "react";
                                           onChange={handleEditInputChange}
                                           style={{ paddingLeft: '12px' }}
                                           className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                          ref={fieldRefs.current["currency"]}
                                         >
                                           <option value="">Select Currency</option>
                                           {currencies.map((currency) => (
@@ -1751,7 +1682,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["salary"]}
                                 />
                               </div>
 
@@ -1773,7 +1703,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["bank_account"]}
                                 />
                               </div>
 
@@ -1787,7 +1716,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["pan_number"]}
                                   />
                                 </div>
 
@@ -1801,7 +1729,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["aadhaar_number"]}
                                   />
                                 </div>
 
@@ -1814,7 +1741,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ padding: '12px' }}
                                     className="input w-full bg-white border-gray-200 text-xs"
-                                    ref={fieldRefs.current["document"]}
                                   />
                                 </div>
 
@@ -1827,7 +1753,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ padding: '12px' }}
                                     className="input w-full bg-white border-gray-200 text-xs"
-                                    ref={fieldRefs.current["other_document"]}
                                   />
                                 </div>
 
@@ -1839,7 +1764,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ padding: '12px' }}
                                     className="input w-full bg-white border-gray-200 text-xs"
-                                    ref={fieldRefs.current["extra_document"]}
                                   />
                                 </div>
 
@@ -1861,7 +1785,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["emergency_contact_name"]}
                                   />
                                 </div>
 
@@ -1877,7 +1800,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["emergency_contact_number"]}
                                   />
                                 </div>
 
@@ -1893,7 +1815,6 @@ import React from "react";
                                     onChange={handleEditInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                    ref={fieldRefs.current["blood_group"]}
                                   />
                                 </div>
 
@@ -1912,7 +1833,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["education"]}
                                 />
                               </div>
 
@@ -1925,7 +1845,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="textarea w-full text-xs bg-white border-gray-200 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["work_experience"]}
                                 />
                               </div>
 
@@ -1939,7 +1858,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["default_language"]}
                                 />
                               </div>
 
@@ -1953,7 +1871,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["time_zone"]}
                                 />
                               </div>
 
@@ -1965,7 +1882,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["is_probation"]}
                                 >
                                   <option value="">Select Probation</option>
                                   <option value="True">Yes</option>
@@ -1981,7 +1897,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["is_branch"]}
                                 >
                                 
                                
@@ -2000,7 +1915,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["group_id"]}
                                 >
                                   <option value="">Select Group</option>
                                   <option value={1}>1</option>
@@ -2018,7 +1932,6 @@ import React from "react";
                                   onChange={handleEditInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
-                                  ref={fieldRefs.current["probation_end_date"]}
                                 />
                               </div>
 
@@ -2027,9 +1940,7 @@ import React from "react";
                             {/* STATUS */}
                             <div className="mb-4">
                               <label className="text-xs text-gray-600" >Status:</label>
-                              <select style={{ paddingLeft: '12px' }}  onChange={handleEditInputChange} value={editEmployee.status} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="status"
-                              ref={fieldRefs.current["status"]}
-                              >
+                              <select style={{ paddingLeft: '12px' }}  onChange={handleEditInputChange} value={editEmployee.status} className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500" name="status">
                                 <option value="">Select Status</option>
                                 <option value="True">Active</option>
                                 <option value="False">Inactive</option>

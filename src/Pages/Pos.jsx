@@ -22,7 +22,13 @@ import CurrencyModel from "../models/CurrencyModel";
   const [cart,setCart] =useState([])
   const [selectedField, setSelectedField] = useState('');
   const cartItems = useSelector((state) => state.posItem?.itemData || []);
+  const [discount,setDiscount] =  useState({
+    discount_on:'',
+    discount:0
+  })
   
+
+  console.log(discount)
   console.log(cart)
   const navigate = useNavigate()
   const [customerDetails, setCustomerDetails] = useState({
@@ -72,6 +78,13 @@ import CurrencyModel from "../models/CurrencyModel";
         [name]: value
       }));
     };
+    const handelDiscount =()=>{
+      const {name,value }= e.target;
+      setDiscount(prev =>({
+        ...prev,
+        [name]:value
+      }))
+    }
 
 
 const CreateCart = (cart) => {
@@ -81,7 +94,7 @@ const CreateCart = (cart) => {
     if (!item.uuid) return;
 
     const selling_price = Number(item.gross_price || item.tag_price || 0);
-    const discount = Number(item.discount || 0);
+  //  const discount = Number(item.discount || 0);
 
     if (grouped[item.uuid]) {
       grouped[item.uuid].quantity += 1;
@@ -92,11 +105,11 @@ const CreateCart = (cart) => {
         item_type: item.item_type || "",
         quantity: 1,
         selling_price,
-       discount,
+        discount: discount.discount,
         message: item.description || "",
-        discount_on: item.discount_on || "",
-       final_discount: discount, // initial = discount * 1
-       final_amount: selling_price, // initial = price * 1
+        discount_on: discount.discount_on || "",
+       final_discount: discount.discount, // initial = discount * 1
+       final_amount: selling_price -discount.discount, // initial = price * 1
       };
 
       if (item.item_type === "Gold") {
@@ -157,6 +170,7 @@ const CreateCart = (cart) => {
            setItemsData(response.data.data)
            
         }catch(error){
+          toast.error("Product Not Found")
             console.error(error)
         }
      }
@@ -209,18 +223,18 @@ const handleClearCart = () => {
   dispatch(clearItemData());
 };
 
-const fetchCurrency = async()=>{
-  try{
- const response = await CurrencyModel.getCurrency( )
-  }catch(error){
+// const fetchCurrency = async()=>{
+//   try{
+//  const response = await CurrencyModel.getCurrency( )
+//   }catch(error){
 
-  }
-}
+//   }
+// }
 
-const handleRemoveItem = (removeIndex) => {
-  const updatedCart = cart.filter((_, index) => index !== removeIndex);
-  setCart(updatedCart);
-};
+// const handleRemoveItem = (removeIndex) => {
+//   const updatedCart = cart.filter((_, index) => index !== removeIndex);
+//   setCart(updatedCart);
+// };
 
 const groupedCart = cart.reduce((acc, item) => {
   if (!item.uuid) return acc;
@@ -245,7 +259,7 @@ const groupedCart = cart.reduce((acc, item) => {
 
  const total = cartItems.reduce((sum, item) => {
   const value = item.gross_price ?? item.tag_price ?? 0;
-  return sum + parseFloat(value);
+  return sum + parseFloat(value)-discount.discount;
 }, 0);
 
   const totalsData = [
@@ -349,31 +363,32 @@ const groupedCart = cart.reduce((acc, item) => {
           </div>
 
           {/* Blue Header Bar */}
-          <div className="bg-[#5E72E4] w-full h-auto sm:h-[40px] rounded-lg " style={{padding:'20px'}}>
-            <div className="flex flex-col sm:flex-row items-center justify-between">
-              <h3 className="text-[12px] font-bold text-white text-center sm:text-left w-full sm:w-auto" style={{ paddingLeft: '0', paddingRight: '0' }}>
-                Salesman & Customer Details
-              </h3>
-              <h3
-                onClick={handleViewMoreClick}
-                className="text-[12px] font-bold text-white flex items-center gap-1 cursor-pointer mt-2 sm:mt-0 w-full sm:w-auto justify-center sm:justify-end"
-                style={{ paddingRight: '0' }}
-              >
-                View More
-                {isViewMoreOpen ? (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"
-                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 9l7 7 7-7" />
-                  </svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"
-                    viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                  </svg>
-                )}
-              </h3>
-            </div>
-          </div>
+          <div className="bg-[#5E72E4] w-full h-auto sm:h-[40px] rounded-lg px-5">
+  <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between h-full" style={{padding:'20px'}}>
+    <h3 className="text-[12px] font-bold text-white text-center sm:text-left">
+      Salesman & Customer Details
+    </h3>
+    <h3
+      onClick={handleViewMoreClick}
+      className="text-[12px] font-bold text-white flex items-center gap-1 cursor-pointer mt-2 sm:mt-0 sm:justify-end"
+    >
+      View More
+      {isViewMoreOpen ? (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"
+          viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 9l7 7 7-7" />
+        </svg>
+      ) : (
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2"
+          viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      )}
+    </h3>
+  </div>
+</div>
+
+
 
           {/* Form Fields - Only visible when View More is expanded */}
           {isViewMoreOpen && (
@@ -412,36 +427,77 @@ const groupedCart = cart.reduce((acc, item) => {
       <div className="w-full overflow-x-auto">
         <table className="table w-full text-sm border border-collapse bg-[#FFFFFF] min-w-[600px]">
           <thead className="h-[30px]">
-            <tr className="bg-gray-800 text-white">
-              <th className="px-4 py-2 border text-center">#</th>
-              <th className="px-4 py-2 border text-center">Item Type</th>
-              <th className="px-4 py-2 border text-center">Code</th>
-              <th className="px-4 py-2 border text-center">Description</th>
-              <th className="px-4 py-2 border text-center">Gross Weight</th>
-              <th className="px-4 py-2 border text-center">UOM</th>
-              <th className="px-4 py-2 border text-center">Rate</th>
-              <th className="px-4 py-2 border text-center">Amount</th>
-              <th className="px-4 py-2 border text-center">Quantity</th>
-              <th className="px-4 py-2 border text-center">Remove</th>
+            <tr className="bg-white text-gray-500">
+              <th className="px-4 py-2 border-b border-gray-300 text-center">#</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Item Type</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Code</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Description</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Gross Weight</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">UOM</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Rate</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Amount</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Quantity</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Discount On</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Discount</th>
+              <th className="px-4 py-2 border-b  border-gray-300 text-center">Remove</th>
             </tr>
           </thead>
           <tbody className="bg-white text-gray-700 text-xs">
             {groupedCart.length > 0 ? (
                 groupedCart.map((item, index) => (
                   <tr key={item.uuid || index} className="border-t h-[30px]">
-                    <td className="px-4 py-2 border text-center">{index + 1}</td>
-                    <td className="px-4 py-2 border text-center">{item.item_type || '-'}</td>
-                    <td className="px-4 py-2 border text-center">{item.serial_no || item.item_code}</td>
-                    <td className="px-4 py-2 border text-center">{item.description || '-'}</td>
-                    <td className="px-4 py-2 border text-center">{item.gold_weight || item.Gross_Weight || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">{item.uom || '-'}</td>
-                    <td className="px-4 py-2 border text-center">{item.cost_price || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">{item.tag_price || item.gross_price || '0.00'}</td>
-                    <td className="px-4 py-2 border text-center">
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{index + 1}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.item_type || '-'}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.serial_no || item.item_code}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.description || '-'}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.gold_weight || item.Gross_Weight || '0.00'}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.uom || '-'}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.cost_price || '0.00'}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">{item.tag_price || item.gross_price || '0.00'}</td>
+                    <td className="px-4 py-2 border-b  border-gray-300 text-center">
                       {item.quantity}
                     
                     </td>
-                    <td  className="flex items-center justify-center " style={{padding:'10px'}}>
+                    <td className="border-b border-gray-300 text-center">
+                      <select
+                        value={discount.discount_on}
+                        onChange={(e) =>
+                          setDiscount((prev) => ({
+                            ...prev,
+                            discount_on: e.target.value
+                          }))
+                        }
+                        className="w-[60%] text-xs text-gray-500 h-[30px] rounded-sm"
+                        style={{ paddingLeft: '12px' }}
+                      >
+                        <option value="">Select Discount</option>
+                        {fields.map((field) => (
+                          <option key={field} value={field}>
+                            {field.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+
+                    <td className="border-b border-gray-300 text-center">
+                      <input
+                        type="number"
+                        min='0'
+                        value={discount.discount}
+                        onChange={(e) =>
+                          setDiscount((prev) => ({
+                            ...prev,
+                            discount: e.target.value
+                          }))
+                        }
+                        className="w-[50%] text-xs text-gray-500 h-[30px] rounded-sm text-center"
+                        placeholder="Amount"
+                      />
+                    </td>
+
+
+
+                    <td  className="flex items-center border-b  border-gray-300 justify-center " style={{padding:'10px'}}>
                       
                        <button onClick={() => handleRemove(item.uuid)} title="Remove Item">
                      <svg 
@@ -465,7 +521,7 @@ const groupedCart = cart.reduce((acc, item) => {
                 ))
               ) : (
                 <tr>
-                  <td colSpan="9" className="text-center py-2 text-sm text-gray-500">
+                  <td colSpan="11" className="text-center py-2 text-sm text-gray-500">
                     No items in cart
                   </td>
                 </tr>
@@ -601,7 +657,7 @@ const groupedCart = cart.reduce((acc, item) => {
                      <div className="flex justify-end">  <button className="bg-[#5E72E4] w-full h-[30px] md:w-[150px] rounded-sm text-white" onClick={handleGetData}>Search</button>
                            </div>
 
-                        <div className="flex flex-col  gap-3 md:flex-row" style={{paddingTop:'20px'}} >
+                        {/* <div className="flex flex-col  gap-3 md:flex-row" style={{paddingTop:'20px'}} >
                         <h3 className="text-[13px] text-gray-700">Discount On:</h3>
                         <select
                           value={selectedField}
@@ -616,7 +672,7 @@ const groupedCart = cart.reduce((acc, item) => {
                             </option>
                           ))}
                         </select>
-                     </div>
+                     </div> */}
                         
                         {/* <div className="flex flex-col gap-10 md:flex-row" style={{paddingTop:'20px'}} >
                         <h3 className="text-[13px] text-gray-700">Item:</h3>

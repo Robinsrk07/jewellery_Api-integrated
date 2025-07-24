@@ -10,6 +10,7 @@ import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+import TableSkelton from "../../components/tableSkelton";
 
      
 const  SettingsTax = () => {
@@ -19,6 +20,8 @@ const  SettingsTax = () => {
                       const [isHovered, setIsHovered] = useState(false);
                       const [modal, setModal] = useState(false);
                       const [editModal, setEditModal] = useState(false);
+                      const [totalPages, setTotalPages] = useState(1);
+                       const [isLoading, setIsLoading] = useState(true);
 
 
                       const [limit, setLimit] = useState(10);
@@ -71,27 +74,28 @@ const  SettingsTax = () => {
                       const [taxData, setTaxData] = useState([]);
 
                       const fetchTaxes = async () => {
-                        try {
-                          const response = await settingsTaxModel.getTaxes(
-                            user_id,
-                            user_types,
-                            limit,
-                            page,
-                            search,
-                            status
-                          );
+                          setIsLoading(true);
+                          try {
+                            const response = await settingsTaxModel.getTaxes(
+                              user_id,
+                              user_types,
+                              limit,
+                              page,
+                              search,
+                              status
+                            );
 
-                          if (response.data && response.data.data) {
-                            console.log("Taxes Received:", response.data.data);
-                            setTaxData(response.data.data);
-                          } else {
-                            toast.error("Unable to fetch tax settings");
+                            if (response?.data?.data) {
+                              setTaxData(response.data.data);
+                              setTotalPages(response.data.pagination?.pages );
+                            }
+                          } catch (error) {
+                            console.error("Error fetching state data:", error);
+                            toast.error("Failed to fetch states.");
+                          } finally {
+                            setIsLoading(false);
                           }
-                        } catch (error) {
-                          console.error("Error fetching taxes:", error);
-                          toast.error("Failed to load tax settings");
-                        }
-                      };
+                        };
 
                       useEffect(() => {
                         fetchTaxes();
@@ -443,53 +447,22 @@ const  SettingsTax = () => {
                               minWidth: '100%' // Ensures it matches table width
                               }}
                           >
-                              <button
-                              className="text-xs font-bold"
-                              style={{
-                                  width: '160px',
-                                  height: '30px',
-                                  borderRadius: '8px',
-                                  backgroundColor: isHovered ? 'rgb(97, 113, 228)' : 'rgb(126, 96, 228)',
-                                  color: 'white',
-                                  transition: 'background-color 0.3s ease',
-                                  cursor: 'pointer',
-                              }}
-                              onMouseEnter={() => setIsHovered(true)}
-                              onMouseLeave={() => setIsHovered(false)}
-                              onClick={() => setModal(true)}
-                              >
-                              + New Tax
-                              </button>
+                              <CreateButton
+                                buttoncontent="+ New Tax"
+                                onClick={() => setModal(true)}  
+                              />                 
+                              
+                  
                           </div>
-                 
-                       {/* <div className="text-gray-600" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
-                         <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {items}</p>
-                         <select
-                           className="border border-gray-300 rounded-lg w-[114px] h-[35px] px-2"
-                           style={{
-                             appearance: 'none',
-                             WebkitAppearance: 'none',
-                             MozAppearance: 'none',
-                             backgroundColor: 'white',
-                             backgroundImage: 'none',
-                             paddingLeft: '5px',
-                           }}
-                           onChange={(e) => setItems(Number(e.target.value))}
-                           value={items}
-                         >
-                           <option value={10}>10</option>
-                           <option value={25}>25</option>
-                           <option value={50}>50</option>
-                         </select>
-                       </div> */}
+                          <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
                        
                  
                        <table className="table w-full  text-sm text-left text-gray-500 border-collapse min-w-[1100px]  " style={{ borderSpacing: '0 12px', borderCollapse: 'separate', }}>
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
-                             <th className="px-6 py-3 w-[100px]"  >ITEM TYPE </th>
+                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'40px'}} >SL NO</th>
+                             <th className="px-6 py-3 w-[100px]"  style={{ paddingLeft: '10px' }}>ITEM TYPE </th>
                              <th className="px-6 py-3 w-[100px]"  >TAX TYPE </th>
                              <th className="px-6 py-3 w-[120px]" >TAX NAME</th>
                              <th className="px-6 py-3 w-[100px]" >BRANCH</th>
@@ -500,10 +473,19 @@ const  SettingsTax = () => {
                            </tr>
                          </thead>
                          <tbody>
-                          {taxData.map((tax, index) => (
+                          {isLoading ? (
+                            <TableSkelton />
+                        ) : taxData.length === 0 ? (
+                            <tr>
+                            <td className="text-center py-4 text-gray-500 text-sm" colSpan="5">
+                                No data available
+                            </td>
+                            </tr>
+                        ) : (
+                          taxData.map((tax, index) => (
                             <tr key={tax.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400">
-                              <td className="px-4 py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
-                              <td className="px-4 py-4 border-b border-gray-200 text-xs">{getItemTypeName(tax.item_type)}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '50px' }}>{index + 1}</td>
+                              <td className="px-4 py-4 border-b border-gray-200 text-xs"style={{ paddingLeft: '20px' }}>{getItemTypeName(tax.item_type)}</td>
                               <td className="px-4 py-4 border-b border-gray-200 text-xs">{tax.tax_type}</td>
                               <td className="px-4 py-4 border-b border-gray-200 text-xs">{tax.tax_name}</td>
                               <td className="px-4 py-4 border-b border-gray-200 text-xs">{getBranchName(tax.branch)}</td>
@@ -531,13 +513,14 @@ const  SettingsTax = () => {
                                 </div>
                               </td>
                             </tr>
-                          ))}
+                          ))
+                        )}
                         </tbody>
                        </table>
                        
                  
                        {/* Pagination */}
-                       <Pagination/>
+                       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                      
                  
                        {/* Modal */}
@@ -711,7 +694,7 @@ const  SettingsTax = () => {
       
                       {editModal &&  (
                                 <div className="fixed inset-0 text-gray-500 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md  w-[90vw] max-w-[500px] h-[90vh] max-h-[600px] flex flex-col overflow-y-auto gap-4"style={{padding:'20px'}}> 
+                                  <div className="bg-white rounded-xl shadow-md  w-[90vw] max-w-[500px] h-[90vh] max-h-[650px] flex flex-col overflow-y-auto gap-4"style={{padding:'20px'}}> 
                                                 
                                                 {/* Added flex-col */}
                                     <h3 className="font-bold text-[22px] text-[#344767] "

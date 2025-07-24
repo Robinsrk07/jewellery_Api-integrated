@@ -84,8 +84,6 @@ const StoneType=()=>{
                       const validateStoneType = () => {
                         const newErrors = {};
                         if (!addStoneTypeData.name.trim()) newErrors.name = 'Please enter name';
-                        if (!addStoneTypeData.description.trim()) newErrors.description = 'Please enter description';
-                        if (addStoneTypeData.status === '') newErrors.status = 'Please select status';
                         return newErrors;
                       };
 
@@ -151,16 +149,6 @@ const StoneType=()=>{
 
                         if (!editingStoneType?.name?.trim()) {
                           newErrors.name = 'Stone type name is required';
-                          valid = false;
-                        }
-
-                        if (!editingStoneType?.description?.trim()) {
-                          newErrors.description = 'Description is required';
-                          valid = false;
-                        }
-
-                        if (editingStoneType?.status === undefined || editingStoneType.status === '') {
-                          newErrors.status = 'Status is required';
                           valid = false;
                         }
 
@@ -366,7 +354,7 @@ const StoneType=()=>{
 
                  {modal && (
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[400px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                          Create Stone Type                      </h3>
@@ -399,7 +387,7 @@ const StoneType=()=>{
                                         
                                           className="font-semibold text-xs text-[#344767] w-[100%]"
                                         >
-                                          Description: <span className="text-red-500 text-[14px]">*</span>
+                                          Description: 
                                         </label>
 
                                         <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -409,9 +397,6 @@ const StoneType=()=>{
                                           onChange={handleAddStoneTypeChange}
                                           name="description"
                                         ></textarea>
-                                        {errors.description && (
-                                          <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                                        )}
                                       </div>
                             
                                            
@@ -466,7 +451,7 @@ const StoneType=()=>{
        
                         {editModal &&(
                                   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                            <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                            <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[450px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                               <h3 className="font-bold text-[22px] text-[#344767] "
                                                 >
                                                   Edit Stone Type                     </h3>
@@ -476,7 +461,6 @@ const StoneType=()=>{
                                             
                                                   <div>
                                                     <label 
-                                                    
                                                       className="font-semibold text-xs text-[#344767] w-[80%]"
                                                     >
                                                     Name: <span className="text-red-500 text-[14px]">*</span>
@@ -499,7 +483,7 @@ const StoneType=()=>{
                                                       
                                                       className="font-semibold text-xs text-[#344767] w-[100%]"
                                                     >
-                                                      Description: <span className="text-red-500 text-[14px]">*</span>
+                                                      Description: 
                                                     </label>
 
                                                     <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -509,9 +493,6 @@ const StoneType=()=>{
                                                       onChange={handleEditStoneTypeChange}
                                                       name="description"
                                                     ></textarea>
-                                                    {errors.description && (
-                                                      <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                                                    )}
                                                   </div>
                                       
                                                     
@@ -520,7 +501,7 @@ const StoneType=()=>{
                                                               
                                                               className="font-semibold text-xs text-[#344767] w-[80%]"
                                                           >
-                                                              Status: <span className="text-red-500 text-[14px]">*</span>
+                                                              Status:
                                                           </label>
                                                           <select 
                                                               className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
@@ -534,9 +515,6 @@ const StoneType=()=>{
                                                               <option value={true} className=" text-gray-600"> Active</option>
                                                               <option value={false} className=" text-gray-600"> InActive</option>
                                                           </select>
-                                                          {errors.status && (
-                                                            <p className="text-red-500 text-xs mt-1">{errors.status}</p>
-                                                          )}
                                                       </div>
                       
                                                       </div> 

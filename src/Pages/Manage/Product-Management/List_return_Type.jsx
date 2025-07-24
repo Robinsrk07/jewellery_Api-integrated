@@ -92,8 +92,6 @@ const List_return_Type =()=>{
               const validateReturnType = () => {
                 const newErrors = {};
                 if (!addReturnTypeData.name.trim()) newErrors.name = 'Please enter name';
-                if (!addReturnTypeData.description.trim()) newErrors.description = 'Please enter description';
-                if (addReturnTypeData.status === '') newErrors.status = 'Please select status';
                 return newErrors;
               };
 
@@ -170,16 +168,6 @@ const List_return_Type =()=>{
 
                   if (!editingReturnType?.name?.trim()) {
                     newErrors.name = 'Return Type name is required';
-                    valid = false;
-                  }
-
-                  if (!editingReturnType?.description?.trim()) {
-                    newErrors.description = 'Description is required';
-                    valid = false;
-                  }
-
-                  if (editingReturnType?.status === undefined || editingReturnType.status === '') {
-                    newErrors.status = 'Status is required';
                     valid = false;
                   }
 
@@ -348,7 +336,7 @@ const List_return_Type =()=>{
        
                        {modal && (
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[380px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                          Create Return Type                       </h3>
@@ -382,7 +370,7 @@ const List_return_Type =()=>{
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Description: <span className="text-red-500 text-[14px]">*</span>
+                                        Description: 
                                       </label>
                                        <div >
                                       <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -392,12 +380,11 @@ const List_return_Type =()=>{
                                         onChange={handleAddReturnTypeChange}
                                         name="description"
                                       ></textarea>
-                                      <p className="text-xs text-red-400">{errors.description}</p>
                                       </div>
-                                      <label 
+                                      {/* <label 
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                        Status: <span className="text-red-500 text-[14px]">*</span>
+                                        Status: 
                                       </label>
                                       <div>
                                       <select defaultValue=""
@@ -412,8 +399,7 @@ const List_return_Type =()=>{
                                                 <option value="false" className="text-gray-600">InActive</option>
         
                                             </select>
-                                            <p className="text-xs text-red-500">{errors.status}</p>
-                                            </div>
+                                            </div> */}
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
@@ -443,7 +429,7 @@ const List_return_Type =()=>{
        
                        {editModal &&(
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[420px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                         Edit Return Type                       </h3>
@@ -472,7 +458,7 @@ const List_return_Type =()=>{
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                       >
-                                        Description:<span className="text-red-500 text-[14px]">*</span>
+                                        Description:
                                       </label>
                                       <div>
                                       <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -482,12 +468,11 @@ const List_return_Type =()=>{
                                         onChange={(e)=>handleEditReturnTypeChange(e)}
                                         name="description"
                                       ></textarea>
-                                        <p className="text-xs text-red-300">{editErrors.description}</p>
                                       </div>
                                          <label 
                                             className="font-semibold text-xs text-[#344767] w-[80%]"
                                           >
-                                                Status:<span className="text-red-500 text-[14px]">*</span>
+                                                Status:
                                             </label>
 
                                             <div>
@@ -502,7 +487,6 @@ const List_return_Type =()=>{
                                                 <option value={true} className=" text-gray-600"> Active</option>
                                                 <option value={false} className=" text-gray-600"> InActive</option>
                                             </select>
-                                             <p className="text-xs text-red-300">{editErrors.status}</p>
                                            </div>
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}

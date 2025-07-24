@@ -25,6 +25,12 @@ const BranchModel = {
   deleteBranch: (id) => {
     return axiosInstance.delete(`manage-branch/${id}/`);
   },
+  assignEmployee:(data)=>{
+     return axiosInstance.post(`branch-employee-assign/`,data)
+  },
+  getEmployeeAssign :()=>{
+    return axiosInstance.get(`branch-employee-assign/`)
+  }
 };
 
 export default BranchModel;

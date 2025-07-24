@@ -6,9 +6,9 @@ import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
 import CountryModel from "../../../models/countryModel";
-import StateModel from "../../../models/StateModel";
+import StateModel from "../../../models/stateModel";
 import CityModel from "../../../models/CityModel";
-import DistrictModel from "../../../models/DistrictModel";
+import DistrictModel from "../../../models/districtModel";
 import { useSelector } from "react-redux";
 import TableSkelton from "../../../components/tableSkelton";
 import { toast } from 'react-toastify';
@@ -858,7 +858,9 @@ const handleDeleteCityArea = async (id) => {
 )}
        
                           
-                     </>)
+                     </>
+                     
+                    )
 }
 
 export default City_Area

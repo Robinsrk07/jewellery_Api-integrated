@@ -86,8 +86,6 @@ const Diamond_Type = ()=>{
                   const validateDiamondType = () => {
                     const newErrors = {};
                     if (!addDiamondTypeData.name.trim()) newErrors.name = 'Please enter name';
-                    if (!addDiamondTypeData.description.trim()) newErrors.description = 'Please enter description';
-                    if (addDiamondTypeData.status === '') newErrors.status = 'Please select status';
                     return newErrors;
                   };
 
@@ -161,15 +159,6 @@ const Diamond_Type = ()=>{
                               valid = false;
                             }
 
-                            if (!editingDiamondType?.description?.trim()) {
-                              newErrors.description = 'Description is required';
-                              valid = false;
-                            }
-
-                            if (editingDiamondType?.status === undefined || editingDiamondType.status === '') {
-                              newErrors.status = 'Status is required';
-                              valid = false;
-                            }
 
                             setErrors(newErrors);
                             return valid;
@@ -376,7 +365,7 @@ const Diamond_Type = ()=>{
        
       {modal && (
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[420px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                          Create Diamond Type                      
@@ -409,7 +398,7 @@ const Diamond_Type = ()=>{
                                           
                                           className="font-semibold text-xs text-[#344767] w-[100%]"
                                         >
-                                          Description: <span className="text-red-500 text-[14px]">*</span>
+                                          Description:
                                         </label>
 
                                         <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -419,9 +408,6 @@ const Diamond_Type = ()=>{
                                           onChange={handleAddDiamondTypeChange}
                                           name="description"
                                         ></textarea>
-                                        {errors.description && (
-                                          <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                                        )}
                                       </div>
                             
                                            
@@ -476,7 +462,7 @@ const Diamond_Type = ()=>{
        
            {editModal &&(
                                       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                                <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                                <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[450px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                                   <h3 className="font-bold text-[22px] text-[#344767] "
                                                     >
                                                       Edit Diamond Type                     </h3>
@@ -509,7 +495,7 @@ const Diamond_Type = ()=>{
                                                           
                                                           className="font-semibold text-xs text-[#344767] w-[100%]"
                                                         >
-                                                          Description: <span className="text-red-500 text-[14px]">*</span>
+                                                          Description: 
                                                         </label>
 
                                                         <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -519,9 +505,6 @@ const Diamond_Type = ()=>{
                                                           onChange={handleEditDiamondTypeChange}
                                                           name="description"
                                                         ></textarea>
-                                                        {errors.description && (
-                                                          <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                                                        )}
                                                       </div>
                                           
                                                         
@@ -530,7 +513,7 @@ const Diamond_Type = ()=>{
                                                                   
                                                                   className="font-semibold text-xs text-[#344767] w-[80%]"
                                                               >
-                                                                  Status: <span className="text-red-500 text-[14px]">*</span>
+                                                                  Status: 
                                                               </label>
                                                               <select 
                                                                   className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
@@ -543,9 +526,6 @@ const Diamond_Type = ()=>{
                                                                   <option value={true} className=" text-gray-600"> Active</option>
                                                                   <option value={false} className=" text-gray-600"> InActive</option>
                                                               </select>
-                                                              {errors.status && (
-                                                                <p className="text-red-500 text-xs mt-1">{errors.status}</p>
-                                                              )}
                                                           </div>
                           
                                                           </div> 

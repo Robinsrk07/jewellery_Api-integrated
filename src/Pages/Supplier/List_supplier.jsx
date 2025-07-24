@@ -13,6 +13,8 @@ import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+import TableSkelton from "../../components/tableSkelton";
+
 const List_supplier=()=>{
 
 
@@ -21,8 +23,8 @@ const List_supplier=()=>{
               const [page, setPage] = useState(1);
               const [status, setStatus] = useState('');
               const [search, setSearch] = useState('');
-             
-
+              const [isLoading, setIsLoading] = useState(true);
+              const [totalPages, setTotalPages] = useState(1);
 
               const [controlAccounts, setControlAccounts] = useState([]);
               const [countries, setCountries] = useState([]);
@@ -70,31 +72,29 @@ const List_supplier=()=>{
 
                   const [supplierData, setSupplierData] = useState([]);
 
-                  const fetchSuppliers = async () => {
-                    try {
-                      const response = await supplierModel.getSuppliers(
-                        user_id,
-                        user_types,
-                        limit,
-                        page,
-                        search,
-                        status
-                      );
+                   const fetchSuppliers = async () => {
+                          setIsLoading(true);
+                          try {
+                            const response = await supplierModel.getSuppliers(
+                              user_id,
+                              user_types,
+                              limit,
+                              page,
+                              search,
+                              status
+                            );
 
-                      
-
-                      if (response.data && response.data.data) {
-                        console.log("Suppliers Received:", response.data.data);
-                        setSupplierData(response.data.data);
-                      } else {
-                        toast.error("Unable to fetch suppliers");
-                      }
-                    } catch (error) {
-                      console.error("Error fetching suppliers:", error);
-                      toast.error("Failed to load suppliers");
-                    }
-                  };
-
+                            if (response?.data?.data) {
+                              setSupplierData(response.data.data);
+                              setTotalPages(response.data.pagination?.pages );
+                            }
+                          } catch (error) {
+                            console.error("Error fetching state data:", error);
+                            toast.error("Failed to fetch states.");
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        };
                   useEffect(() => {
                     fetchSuppliers();
                   }, [limit, page, search, status]);
@@ -224,22 +224,13 @@ const handleEditClick = (supplier) => {
                           await supplierModel.deleteSupplier(id);
 
                           setSupplierData((prevData) => prevData.filter((item) => item.id !== id));
-
-                          
-                          // if (modal && typeof modal.close === 'function') { // This line was removed as per the edit hint
-                          //   modal.close();
-                          // }
-
                           toast.success('Supplier deleted successfully');
                         } catch (error) {
                           console.error("Error deleting Supplier:", error);
                           toast.error('Failed to delete Supplier');
                         }
                       };
-          
-           
-           
-             const totalPages = Math.ceil(supplierData.length / limit) || 1;
+  
              return (
                
            <>
@@ -309,7 +300,17 @@ const handleEditClick = (supplier) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {supplierData.map((supplier, index) => (
+                     {isLoading ? (
+                            <TableSkelton />
+                          ) : supplierData.length === 0 ? (
+                          <tr>
+                            <td className="text-center py-4 text-gray-500 text-sm" colSpan="5">
+                              No data available
+                          </td>
+                        </tr>
+                        ) : (
+
+                      supplierData.map((supplier, index) => (
                         <tr key={supplier.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                           <td className="px-4 py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '35px' }}>{index+1}</td>
                           <td className="px-4 py-4 border-b border-gray-200 text-xs">{supplier.code}</td>
@@ -343,14 +344,15 @@ const handleEditClick = (supplier) => {
                                 <EditButton onClick={() => handleEditClick(supplier)} />
                               </Link>
                                <DeleteButton 
-                                  buttonText="Delete Supplier" 
+                                  buttonText="Delete " 
                                   modalId={`delete_modal_${supplier.id}`} 
                                   onConfirmDelete={() => handleDeleteSupplier(supplier.id)} 
                               />
                             </div>
                           </td>
                         </tr>
-                      ))}
+                      ))
+                    )}
                     </tbody>
                   </table>
                               

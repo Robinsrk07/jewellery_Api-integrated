@@ -262,7 +262,7 @@ const Occasion = () => {
       </div>
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[400px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
             <h3 className="font-bold text-[22px] text-[#344767]">Create Occasion</h3>
             <hr className=" border-gray-300"/>
             <div className="flex flex-col gap-4 flex-grow">
@@ -272,9 +272,8 @@ const Occasion = () => {
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description:</label>
                 <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" style={{paddingLeft:'12px'}} value={addOccasionData.description} onChange={handleAddOccasionChange} name="description"></textarea>
-                {errors.description && (<p className="text-red-500 text-xs mt-1">{errors.description}</p>)}
               </div>
               {/* <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: <span className="text-red-500 text-[14px]">*</span></label>
@@ -295,7 +294,7 @@ const Occasion = () => {
       )}
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[450px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
             <h3 className="font-bold text-[22px] text-[#344767]">Edit Occasion</h3>
             <hr className=" border-gray-300"/>
             <div className="flex flex-col gap-4 flex-grow">
@@ -305,18 +304,16 @@ const Occasion = () => {
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: </label>
                 <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" style={{paddingLeft:'12px'}} value={editingOccasion?.description || ''} onChange={handleEditOccasionChange} name="description"></textarea>
-                {errors.description && (<p className="text-red-500 text-xs mt-1">{errors.description}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: </label>
                 <select className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={String(editingOccasion?.status)} onChange={handleEditOccasionChange} name='status'>
                   <option value="" className="text-gray-600">Select</option>
                   <option value="true" className="text-gray-600">Active</option>
                   <option value="false" className="text-gray-600">InActive</option>
                 </select>
-                {errors.status && (<p className="text-red-500 text-xs mt-1">{errors.status}</p>)}
               </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">

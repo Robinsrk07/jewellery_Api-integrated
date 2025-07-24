@@ -12,6 +12,7 @@ const DynamicSidebar = () => {
   const location = useLocation();
   const [menuData, setMenuData] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [clickedMenuKey, setClickedMenuKey] = useState(null);
 
   useEffect(() => {
     const fetchMenuData = async () => {
@@ -44,8 +45,11 @@ const DynamicSidebar = () => {
   };
 
   const isActive = (url) => {
-    return location.pathname === `/${url}`;
+    return location.pathname === `${url}`;
   };
+
+console.log('Current path:', location.pathname);
+console.log('Is active:', isActive(location.pathname));
 
   const renderMenuItems = (items, level = 0, parentIndex = '') => {
     return items.map((item, index) => {
@@ -60,14 +64,20 @@ const DynamicSidebar = () => {
         <div key={uniqueKey} style={{ marginLeft: level > 0 ? '2px' : '0' }}>
           <div 
             className={`flex items-center justify-between py-2 px-3 rounded-lg transition-colors
-              ${isItemActive ? 'bg-blue-50 text-blue-600' : 'hover:bg-gray-100 text-gray-400'}
-            `}
+  ${isItemActive || clickedMenuKey === uniqueKey
+    ? 'bg-white text-blue-600'
+    : 'text-gray-400 hover:text-green-800 '}
+`}
+
             
           >
             {hasChildren ? (
             <button
               className="flex gap-3 items-center w-full text-left"
-              onClick={() => toggleMenu(uniqueKey)}
+              onClick={() => {
+                toggleMenu(uniqueKey);
+                setClickedMenuKey(uniqueKey);
+              }}
             >
               <span className="mr-2">{getMenuIcon(item.menu_name || item.main_menu)}</span>
               <span className="text-[14px] text-gray-400 flex-grow text-left">
@@ -81,7 +91,10 @@ const DynamicSidebar = () => {
             ) : (
              <Link 
               to={`${item.url}`} 
-              className={`flex items-center w-full text-[14px] ${textSizeClass} text-gray-400`}
+              className={`flex items-center w-full text-[14px] ${textSizeClass} ${
+                isActive(item.url) || clickedMenuKey === uniqueKey ? 'text-blue-500' : 'text-gray-400'
+              }`}
+              onClick={() => setClickedMenuKey(uniqueKey)}
             >
               {item.menu_name || item.main_menu}
             </Link>
@@ -100,7 +113,10 @@ const DynamicSidebar = () => {
               <div style={{ marginTop: '8px' }}>
                 <button
                   className="flex items-center w-full gap-2 text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wide hover:text-blue-600 transition"
-                  onClick={() => toggleMenu(`${uniqueKey}-gold`)}
+                  onClick={() => {
+                    toggleMenu(`${uniqueKey}-gold`);
+                    setClickedMenuKey(`${uniqueKey}-gold`);
+                  }}
                   style={{ paddingLeft: '31px',paddingBottom:'10px' }}
                 >
                   <span>Gold</span>
@@ -119,11 +135,14 @@ const DynamicSidebar = () => {
               <div style={{ marginTop: '8px' }}>
                 <button
                   className="flex items-center w-full gap-2 text-left text-[12px] font-semibold text-gray-400 uppercase tracking-wide hover:text-blue-600 transition"
-                  onClick={() => toggleMenu(`${uniqueKey}-diamond`)}
+                  onClick={() => {
+                    toggleMenu(`${uniqueKey}-diamond`);
+                    setClickedMenuKey(`${uniqueKey}-diamond`);
+                  }}
                   style={{ paddingLeft: '31px',paddingBottom:'10px' }}
                 >
                   <span>Diamond</span>
-                  <span className=" ml-auto">
+                  <span className=" text-[8px] ml-auto">
                     {expandedMenus[`${uniqueKey}-diamond`] ? '▲' : '▼'}
                   </span>
                 </button>

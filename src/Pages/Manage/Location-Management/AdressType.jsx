@@ -82,8 +82,6 @@ const Adress_Type = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!data.name.trim()) newErrors.name = 'Please enter name';
-    if (!data.description.trim()) newErrors.description = 'Please enter description';
-    if (data.status === '') newErrors.status = 'Please select status';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -212,15 +210,8 @@ const Adress_Type = () => {
                   valid = false;
                 }
 
-                if (!editingAddressType?.description?.trim()) {
-                  newErrors.description = 'Description is required';
-                  valid = false;
-                }
+                
 
-                if (editingAddressType?.status === undefined || editingAddressType.status === '') {
-                  newErrors.status = 'Status is required';
-                  valid = false;
-                }
 
             setErrors(newErrors);
             return valid;
@@ -333,7 +324,7 @@ const Adress_Type = () => {
 
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[400px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
             <h3 className="font-bold text-[22px] text-[#344767]">
               Create Address Type
             </h3>
@@ -341,7 +332,7 @@ const Adress_Type = () => {
 
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">
-                Name:
+                Name: <span className="text-xs text-red-400">*</span>
               </label>
               <div>
               <input type="text"
@@ -365,7 +356,6 @@ const Adress_Type = () => {
                 name="description"
                 value={data.description}
               ></textarea>
-              <p className="text-xs text-red-400">{errors.description}</p>
               </div>
 
               {/* <label className="font-semibold text-xs text-[#344767] w-[80%]">
@@ -410,7 +400,7 @@ const Adress_Type = () => {
 
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[480px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
             <h3 className="font-bold text-[22px] text-[#344767]">
               Edit Address Type
             </h3>
@@ -418,7 +408,7 @@ const Adress_Type = () => {
 
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">
-                Name:
+                Name: <span className="text-xs text-red-400">*</span>
               </label>
 
               <div>

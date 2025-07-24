@@ -238,9 +238,11 @@ const ViewPurchase = () => {
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       {purchase.adjusted_total_stone_value || 'none'}
                     </td>
-                    <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                      {purchase.barcode || 'N/A'}
-                    </td>
+                    <td className="px-6 py-5 border-b border-gray-200 text-xs text-blue-600 underline">
+  {purchase.barcode || 'N/A'}
+</td>
+
+
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       {purchase.tagline1 || 'N/A'}
                     </td>

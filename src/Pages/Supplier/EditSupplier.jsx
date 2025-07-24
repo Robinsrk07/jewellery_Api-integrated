@@ -96,6 +96,8 @@ const EditSupplier = () => {
                   if (!editSupplierData.name) newErrors.name = 'Name is required';
                   if (!editSupplierData.code) newErrors.code = 'Code is required';
                   if (!editSupplierData.currency) newErrors.currency = 'Currency is required';
+                  if (!editSupplierData.address_type) newErrors.address_type = 'Adress_type is required';
+                  if (!editSupplierData.country) newErrors.country = 'country is required';
                   setErrors(newErrors);
                   return Object.keys(newErrors).length === 0;
                 };
@@ -138,64 +140,6 @@ const EditSupplier = () => {
               };
 
 
-//   const handleEditSubmitSupplier = async () => {
-//   if (!editSupplierData?.id) {
-//     toast.error("Invalid supplier selected for editing.");
-//     return;
-//   }
-
-//   if (!validateEditSupplier()) return;
-//   setIsSubmitting(true);
-
-//   try {
-//     const cleanData = {
-//       ...editSupplierData,
-//       status: editSupplierData.status === true || editSupplierData.status === "true" || editSupplierData.status === "Active",
-//       updated_by: user_id,
-//       updated_by_type: user_types,
-//     };
-
-//     // Convert numeric string IDs to integers
-//     ['currency', 'supplier_group', 'control_account', 'address_type', 'country', 'city', 'terms_of_payment'].forEach((key) => {
-//       if (cleanData[key] && !isNaN(cleanData[key])) {
-//         cleanData[key] = parseInt(cleanData[key]);
-//       }
-//     });
-
-//     // Remove empty string fields
-//     Object.keys(cleanData).forEach((key) => {
-//       if (cleanData[key] === "") {
-//         delete cleanData[key];
-//       }
-//     });
-
-//     console.log("Cleaned payload:", cleanData);
-
-//     const response = await supplierModel.updateSupplier(editSupplierData.id, cleanData);
-
-//     if (response.status === 200) {
-//       toast.success("Supplier updated successfully!");
-//     }
-//   } catch (error) {
-//   console.error("Update supplier error:", error);
-
-//   if (error.response) {
-//     console.log("Backend response error:", error.response.data);
-//     console.log("Validation errors:", error.response.data.errors); // <-- ADD THIS
-//   }
-
-//   if (error.response?.data?.errors) {
-//     setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-//     toast.error("Validation errors occurred.");
-//   } else {
-//     toast.error("Failed to update supplier!");
-//   }
-// }
-
-//  finally {
-//     setIsSubmitting(false);
-//   }
-// };
 
         const handleEditCloseModal = () => {
               setEditModal(false);
@@ -219,7 +163,7 @@ const EditSupplier = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7  justify-center items-center" style={{padding:'20px'}}>
 
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Code</label>
+          <label className="text-xs font-bold text-[#344767]">Code <span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="text"
             name="code"
@@ -234,7 +178,7 @@ const EditSupplier = () => {
 
       
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Name</label>
+          <label className="text-xs font-bold text-[#344767]">Name <span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="text"
             name="name"
@@ -249,7 +193,7 @@ const EditSupplier = () => {
 
          
         <div className="w-full flex flex-col gap-2">
-          <label className="text-xs font-bold text-[#344767]">Currency</label>
+          <label className="text-xs font-bold text-[#344767]">Currency <span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="currency"
             onChange={handleEditSupplierChange}
@@ -439,7 +383,7 @@ const EditSupplier = () => {
 
 
         <div className="w-full flex flex-col gap-2">
-          <label className="text-xs font-bold text-[#344767]">Address Type</label>
+          <label className="text-xs font-bold text-[#344767]">Address Type <span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="address_type"
             onChange={handleEditSupplierChange}
@@ -495,7 +439,7 @@ const EditSupplier = () => {
 
 
        <div className="w-full flex flex-col gap-2">
-        <label className="text-xs font-bold text-[#344767]">Country</label>
+        <label className="text-xs font-bold text-[#344767]">Country <span className="text-red-500 text-[14px]">*</span></label>
         <select
           name="country"
           onChange={handleEditSupplierChange}

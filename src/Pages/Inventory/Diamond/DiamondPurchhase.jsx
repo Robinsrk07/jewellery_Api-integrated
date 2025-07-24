@@ -24,17 +24,17 @@ const DiamondPurchhase = () => {
     
     const auth = useSelector((state) => state.auth);
     const { login_id, can_manage_user_types } = auth
-     const [limit, setLimit] = useState(10);
-     const [page, setPage] = useState(1);
-      const [purchaseData, setPurchaseData] = useState([]);
-      const [totalPages, setTotalPages] = useState(1);
-     const [search, setSearch] = useState('');
-     const [status, setStatus] = useState('');
+    const [limit, setLimit] = useState(10);
+    const [page, setPage] = useState(1);
+    const [purchaseData, setPurchaseData] = useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [search, setSearch] = useState('');
+    const [status, setStatus] = useState('');
     const user_id = login_id;
     const user_types = Object.keys(can_manage_user_types).join(',');   
     const [deletingId, setDeletingId] = useState(null);
     const [itemToDelete, setItemToDelete] = useState(null);
-     const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
  
     console.log(diamondItem)
     const fetchDiamondItems = async () => {
@@ -196,8 +196,8 @@ console.log(DiamondUtils)
         {getNameFromId('item_type', item.item_type)}
       </td>
     
-      <td className="border-b border-gray-200 text-xs    hover:text-blue-500 cursor-pointer" >
-        <Link to={`/dashboard/listDiamond/${item.uuid}/${item.created_by}`}>
+      <td className="border-b  border-gray-200 text-xs  underline  text-blue-500 cursor-pointer" >
+        <Link to={`/dashboard/list_diamond/${item.uuid}/${item.created_by}`}>
         {item.item_name}
         </Link>
       </td>
@@ -238,10 +238,10 @@ console.log(DiamondUtils)
         {item.prefix}
       </td>
       <td className="px-4 py-3 border-b border-gray-200 text-xs text-left" style={{ padding: '10px 12px' }}>
-        ₹{parseFloat(item.total_amount).toFixed(2)}
+        {parseFloat(item.total_amount).toFixed(2)}
       </td>
       <td className="px-4 py-3 border-b border-gray-200 text-xs text-left">
-        ₹{parseFloat(item.net_amount).toFixed(2)}
+        {parseFloat(item.net_amount).toFixed(2)}
       </td>
       <td className="px-4 py-3 text-xs">
         <div className="flex flex-row gap-2">

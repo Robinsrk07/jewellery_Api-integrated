@@ -624,7 +624,7 @@ const validateEditForm = () => {
        
      {editModal && (
   <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-    <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+    <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[620px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
       <h3 className="font-bold text-[22px] text-[#344767]">
         Edit Category
       </h3>

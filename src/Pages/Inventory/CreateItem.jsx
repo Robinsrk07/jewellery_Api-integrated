@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import UtilsGetModel from "../../models/Utils_getModel";
 import { toast } from "react-toastify";
 import GoldItemModel from "../../models/GoldItem";
+import CountryModel from "../../models/countryModel";
 import { useNavigate } from "react-router";
+import { useSelector } from "react-redux";
 const CreateItem = () => {
   const navigate = useNavigate()
   const [data, setData] = useState({
@@ -35,6 +37,7 @@ const CreateItem = () => {
   });
 
   const [UtilsData,setUtilsData] = useState([]);
+  const [country,setCountry]= useState([])
   
 const FetUtilsdata = async() => {
   try {
@@ -44,6 +47,12 @@ const FetUtilsdata = async() => {
    console.error("Error fetching utils data:", error);
   }
 }
+
+
+    const auth= useSelector((state) => state.auth);
+    const { login_id ,can_manage_user_types,} = auth;  
+    const user_id = login_id;
+     const user_types = Object.keys(can_manage_user_types).join(','); 
 const validateForm = () => {
   const newErrors = {};
 
@@ -166,6 +175,17 @@ const handleSubmit = async (e) => {
 
   useEffect(() => {
     FetUtilsdata()
+  },[])
+  useEffect(()=>{
+ const fetchCounty = async()=>{
+  try{
+  const res = await CountryModel.getCountries(user_id,user_types,1000)
+  setCountry(res?.data?.data)
+  }catch(error){
+  console.error(error)
+  }
+ }
+ fetchCounty()
   },[])
 
 
@@ -454,15 +474,20 @@ const handleSubmit = async (e) => {
        
         {/* item image */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Item Image</label>
-          <input
-            type="file"
-            name="item_image"
-            onChange={handleChange}
-            style={{ paddingLeft: '10px' }}
-            className="file-input bg-white text-gray-500 border-gray-300 rounded-lg file-input-sm w-full"
-          />
-        </div>
+  <label className="text-xs font-bold text-[#344767]">Item Image</label>
+  <input
+    type="file"
+    name="item_image"
+    onChange={handleChange}
+    className="w-full text-sm text-gray-500
+               file:mr-4 file:py-1 file:px-4
+               file:rounded-lg file:border-0
+               file:text-sm file:font-semibold
+               file:bg-gray-100 file:text-gray-600
+               hover:file:bg-gray-200 border border-gray-200 rounded-lg h-[33px]"
+  />
+</div>
+
 
       
 
@@ -521,18 +546,21 @@ const handleSubmit = async (e) => {
  
             <div className="w-full flex flex-col gap-2"> 
             <label className="text-xs font-bold text-[#344767]">Made in</label>
-            <select
-              name="made_in"
-              value={data.made_in}
-              onChange={handleChange}
-              style={{ paddingLeft: '12px', fontSize: '11px' }}
-              className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
-            >
-              <option disabled value="">-----------</option>
-              {/* TODO: Replace with mapped country IDs when API provides them */}
-              <option className="text-sm text-gray-500" value="17">Bolivia</option>
-              <option className="text-sm text-gray-500" value="18">Brazil</option>
-            </select>
+           <select
+  name="made_in"
+  value={data.made_in}
+  onChange={handleChange}
+  style={{ paddingLeft: '12px', fontSize: '11px' }}
+  className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+>
+  <option disabled value="">-----------</option>
+  {country.map((c) => (
+    <option key={c.id} value={c.id} className="text-sm text-gray-500">
+      {c.name}
+    </option>
+  ))}
+</select>
+
           </div>
 
   
@@ -678,7 +706,7 @@ const handleSubmit = async (e) => {
             </div>
 
       </div>
-      <div className="flex w-full h-[20vh] mt-4 justify-center items-center">
+      <div className="flex w-full h-[20vh] mt-4 justify-end items-end" style={{padding:'20px'}}>
         <button
           type="submit"
           onClick={handleSubmit}

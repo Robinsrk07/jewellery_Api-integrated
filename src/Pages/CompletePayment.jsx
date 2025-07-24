@@ -42,11 +42,12 @@ const CompletePayment = () => {
   const [payments, setPayments] = useState([{ ...defaultPayment }]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [splitPayment, setSplitPayment] = useState(false);
-  const [utils, setUtils] = useState();
+  const [utils, setUtils] = useState([]);
   const auth = useSelector((state) => state.auth);
   const user_id = auth?.login_id;
   const user_types = Object.keys(auth?.can_manage_user_types || {}).join(',');
 console.log(payments)
+console.log(utils)
   const totalAmount = Number(cartData?.data?.net_amount || 0);
   const totalTax = Number(cartData?.data?.tax || 0);
 
@@ -188,7 +189,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500 mb-1">Payment Mode</label>
           <select
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs text-gray-500 border rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="payment_mode"
             value={payments[0].payment_mode}
@@ -205,13 +206,13 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
 
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500 mb-1">Amount</label>
-          <input value={payments[0].amount} name='amount' onChange={(e) => handleChange(0, e)} className="w-full h-[33px] text-xs border rounded-sm border-gray-300" style={{ paddingLeft: '12px' }}  placeholder="Amount" />
+          <input value={payments[0].amount} name='amount' onChange={(e) => handleChange(0, e)} className="w-full h-[33px] text-gray-600 text-xs border rounded-sm border-gray-300" style={{ paddingLeft: '12px' }}  placeholder="Amount" />
         </div>
 
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500 mb-1">Exchange Rate</label>
           <input
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs text-gray-500 border rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="exchange_rate"
             placeholder="Exchange Rate"
@@ -227,7 +228,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
           <div className="flex flex-col gap-2 w-full">
             <label className="text-xs text-gray-500 mb-1">Approval Code</label>
             <input
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs text-gray-500 border rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="approval_code"
               placeholder="Approval Code"
@@ -240,7 +241,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
             <label className="text-xs text-gray-500 mb-1">Expiry Date</label>
             <input
               type="date"
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="exp_date"
               placeholder="Expiry Date"
@@ -253,7 +254,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
             <label className="text-xs text-gray-500 mb-1">Card Holder</label>
             <input
               type="text"
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="card_holder"
               placeholder="Card Holder"
@@ -269,7 +270,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
           <label className="text-xs text-gray-500 mb-1">Commission</label>
           <input
             type="text"
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs  text-gray-500 border rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="commission"
             placeholder="Commission"
@@ -282,7 +283,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
           <label className="text-xs text-gray-500 mb-1">Tax</label>
           <input
             type="text"
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="tax"
             placeholder="Tax"
@@ -292,7 +293,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
         </div>
           <div className="flex flex-col gap-2 w-full">
             <label className="text-xs text-gray-500 mb-1">Currency</label>
-            <select style={{paddingLeft:'10px'}} name="currency" value={payments[0].currency}  onChange={(e) => handleChange(1, e)} className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
+            <select style={{paddingLeft:'10px'}} name="currency" value={payments[0].currency}  onChange={(e) => handleChange(1, e)} className="select select-bordered text-gray-500 bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
               <option value =''>--select option --</option>
 
                {utils.map((item) => (
@@ -324,7 +325,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
               <label className="text-xs text-gray-500 mb-1">Card Number</label>
               <input
                 type="text"
-                className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+                className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
                 style={{ paddingLeft: '12px' }}
                 name="card_num"
                 placeholder="Card Number"
@@ -339,7 +340,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
             <label className="text-xs text-gray-500 mb-1">UPI ID</label>
             <input
               type="text"
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs text-gray-500 border rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="upi_id"
               placeholder="Enter Your UPI ID "
@@ -354,7 +355,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500 mb-1">Payment Mode</label>
           <select
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="payment_mode"
             value={payments[1].payment_mode}
@@ -371,13 +372,13 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
 
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500 mb-1">Amount</label>
-          <input name='amount' onChange={(e) => handleChange(1, e)} value={payments[1].amount} className="w-full h-[33px] text-xs border rounded-sm border-gray-300" style={{ paddingLeft: '12px' }} name="amount" placeholder="Amount" />
+          <input name='amount' onChange={(e) => handleChange(1, e)} value={payments[1].amount} className="w-full text-gray-500 h-[33px] text-xs border rounded-sm border-gray-300" style={{ paddingLeft: '12px' }} name="amount" placeholder="Amount" />
         </div>
 
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500 mb-1">Exchange Rate</label>
           <input
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="exchange_rate"
             placeholder="Exchange Rate"
@@ -389,11 +390,11 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
       </div>
 
      
-       {( !isCashPayment1 && !isUpiPayment1  ) &&(<div className="flex flex-col  md:flex-row items-center justify-center gap-4">
+       {( !isCashPayment1 && !isUpiPayment1  ) &&(<div className="flex flex-col  text-gray-500 md:flex-row items-center justify-center gap-4">
           <div className="flex flex-col gap-2 w-full">
             <label className="text-xs text-gray-500 mb-1">Approval Code</label>
             <input
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs border  text-gray-500 rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="approval_code"
               placeholder="Approval Code"
@@ -406,7 +407,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
             <label className="text-xs text-gray-500 mb-1">Expiry Date</label>
             <input
               type="date"
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="exp_date"
               placeholder="Expiry Date"
@@ -419,7 +420,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
             <label className="text-xs text-gray-500 mb-1">Card Holder</label>
             <input
               type="text"
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="card_holder"
               placeholder="Card Holder"
@@ -435,7 +436,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
           <label className="text-xs text-gray-500 mb-1">Commission</label>
           <input
             type="text"
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs text-gray-500 border rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="commission"
             placeholder="Commission"
@@ -448,7 +449,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
           <label className="text-xs text-gray-500 mb-1">Tax</label>
           <input
             type="text"
-            className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+            className="w-full h-[33px] text-xs text-gray-500 border rounded-sm border-gray-300"
             style={{ paddingLeft: '12px' }}
             name="tax"
             placeholder="Tax"
@@ -467,7 +468,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
               value={payments[1].currency}
               onChange={(e) => handleChange(1, e)}
             /> */}
-            <select style={{paddingLeft:'10px'}} name="currency" value={payments[1].currency}  onChange={(e) => handleChange(1, e)} className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
+            <select style={{paddingLeft:'10px'}} name="currency" value={payments[1].currency}  onChange={(e) => handleChange(1, e)} className="select select-bordered text-gray-500 bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
               <option value =''>--select option --</option>
 
                {utils.map((item) => (
@@ -488,7 +489,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
               <label className="text-xs text-gray-500 mb-1">Card Number</label>
               <input
                 type="text"
-                className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+                className="w-full h-[33px] text-gray-500 text-xs border rounded-sm border-gray-300"
                 style={{ paddingLeft: '12px' }}
                 name="card_num"
                 placeholder="Card Number"
@@ -502,7 +503,7 @@ const isUpiPayment1 = payments.length > 1 && payments[1]?.payment_mode === "4";
             <label className="text-xs text-gray-500 mb-1">UPI ID</label>
             <input
               type="text"
-              className="w-full h-[33px] text-xs border rounded-sm border-gray-300"
+              className="w-full h-[33px] text-xs border text-gray-500 rounded-sm border-gray-300"
               style={{ paddingLeft: '12px' }}
               name="upi_id"
               placeholder="Enter Your UPI ID "

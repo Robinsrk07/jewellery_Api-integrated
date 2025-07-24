@@ -5,494 +5,637 @@ import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
-import { useSelector } from "react-redux";
 import CityModel from "../../../models/CityModel";
 import CountryModel from "../../../models/countryModel";
+import { useSelector } from "react-redux";
 import TableSkelton from "../../../components/tableSkelton";
-import { toast } from "react-toastify";
-const City=()=>{
+import { toast } from 'react-toastify';
+
+
+
+
+
+
+const City =()=>{
    
-                    const [items, setItems] = useState(10);
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
-                    const auth= useSelector((state) => state.auth);
-                    const { login_id ,can_manage_user_types,} = auth;   
-                    const [totalPages, setTotalPages] = useState(1); 
-                     const [deletingId, setDeletingId] = useState(null);
-                    const [itemToDelete, setItemToDelete] = useState(null);
-                    const[limit,setLimit]=useState(10);  
-                    console.log(limit);
-                    
-                    const[page,setPage]=useState(1);  
-                    const[search,setSearch]=useState('');
-                    const[status,setStatus]=useState();
-                    const[country,setCountryData]=useState([])
-                    const [isSubmitting, setIsSubmitting] = useState(false);
-                    const [isLoading, setIsLoading] = useState(true);
-                    const user_id = login_id;
-                    const user_types = Object.keys(can_manage_user_types).join(','); 
-                    const [city,setCity]= useState([])
-                    const [data,setData] =useState({
-                      name:'',
-                      code:'',
-                      country:''
-                    })
-                    const[editData,setEditData]= useState([])
-                     console.log(editData)
-                    
+  const [cityData, setCityData] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modal, setModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [editingCity, setEditingCity] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
 
-              
+  const [addCityData, setAddCityData] = useState({
+    code: '',
+    name: '',
+    country: '',
+  });
 
-                const getIdOfCountry = (countryName) => {
-                    const countryObj = country.find((c) => c.name === countryName);
-                    return countryObj ? countryObj.id : null;
-                  };
+  const [errors, setErrors] = useState({
+    code: '',
+    name: '',
+    country: '',
+  });
 
-                 if (data.country) {
-                    const countryId = getIdOfCountry(data.country);
-                    console.log("Country ID:", countryId);
-                  }
+  const auth = useSelector((state) => state.auth);
+  const { login_id, can_manage_user_types } = auth;
+  const user_id = login_id;
+  const user_types = Object.keys(can_manage_user_types).join(',');
 
-               const getCountryOfId = (couontryCode)=>{
-                    const counrtyObj = country.find((c)=>c.id == couontryCode)
-                    return counrtyObj ? counrtyObj.name :null
-               }
+  const fetchCityData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await CityModel.getCities(
+        user_id,
+        user_types,
+        limit,
+        page,
+        search,
+        status
+      );
 
-                const handleSubmit = async (e) => {
-                  e.preventDefault();
+      if (response?.data?.data) {
+        setCityData(response.data.data);
+        setTotalPages(response.data.pagination?.pages || 1);
+      }
+    } catch (error) {
+      console.error('Error fetching city data:', error);
+      toast.error('Failed to fetch cities.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-                  const submitData = {
-                    name: data.name,
-                    code: data.code,
-                    country: getIdOfCountry(data.country),
-                  };
-
-                  try {
-                    const response = await CityModel.CreateCity(submitData); 
-                    toast.success("City created successfully!");
-                    // Optionally reset form
-                    setData({ name: '', code: '', country: '' });
-                    FetchCountry()
-                    handleCloseModal(); // Close modal after success
-                  } catch (error) {
-                    toast.error("Failed to create city. Please try again.");
-                  }
-                };
-                
-                 const handleEditSubmit = async () => {
-                  
-                  setIsSubmitting(true);
-                  try {
-                    const response = await CityModel.EditCity(
-                      
-                      {
-                        code: editData.code,
-                        name: editData.name,
-                        status: editData.status
-                      },editData.id
-                    );
-                    if (response.status === 200) {
-                      FetchCountry();
-                      toast.success('City updated successfully!');
-
-                      handleEditCloseModal();
-                    }
-                  } catch (error) {
-                      console.log(error);
-                      
-                       toast.error('Failed to update country!');
-                    if (error.response?.data?.errors) {
-                      setErrors(prev => ({
-                        ...prev,
-                        ...error.response.data.errors
-                      }));
-                    }
-                  } finally {
-                    setIsSubmitting(false);
-                  }
-                };
-                 const handleDeleteCity = async (id) => {
-                             
-                              if (!id) toast.error("Sorry Unable to Delete City")
-                              
-                              try {
-                                await CityModel.DeleteCity(id);
-                                await fetchCityData()
-                                toast.success("City Deleted SuccessFully")
-                              } catch (error) {
-                                console.error("Error deleting country:", error);
-                                toast.error("Please Try Again , Failed to delete City")
-                              }finally {
-                                      setDeletingId(null);
-                                  }
-                     };
+  useEffect(() => {
+    fetchCityData();
+  }, [limit, page, search, status]);
 
 
 
+  const [countries, setCountries] = useState([]);
 
-                      const handleChange = (e) => {
-                        const { name, value } = e.target;
-                        setData(prev => ({ ...prev, [name]: value }));
-                      };
-                      const fetchCityData =async()=>{
-                      try{
-                            const response = await CityModel.getCities(
-                            user_id,          
-                            user_types,          
-                            limit,
-                            page,
-                            search,
-                            status  )
+  const fetchCountries = async () => {
+    try {
+      const response = await CountryModel.getCountries(user_id, user_types);
+      if (response?.data?.data) {
+        setCountries(response.data.data);
+      } else {
+        toast.error("Failed to load countries");
+      }
+    } catch (error) {
+      console.error("Error fetching countries:", error);
+      toast.error("Error fetching countries");
+    }
+  };
 
-                            if(response){
-                              setCity(response?.data?.data)
-                                setTotalPages(response?.data?.pagination?.pages);
-                            }
-                      }catch(error){
-                         console.error(error)
-                      }finally {
-                          setIsLoading(false); 
-                        }
-                      }
 
-                     const FetchCountry = async () => {
-                        try {
-                          const response = await CountryModel.getCountries(
-                            user_id,          
-                            user_types,          
-                            limit,
-                            page,
-                            search,
-                            status               
-                          );
-
-                          if (response.data && response?.data?.data) {
-                            setCountryData(response?.data?.data);
-                          }
-                        } catch (error) {
-                          console.error("Error fetching country data:", error);
-                        }
-                      };
-                    
+  const getCountryName = (id) => {
+  const country = countries.find((c) => c.id === id);
+  return country ? country.name : "N/A";
+};
   
-           const countryMap = new Map(country.map(c => [c.id, c.name]));
 
 
-             const handleCloseModal = () => {
-                setModal(false);
-                setEditModal(false)
-               };
-              const handleEditCloseModal =()=>{
-                setEditModal(false)
-              }
-                  
-           useEffect(()=>{
-               FetchCountry()
-               },[])
 
-           useEffect(()=>{
-                fetchCityData()
-           },[country])
 
-                  
-                  
-                  
+const handleAddCityChange = (e) => {
+  const { name, value } = e.target;
+  setAddCityData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+const validateCity = () => {
+  const newErrors = {};
+
+  if (!addCityData.code.trim()) {
+    newErrors.code = "Please enter city code";
+  }
+
+  if (!addCityData.name.trim()) {
+    newErrors.name = "Please enter city name";
+  }
+
+  if (!addCityData.country) {
+    newErrors.country = "Please select a country";
+  }
+
+  return newErrors;
+};
+
+
+const handleSubmitCity = async () => {
+  const validationErrors = validateCity();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+ const payload = {
+  code: addCityData.code.trim(),
+  name: addCityData.name.trim(),
+  country: addCityData.country,   
+};
+
+
+  console.log("City Payload being sent:", payload);
+
+  try {
+    const response = await CityModel.CreateCity(payload);
+    console.log("Create City response:", response);
+
+    if (response.status === 201 || response.status === 200) {
+      toast.success("City created successfully!");
+      fetchCityData();
+      handleCloseModal();
+
+      setAddCityData({
+        code: '',
+        name: '',
+        status: false,
+      });
+
+      setErrors({});
+    }
+  } catch (error) {
+    console.error("Create City error:", error);
+    console.log("Error response:", error.response?.data);
+    console.log("Field errors:", error.response?.data?.errors);
+    toast.error("Failed to create city!");
+    handleCloseModal();
+
+    if (error.response?.data?.errors) {
+      setErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  }
+};
+
+
+const [editCityErrors, setEditCityErrors] = useState({});
+
+const validateEditCity = () => {
+  let valid = true;
+  const errors = {};
+
+  if (!editingCity?.code?.trim()) {
+    errors.code = 'City code is required';
+    valid = false;
+  }
+
+  if (!editingCity?.name?.trim()) {
+    errors.name = 'City name is required';
+    valid = false;
+  }
+
+  if (!editingCity?.country) {
+    errors.country = 'State selection is required';
+    valid = false;
+  }
+
+  setEditCityErrors(errors);
+  return valid;
+};
+
+
+const handleEditClickCity = (cityObj) => {
+  if (!cityObj || typeof cityObj !== 'object' || !cityObj.id) {
+    console.warn("Invalid city object passed:", cityObj);
+    toast.error("Invalid city selected.");
+    return;
+  }
+
+  console.log("Editing City:", cityObj);
+
+  setEditingCity({
+    id: cityObj.id,
+    code: cityObj.code,
+    name: cityObj.name,
+    country: cityObj.country,
+    status: cityObj.status?.toString(),
+  });
+
+  setEditModal(true);
+};
+
+
+const handleEditCityChange = (e) => {
+  const { name, value } = e.target;
+
+  setEditingCity((prev) => ({
+    ...prev,
+    [name]: name === 'status' ? (value === 'true') : value,
+  }));
+};
+
+
+const handleEditSubmitCity = async () => {
+  if (!editingCity?.id) {
+    toast.error("Invalid city selected for editing.");
+    return;
+  }
+
+  if (!validateEditCity()) return;
+
+  setIsSubmitting(true);
+
+  const payload = {
+    code: editingCity.code.trim(),
+    name: editingCity.name.trim(),
+    country: editingCity.country,
+    status: editingCity.status === true || editingCity.status === 'true',
+  };
+
+  try {
+    const response = await CityModel.EditCity(editingCity.id, payload);
+
+    if (response.status === 200) {
+      fetchCityData();
+      toast.success('City updated successfully!');
+      setEditModal(false);
+    }
+  } catch (error) {
+    console.error("Update city error:", error);
+    toast.error('Failed to update city!');
+    if (error.response?.data?.errors) {
+      setEditCityErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+
+const handleEditCloseCityModal = () => {
+  setEditModal(false);
+  setEditingCity(null);
+  setEditCityErrors({
+    code: '',
+    name: '',
+    country: '',
+    status: '',
+  });
+};
+
+
+           
+const handleDeleteCity = async (id) => {
+  if (!id) return;
+
+  try {
+    await CityModel.DeleteCity(id); 
+
+    const modal = document.getElementById(`delete_modal_${id}`);
+    if (modal && typeof modal.close === 'function') {
+      modal.close();
+    }
+
+    toast.success('City deleted successfully');
+    fetchCityData(); 
+  } catch (error) {
+    console.error("Error deleting City:", error);
+    toast.error('Failed to delete City');
+  }
+};
+
+
+
+    const handleCloseModal = () => {
+    setErrors({
+        code: '',
+        name: '',
+        country:'',
+        status: ''
+    });
+    setModal(false);
+    setEditModal(false);
+    };
+
+    useEffect(() => {
+  fetchCityData();
+  fetchCountries();
+
+}, [limit, page, search, status]);
+              
                     return (
                       
                   <>
                   <CustomScrollbar/>
-
-                    <div className="bg-white w-full
+                 <div className="bg-white w-full
                                   max-w-[95vw] 
                                   xl:max-w-[90vw] 
-                                  2xl:max-w-[85vw] 
-                                  h-auto max-h-[84vh] 
+                                  2xl:max-w-[95vw] 
+                                  h-auto max-h-[70vh] 
                                   rounded-xl px-4 md:px-8 lg:px-12
                                   mx-auto overflow-auto  custom-scrollbar"
                               style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                                 >
-                   <CreateButton
-                      buttoncontent="+ New City"
-                      onClick={() => setModal(true)}  // This will now work!
-                   />                 
-                      <ItemsPerPageSelector items={limit} setItems={setLimit} />
+                 <CreateButton
+                  buttoncontent="+ New City"
+                  onClick={() => setModal(true)}  
+                 />                 
+                 <ItemsPerPageSelector items={limit} setItems={setLimit} />
                   
                         
-                            
-                  <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
-                  style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '800px' }}>
-                                <thead className="text-xs text-gray-400 uppercase bg-white">
-                                  <tr>
-                                    <th style={{ width: '100px', paddingLeft: '20px', paddingTop: '12px', paddingBottom: '12px' }}>SL NO</th>
-                                    <th style={{ width: '100px', padding: '12px 24px' }}>CODE</th>
-                                    <th style={{ width: '120px', padding: '12px 24px' }}>NAME</th>
-                                    <th style={{ width: '150px', padding: '12px 24px' }}>COUNTRY</th>
-                                    <th style={{ width: '100px', padding: '12px 24px' }}>STATUS</th>
-                                    <th style={{ width: '210px', padding: '12px 24px' }}>ACTION</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {isLoading ? (
-                                        <TableSkelton />
-                                      ) : city.length === 0 ? (
-                                        <tr >
-                                          <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
-                                            No data available
-                                          </td>
-                                        </tr>
-                                      ) :city
-                                  .filter(location => countryMap.has(location.country))
-                                  .map((location,index) => (
-                                    <tr key={location.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400" >
-                                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }} >
-                                        {index+1}
-                                      </td>
-                                      <td className="border-b border-gray-200 text-xs"style={{ paddingLeft: '30px' }} >{location.code}</td>
-                                      <td className="border-b border-gray-200 text-xs"style={{ paddingLeft: '30px'}} >{location.name}</td>
-                                      <td className="border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}> {countryMap.get(location.country)}</td>
-                                       <td className="py-4 border-b border-gray-200 text-xs" >
-                               {location.status ? (
-                                <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" >
-                                  Active
-                                </span>
-                              ) : (
-                                <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded">
-                                  INACTIVE
-                                </span>
-                              )}
-                            </td>                                     
-                             <td className="border-b border-gray-200 text-xs" >
-                                        <div className="flex gap-2.5 items-center">
-                                          <EditButton
-                                          onClick={()=>{setEditModal(true);setEditData(location)}}
-                                         />
-                                            
-                                         <DeleteButton 
-                                                                                   buttonText={deletingId === location.id ? 'Deleting...' : 'Delete'}
-                                                                                   item="City"
-                                                                                   onOpenModal={() => setItemToDelete(location.id)}
-                                                                                   onConfirmDelete={() => handleDeleteCity(itemToDelete)}
-                                                                                   disabled={deletingId === country.id}
-                                                                                 />
-                                        </div>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                        
+                     <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
+                        style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '800px' }}>
+                      <thead className="text-xs text-gray-400 uppercase bg-white">
+                        <tr>
+                          <th  style={{ width: '80px', paddingLeft: '20px' }}>SL NO</th>
+                          <th  style={{ width: '100px' }}>CODE</th>
+                          <th  style={{ width: '130px' }}>NAME</th>
+                          <th  style={{ width: '130px' }}>COUNTRY</th>
+                          <th  style={{ width: '130px' }}>STATUS</th>
+                          <th  style={{ width: '130px' }}>ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {isLoading ? (
+                            <TableSkelton />
+                        ) : cityData.length === 0 ? (
+                            <tr>
+                            <td className="text-center py-4 text-gray-500 text-sm" colSpan="5">
+                                No data available
+                            </td>
+                            </tr>
+                        ) : (
+                            cityData.map((city, index) => (
+                            <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
+                                {index + 1}
+                                </td>
+                                <td className="py-4 border-b border-gray-200 text-xs">{city.code}</td>
+                                <td className="py-4 border-b border-gray-200 text-xs">{city.name}</td>
+                                <td className="py-4 border-b border-gray-200 text-xs">{getCountryName(city.country)}</td>
+                                <td className="py-4 border-b border-gray-200 text-xs">
+                                {city.status ? (
+                                    <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    Active
+                                    </span>
+                                ) : (
+                                    <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                    INACTIVE
+                                    </span>
+                                )}
+                                </td>
+                                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                                <div className="flex gap-2.5 items-center">
+                                    <EditButton
+                                    onClick={() => {
+                                        setEditingCity(city); 
+                                        setEditModal(true);
+                                    }}
+                                    />
+                                    <DeleteButton
+                                    buttonText="Delete City"
+                                    modalId={`delete_modal_${city.id}`}
+                                    onConfirmDelete={() => handleDeleteCity(city.id)}
+                                  />
+
+                                </div>
+                                </td>
+                            </tr>
+                            ))
+                        )}
+                        </tbody>
+
+                    </table>
+                                        
                   
-                       
                      <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
-                            
-                       </div>
-                        {modal && (
-                           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
-                                    <h3 className="font-bold text-[22px] text-[#344767] "
-                                       >
-                                         Create City                     </h3>
-                                    <hr className=" border-gray-300"/>
-      
-                                    <div className="flex flex-col flex-grow gap-4"> {/* Added flex-grow */}
-                                   
-                                      
-                                      <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[80%]"
-                                      >
-                                       Code:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        value={data.code}
-                                        onChange={handleChange}
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                        style={{paddingLeft:'12px'}}
-                                        name="code"
-                                      />
-
-                                       <label 
-                                       
-                                        className="font-semibold text-xs text-[#344767] w-[80%]"
-                                      >
-                                       Name:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here"
-                                        value={data.name} 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                        style={{paddingLeft:'12px'}}
-                                        onChange={handleChange}
-                                        name="name"
-                                      />
-                                      
-                                      
-
-                                   
-                            
-                                           
-                                            <label 
-      
-                                                className="font-semibold text-xs text-[#344767] w-[80%]"
-                                            >
-                                                Country:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                style={{paddingLeft:'12px'}}
-                                                
-                                                name='country'
-                                                 onChange={handleChange}
-
-                                            >
-                                                <option className=" text-gray-600 text-xs" value=''>--Select Counrty-- </option>
-                                               {country.filter((con)=>con.status ==true).map((con)=><option value={con.name} className=" text-gray-600">{con.name}</option>)} 
-                                               
-                                            </select>
-                                           
-                                            </div> 
-                                            {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
-                                                >
-                                          
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                              
-                                                 style={{ backgroundColor: '#8392ab' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                              <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={ handleSubmit}
-                                            >
-                                                Submit
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                         )}
+                  
+        
+                       
+      </div>
        
-                       {editModal &&(
-                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+      {modal && (
+                           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[400px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
-                                       Edit City                     </h3>
+                                         Create City                   </h3>
                                     <hr className=" border-gray-300"/>
-      
                                     <div className="flex flex-col flex-grow gap-4"> {/* Added flex-grow */}
-                                   
-                                      
-                                      <label 
-                                       
+                                      <div>
+                                      <label      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Code:
+                                       Code:<span className="text-xs text-red-400">*</span>
                                       </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                        style={{paddingLeft:'12px'}}
-                                         value={editData?.code || ''}
-                                        onChange={(e) => {
-                                          setEditData({...editData, code: e.target.value});
-                                          
-                                        }}
+                                      <input
+                                        type="text"
+                                        placeholder="Type here"
+                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                        style={{ paddingLeft: '12px' }}
                                         name="code"
+                                        value={addCityData.code}
+                                        onChange={handleAddCityChange}
+                                        
                                       />
-
-                                       <label 
-                                       
+                                      {errors.code && (
+                                              <p className="text-red-500 text-xs mt-1">{errors.code}</p>
+                                            )}
+                                      
+                                      
+                                      </div>
+                                      <div>
+                                       <label                                      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name:<span className="text-xs text-red-400">*</span>
                                       </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                        style={{paddingLeft:'12px'}}
-                                       value={editData?.name || ''}
-                                        onChange={(e) => {
-                                          setEditData({...editData, name: e.target.value});
-                                          
-                                        }}
-                                        name="name"
-                                      />
+                                     <input
+                                      type="text"
+                                      placeholder="Type here"
+                                      className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                                      style={{ paddingLeft: '12px' }}
+                                      name="name"
+                                      value={addCityData.name}
+                                      onChange={handleAddCityChange}
                                       
-                                      
-
-                                   
-                            
-                                           
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[80%]"
-                                            >
-                                                Country:
-                                            </label>
-                                            <input type="text" 
-                                                placeholder="Type here" 
-                                                className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-300 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
-                                                style={{paddingLeft:'12px'}}
-                                                //onChange={(e)=>handleChange(e)}
-                                                name="name"
-                                                value={getCountryOfId(editData.country)}
-                                              />
-                                                
-                                            <label 
-                                                
-                                                className="font-semibold text-xs text-[#344767] w-[80%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select
-                                          className={`select w-[100%] h-[35px] bg-white border  focus:outline-none rounded-lg focus:border-b-2 focus:border-blue-500`}
-                                          style={{paddingLeft:'12px'}}
-                                          value={editData?.status ? 'Active' : 'InActive'}
-                                          onChange={(e) => {
-                                            setEditData({
-                                              ...editData, 
-                                              status: e.target.value === 'Active'
-                                            });
-                                          
-                                          }}
+                                    />
+                                    
+                                    {errors.name && (
+                                              <p className="text-red-500 text-xs mt-1">{errors.name}</p>
+                                            )}
+                                    
+                                    </div>
+                                    <div className="w-full flex flex-col gap-2">
+                                    <label className="text-xs font-bold text-[#344767]">
+                                        Country <span className="text-xs text-red-400">*</span>
+                                    </label>
+                                    <select
+                                        name="country"
+                                        value={addCityData.country}
+                                        onChange={handleAddCityChange}
+                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                    >
+                                        <option value="">Select Country</option>
+                                        {countries.map((country) => (
+                                        <option key={country.id} value={country.id}>
+                                            {country.name}
+                                        </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-red-400">{errors.country}</p>
+                                    </div>
+                                   </div> 
+                                   <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
                                         >
-                                          <option value="Active">Active</option>
-                                          <option value="InActive">InActive</option>
-                                        </select>
-            
-                                            </div> 
-                                            {/* Button container positioned 10px above bottom */}
-                                            <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
-                                                >
+                                     <button
+                                       type="button"
+                                       className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                       style={{ backgroundColor: '#8392ab' }}
+                                               onClick={handleCloseModal}
+                                      >
+                                             close
+                                      </button>
+                                         <button
+                                           type="button"
+                                           className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                                           style={{ backgroundColor: '#5E72E4' }}
                                            
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px]  rounded-lg text-white border-none"
-                                               
-                                                 style={{ backgroundColor: '#8392ab' }}
-                                                onClick={handleEditCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                             <button
-                                                type="button"
-                                                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
-                                               style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleEditSubmit}
-                                            >
-                                                Submit
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>)}
+                                           onClick={handleSubmitCity}
+                                          >
+                                          Create
+                                           </button>
 
+                                          </div>
+                                    </div>
+                                 </div>
+       )}
+       
+     {editModal && (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+    <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+      <h3 className="font-bold text-[22px] text-[#344767]">
+        Edit City
+      </h3>
+      <hr className="border-gray-300"/>
+      
+      <div className="flex flex-col flex-grow gap-4">
+        {/* Code Field */}
+        <div>
+          <label className="font-semibold text-xs text-[#344767] w-[80%]">
+            Code: <span className="text-xs text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            name="code"
+            placeholder="Type here"
+            className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+            style={{paddingLeft:'12px'}}
+            value={editingCity?.code || ''}
+            onChange={handleEditCityChange}
+          />
+          {editCityErrors.code && (
+            <p className="text-red-500 text-xs mt-1">{editCityErrors.code}</p>
+          )}
+        </div>
+
+        {/* Name Field */}
+        <div>
+          <label className="font-semibold text-xs text-[#344767] w-[80%]">
+            Name: <span className="text-xs text-red-400">*</span>
+          </label>
+          <input
+            type="text"
+            placeholder="Type here"
+            name="name"
+            className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
+            style={{paddingLeft:'12px'}}
+            value={editingCity?.name || ''}
+            onChange={handleEditCityChange}
+          />
+          {editCityErrors.name && (
+            <p className="text-red-500 text-xs mt-1">{editCityErrors.name}</p>
+          )}
+        </div>
+
+        <div className="w-full flex flex-col gap-2">
+                                    <label className="text-xs font-bold text-[#344767]">
+                                        Country <span className="text-xs text-red-400">*</span>
+                                    </label>
+                                    <select
+                                        name="country"
+                                        value={editingCity.country}
+                                        onChange={handleEditCityChange}
+                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                    >
+                                        <option value="">Select Country</option>
+                                        {countries.map((country) => (
+                                        <option key={country.id} value={country.id}>
+                                            {country.name}
+                                        </option>
+                                        ))}
+                                    </select>
+                                    <p className="text-xs text-red-400">{editCityErrors.country}</p>
+                                    </div>
+
+        {/* Status Field */}
+        <div>
+          <label className="font-semibold text-xs text-[#344767] w-[80%]">
+            Status:
+          </label>
+          <select
+            className={`select w-[100%] h-[35px] text-gray-500 bg-white border ${
+              errors.status ? 'border-red-500' : 'border-gray-300'
+            } focus:outline-none rounded-lg focus:border-b-2 focus:border-blue-500`}
+            style={{paddingLeft:'12px'}}
+            value={editingCity?.status ? 'Active' : 'InActive'}
+            onChange={(e) => {
+              setEditingCity({
+                ...editingCity, 
+                status: e.target.value === 'Active'
+              });
+              
+            }}
+          >
+            <option value="Active">Active</option>
+            <option value="InActive">InActive</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
+        <button
+          type="button"
+          className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+          style={{ backgroundColor: '#8392ab' }}
+          onClick={handleEditCloseCityModal}
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+          style={{ backgroundColor: '#5E72E4' }}
+          onClick={handleEditSubmitCity}
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Updating...' : 'Update'}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+       
+                          
                      </>)
 }
 

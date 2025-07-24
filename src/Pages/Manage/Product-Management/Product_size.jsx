@@ -85,8 +85,6 @@ const Product_Size = () => {
   const validateProductSize = () => {
     const newErrors = {};
     if (!addProductSizeData.name.trim()) newErrors.name = 'Please enter name';
-    if (!addProductSizeData.description.trim()) newErrors.description = 'Please enter description';
-    if (addProductSizeData.status === '') newErrors.status = 'Please select status';
     return newErrors;
   };
 
@@ -164,16 +162,6 @@ const Product_Size = () => {
 
     if (!editingProductSize?.name?.trim()) {
       newErrors.name = 'Product size name is required';
-      valid = false;
-    }
-
-    if (!editingProductSize?.description?.trim()) {
-      newErrors.description = 'Description is required';
-      valid = false;
-    }
-
-    if (editingProductSize?.status === undefined || editingProductSize.status === '') {
-      newErrors.status = 'Status is required';
       valid = false;
     }
 
@@ -339,7 +327,7 @@ const Product_Size = () => {
 
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[400px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
             <h3 className="font-bold text-[22px] text-[#344767] ">
               Create Product Size                      
             </h3>
@@ -364,7 +352,7 @@ const Product_Size = () => {
                                       
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">
-                  Description: <span className="text-red-500 text-[14px]">*</span>
+                  Description: 
                 </label>
                 <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                   placeholder="Description" 
@@ -373,9 +361,6 @@ const Product_Size = () => {
                   onChange={handleAddProductSizeChange}
                   name="description"
                 ></textarea>
-                {errors.description && (
-                  <p className="text-red-500 text-xs mt-1">{errors.description}</p>
-                )}
               </div>
                             
               {/* <div>
@@ -422,7 +407,7 @@ const Product_Size = () => {
        
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[420px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}>                                                 
             <h3 className="font-bold text-[22px] text-[#344767] ">
               Edit Product Size                      
             </h3>
@@ -447,7 +432,7 @@ const Product_Size = () => {
                                       
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">
-                  Description: <span className="text-red-500 text-[14px]">*</span>
+                  Description: 
                 </label>
                 <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
                   placeholder="Description" 
@@ -456,14 +441,11 @@ const Product_Size = () => {
                   onChange={handleEditProductSizeChange}
                   name="description"
                 ></textarea>
-                {editErrors.description && (
-                  <p className="text-red-500 text-xs mt-1">{editErrors.description}</p>
-                )}
               </div>
                             
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">
-                  Status: <span className="text-red-500 text-[14px]">*</span>
+                  Status: 
                 </label>
                 <select
                   className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 

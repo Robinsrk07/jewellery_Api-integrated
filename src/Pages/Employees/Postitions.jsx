@@ -9,7 +9,7 @@ import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
-import TableSkelton from "../../components/TableSkelton";
+import TableSkelton from "../../components/tableSkelton";
 
 const Positions = () => {
   const [modal, setModal] = useState(false);
@@ -207,7 +207,7 @@ const Positions = () => {
         <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1000px]" style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}>
           <thead className="text-xs text-gray-400 uppercase bg-white">
             <tr>
-              <th className="px-6 py-3" style={{ width: '90px', paddingLeft: '20px' }}>SL NO</th>
+              <th className="px-6 py-3" style={{ width: '90px', paddingLeft: '40px' }}>SL NO</th>
               <th className="px-6 py-3" style={{ width: '100px' }}>POSITIONS</th>
               <th className="px-6 py-3" style={{ width: '90px' }}>STATUS</th>
               <th className="px-6 py-3" style={{ width: '90px' }}>ACTION</th>
@@ -222,7 +222,7 @@ const Positions = () => {
               </tr>
             ) : positions.map((pos, index) => (
               <tr key={pos.id} className="bg-white hover:bg-gray-50 h-12 text-gray-400">
-                <td className="px-6 py-5 text-xs border-b border-gray-200" style={{ paddingLeft: '30px', }}>{index + 1}</td>
+                <td className="px-6 py-5 text-xs border-b border-gray-200" style={{ paddingLeft: '50px', }}>{index + 1}</td>
                 <td className="px-6 py-5 text-xs border-b border-gray-200" >{pos.name}</td>
                 <td className="px-6 py-5 text-xs border-b border-gray-200" >
                   {pos.status === true || pos.status === 'true' || pos.status === 'ACTIVE' ? (
@@ -249,7 +249,7 @@ const Positions = () => {
             <h3 className="font-bold text-[22px] text-[#344767]">Create Position</h3>
             <hr className=" border-gray-300"/>
             <div className="flex flex-col flex-grow gap-4">
-              <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
+              <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:<span className="text-xs text-red-400">*</span></label>
               <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addPositionData.name} onChange={handleAddPositionChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
             </div>
@@ -266,7 +266,7 @@ const Positions = () => {
             <h3 className="font-bold text-[22px] text-[#344767]">Edit Position</h3>
             <hr className=" border-gray-300"/>
             <div className="flex flex-col flex-grow gap-4">
-              <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
+              <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-xs text-red-400">*</span></label>
               <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingPosition?.name || ''} onChange={handleEditPositionChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>

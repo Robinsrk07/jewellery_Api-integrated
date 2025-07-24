@@ -1,7 +1,3 @@
-
-
-
-
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -72,8 +68,6 @@ const Tax = () => {
     const newErrors = {};
     if (!addTaxCategoryData.name.trim()) newErrors.name = 'Please enter name';
     if (!addTaxCategoryData.tax || isNaN(addTaxCategoryData.tax)) newErrors.tax = 'Please enter a valid tax rate';
-    if (!addTaxCategoryData.description.trim()) newErrors.description = 'Please enter description';
-    if (addTaxCategoryData.status === '') newErrors.status = 'Please select status';
     return newErrors;
   };
 
@@ -94,8 +88,6 @@ const Tax = () => {
       tax: addTaxCategoryData.tax,
       description: addTaxCategoryData.description,
       status: addTaxCategoryData.status === 'true',
-      created_by: user_id,
-      created_by_type: user_types,
     };
     try {
       const response = await taxCategoryModel.createTaxCategory(payload);
@@ -121,14 +113,6 @@ const Tax = () => {
     }
     if (!editingTaxCategory?.tax || isNaN(editingTaxCategory.tax)) {
       newErrors.tax = 'A valid tax rate is required';
-      valid = false;
-    }
-    if (!editingTaxCategory?.description?.trim()) {
-      newErrors.description = 'Description is required';
-      valid = false;
-    }
-    if (editingTaxCategory?.status === undefined || editingTaxCategory.status === '') {
-      newErrors.status = 'Status is required';
       valid = false;
     }
     setErrors(newErrors);
@@ -231,8 +215,8 @@ const Tax = () => {
         <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto" style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '1100px' }}>
           <thead className="text-xs text-gray-400 uppercase bg-white">
             <tr>
-              <th style={{ width: '80px', paddingLeft: '20px' }}>SL NO</th>
-              <th style={{ width: '300px' }}>NAME</th>
+              <th style={{ width: '80px', paddingLeft: '40px' }}>SL NO</th>
+              <th style={{ width: '300px', paddingLeft: '20px' }}>NAME</th>
               <th style={{ width: '100px' }}>TAX</th>
               <th style={{ width: '900px' }}>DESCRIPTION</th>
               <th style={{ width: '150px' }}>STATUS</th>
@@ -248,8 +232,8 @@ const Tax = () => {
               </tr>
             ) : taxCategoryData.map((tax, index) => (
               <tr key={tax.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>{index + 1}</td>
-                <td className="py-4 border-b border-gray-200 text-xs">{tax.name}</td>
+                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '50px' }}>{index + 1}</td>
+                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{tax.name}</td>
                 <td className="py-4 border-b border-gray-200 text-xs">{tax.tax}</td>
                 <td className="py-4 border-b border-gray-200 text-xs">{tax.description}</td>
                 <td className="py-4 border-b border-gray-200 text-xs">
@@ -273,7 +257,7 @@ const Tax = () => {
       </div>
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[450px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
             <h3 className="font-bold text-[22px] text-[#344767]">Create Tax Category</h3>
             <hr className=" border-gray-300" />
             <div className="flex flex-col gap-4 flex-grow">
@@ -283,24 +267,22 @@ const Tax = () => {
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: <span className="text-red-500 text-[14px]">*</span></label>
-                <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.description} onChange={handleAddTaxCategoryChange} name="description"></textarea>
-                {errors.description && (<p className="text-red-500 text-xs mt-1">{errors.description}</p>)}
-              </div>
-              <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Tax: <span className="text-red-500 text-[14px]">*</span></label>
                 <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.tax} onChange={handleAddTaxCategoryChange} name="tax" />
                 {errors.tax && (<p className="text-red-500 text-xs mt-1">{errors.tax}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: </label>
+                <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.description} onChange={handleAddTaxCategoryChange} name="description"></textarea>
+              </div>
+              {/* <div>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: </label>
                 <select className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.status} onChange={handleAddTaxCategoryChange} name='status'>
                   <option value='' className=" text-gray-600">Select</option>
                   <option value='true' className=" text-gray-600">Active</option>
                   <option value='false' className=" text-gray-600">InActive</option>
                 </select>
-                {errors.status && (<p className="text-red-500 text-xs mt-1">{errors.status}</p>)}
-              </div>
+              </div> */}
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
               <button type="button" className="btn w-[100px] h-[35px] rounded-lg text-white border-none" style={{ backgroundColor: '#8392ab' }} onClick={handleCloseModal}>close</button>
@@ -311,7 +293,7 @@ const Tax = () => {
       )}
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
             <h3 className="font-bold text-[22px] text-[#344767]">Edit Tax Category</h3>
             <hr className=" border-gray-300" />
             <div className="flex flex-col gap-4 flex-grow">
@@ -321,23 +303,22 @@ const Tax = () => {
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: <span className="text-red-500 text-[14px]">*</span></label>
-                <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.description || ''} onChange={handleEditTaxCategoryChange} name="description"></textarea>
-                {errors.description && (<p className="text-red-500 text-xs mt-1">{errors.description}</p>)}
-              </div>
-              <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Tax: <span className="text-red-500 text-[14px]">*</span></label>
                 <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.tax || ''} onChange={handleEditTaxCategoryChange} name="tax" />
                 {errors.tax && (<p className="text-red-500 text-xs mt-1">{errors.tax}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: </label>
+                <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.description || ''} onChange={handleEditTaxCategoryChange} name="description"></textarea>
+              </div>
+              
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">Status: </label>
                 <select className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.status || ''} onChange={handleEditTaxCategoryChange} name='status'>
                   <option value='' className=" text-gray-600">Select</option>
                   <option value='true' className=" text-gray-600">Active</option>
                   <option value='false' className=" text-gray-600">InActive</option>
                 </select>
-                {errors.status && (<p className="text-red-500 text-xs mt-1">{errors.status}</p>)}
               </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">

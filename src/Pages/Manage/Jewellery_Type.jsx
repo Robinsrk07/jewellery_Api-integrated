@@ -1,486 +1,480 @@
-
-
-import React, { useState } from 'react';
-import '@fontsource/open-sans'; // Default weight 400
-import '@fontsource/open-sans/600.css'; // Semi-bold
-import '@fontsource/open-sans/700.css'; // Bold
+import { useEffect, useState } from "react";
+import CustomScrollbar from "../../components/CustomScrollbar";
 import EditButton from '../../components/EditButton';
 import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
-     const  Jewellery_Type = () => {
-     
-          
-      const  [isHovered, setIsHovered] = useState(false);
-                   const [items, setItems] = useState(10);
-                   const [formData, setFormData] = useState({
-                     name: '',
-                     gender:'',
-                     department:'',
-                     status:'',
-                     position:'',
-                     bankaccountnumber:''
-                   });
-                   const [errors, setErrors] = useState({});
-                    // handle change 
-                 
-                       const handleChange = (e) => {
-                         const { name, value } = e.target;
-                         setFormData((prev) => ({ ...prev, [name]: value }));
-                         setErrors((prev) => ({ ...prev, [name]: '' })); 
-                       };
-      
-                    const [modal, setModal] = useState(false)   
-                    const [editModal,setEditModal]= useState(false)
+import JewelleryTypeModel from "../../models/jewelleryTypeModel";
+import ItemTypeModel from "../../models/itemTypeModel";
+import { useSelector } from "react-redux";
+import { toast } from 'react-toastify';
 
-                    const jewelleryData = [
-                          {
-                            id: 1,
-                            code: 'Necklace',
-                            name: 'Necklace',
-                            type: 'Gold',
-                            status: 'ACTIVE',
-                          },
-                          {
-                            id: 2,
-                            code: 'Earrings',
-                            name: 'Earrings',
-                            type: 'Gold',
-                            status: 'ACTIVE',
-                          },
-                          {
-                            id: 3,
-                            code: 'Gold Bar',
-                            name: 'Gold Bar',
-                            type: 'Gold',
-                            status: 'ACTIVE',
-                          },
-                        ];
+  const JewelleryType = () => {
+  // State
+  const [items, setItems] = useState(10);
+  const [modal, setModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
+  const [jewelleryTypeData, setJewelleryTypeData] = useState([]);
+  const [deletingId, setDeletingId] = useState(null);
+  const [jewelleryTypeToDelete, setJewelleryTypeToDelete] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingjewelleryType, setEditingJewelleryType] = useState(null);
+  const [addJewelleryTypeData, setaddJewelleryTypeData] = useState({
+    code: '',
+    name: '',
+    item_type: '',
+  });
+  const [errors, setErrors] = useState({
+    code: '',
+    name: '',
+    item_type: '',
+    status: ''
+  });
+  const [itemTypeOptions, setItemTypeOptions] = useState([]);
 
-                 
-                   //validation 
-                   
-                   const validate = () => {
-                     const newErrors = {};
-                     if (!formData.name.trim()) newErrors.name = 'Please Enter Name';
-                     if (!formData.description.trim()) newErrors.description = 'Enter the Description';
-                     if (!formData.status.trim()) newErrors.status = 'Enter Status';
-                     return newErrors;
-                   };    
-                 
-                   //handle submit
-                 
-                   const handleSubmit = (e) => {
-                     e.preventDefault();
-                     const validationErrors = validate();
-                     if (Object.keys(validationErrors).length > 0) {
-                       setErrors(validationErrors);
-                       return;
-                     }
-                 
-                     // Submit form
-                     console.log('Form submitted:', formData);
-                 
-                     // Reset form and close modal - Fixed to include all fields
-                     setFormData({
-                       name: '',
-                       description: '',
-                       status: '',
-                     });
-                     setErrors({});
-                     setModal(false);
-                   };
-                  
-                   // Handle close modal
-                   const handleCloseModal = () => {
-                     setModal(false);
-                     setEditModal(false)
-                   };
-                 
-                 
-                 
-                 
-                 
-                   return (
-                     
-                 <>
-                 <style jsx global>{`
-                   .custom-scrollbar::-webkit-scrollbar {
-                     width: 6px;  /* Slightly wider for better visibility */
-                     height: 6px; /* For horizontal scroll */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-track {
-                     background: #f1f1f1; /* Light gray track */
-                     border-radius: 3px;
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb {
-                     background:rgb(218, 216, 216); /* Rich red color */
-                     border-radius: 3px;
-                     border: 1px solidrgb(206, 198, 198); /* Darker red border */
-                   }
-                   
-                   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                     background:rgb(202, 190, 190); /* Darker red on hover */
-                   }
-                   
-                   /* For Firefox */
-                   .custom-scrollbar {
-                     scrollbar-width: thin;
-                     scrollbar-color:rgb(226, 215, 215) #f1f1f1; /* red thumb on gray track */
-                   }
-                 `}</style>
-                <div className="bg-white w-full
-                    max-w-[99vw] 
-                    xl:max-w-[90vw] 
-                    2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
-                    rounded-xl px-4 md:px-8 lg:px-12
-                    mx-auto overflow-auto  custom-scrollbar"
-                 style={{ fontFamily: 'Open Sans',overflow:'auto'}}
-                   >
-                        <CreateButton
-                          buttoncontent="+ New Jewellery Type"
-                          onClick={() => setModal(true)}  // This will now work!
-                        />                 
-                       <ItemsPerPageSelector items={items} setItems={setItems} />
+  // Redux
+  const auth = useSelector((state) => state.auth);
+  const { login_id, can_manage_user_types } = auth;
+  const user_id = login_id;
+  const user_types = Object.keys(can_manage_user_types).join(',');
 
-                 
-                       
-                      <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[800px]" style={{ borderSpacing: '0 12px', borderCollapse: 'separate' }}>
-                        <thead className="text-xs text-gray-400 uppercase bg-white">
-                          <tr>
-                            <th className="w-[150px]" style={{ width: '90px', paddingLeft: '20px' }}>SL NO</th>
-                            <th className="w-[150px]">CODE</th>
-                            <th className="w-[150px]">NAME</th>
-                            <th className="w-[150px]">JEWELLERY TYPE</th>
-                            <th className="w-[150px]">STATUS</th>
-                            <th className="w-[150px]">ACTION</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {jewelleryData.map((item, index) => (
-                            <tr key={item.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.code}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.name}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.type}</td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                                <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>{item.status}</span>
-                              </td>
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
-                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                  <EditButton
-                                    onClick={()=>setEditModal(true)}
-                                  />
+  // Pagination/filter
+  const [limit, setLimit] = useState(10);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('');
 
+  // Fetch jewellery types
+  const FetchJewelleryType = async () => {
+    try {
+      const response = await JewelleryTypeModel.getJewelleryType(
+        user_id,
+        user_types,
+        limit,
+        page,
+        search,
+        status
+      );
+      if (response.data && response.data.data) {
+        setJewelleryTypeData(response.data.data);
+      }
+    } catch (error) {
+      console.error("Error fetching jewellery type data:", error);
+    }
+  };
 
-                                 <DeleteButton 
-                                  buttonText="Delete Jewellery Type" 
-                                  modalId="my_modal_8" 
-                                />
+  // Fetch item types
+  useEffect(() => {
+    FetchJewelleryType();
+    const fetchItemTypes = async () => {
+      try {
+        const response = await ItemTypeModel.getItemTypes(user_id, user_types);
+        if (response.data && response.data.data) {
+          setItemTypeOptions(response.data.data);
+        }
+      } catch (error) {
+        console.error("Error fetching item types:", error);
+      }
+    };
+    fetchItemTypes();
+  }, []);
 
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+  // Form handlers
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setaddJewelleryTypeData(prev => ({ ...prev, [name]: value }));
+  };
 
-                       
-                 
-                       {/* Pagination */}
-                       <Pagination/>
-                 
-                       {/* Modal */}
-      
-      
-                       <dialog id="my_modal_8" className="modal">
-      
-      
-                       <div className="modal-box bg-white text-center py-8 px-6 rounded-xl relative font-[Open_Sans]
-                         w-[90vw] max-w-[400px] h-[90vh] max-h-[300px]
-                        "
-      
-                       onClick={()=>document.getElementById('my_modal_8').close()}
-                       >
-                       
-                        {/* Icon */}
-                        <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                          <div className="text-orange-400 text-6xl">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              strokeWidth=".7"
-                              stroke="currentColor"
-                              className="w-30 h-30"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                            </svg>
-                          </div>
-                        </div>
-      
-                        {/* Title & Message */}
-                        <h3 className="text-lg text-gray-500 font-semibold " style={{margin:'20px'}}>Are you sure?</h3>
-                        <p className="text-sm text-gray-500 " style={{margin:'20px'}}>You won't be able to revert this!</p>
-      
-                        {/* Actions */}
-                        <div className="flex justify-center gap-4">
-                          <button
-                            className="btn text-xs border-none bg-red-500 font-bold text-white hover:bg-red-600 px-6"
-                            onClick={() => document.getElementById('my_modal_cancel').showModal()}
-                            style={{width:'100px'}}
-                          >
-                            No, cancel!
-                          </button>
-                          <button
-                            className="btn text-xs border-none bg-green-500 font-bold text-white hover:bg-green-600 px-6"
-                            onClick={() => {
-                              document.getElementById('my_modal_8').close();
-                            }}
-                            style={{width:'100px'}}
-                          >
-                            Yes, delete it!
-                          </button>
-                        </div>
-                      </div>
-                    </dialog>
-      
-      
-                  <dialog id="my_modal_cancel" className="modal">
-                  <div className="modal-box text-center py-10 px-8 w-[90vw] bg-white max-w-[400px] h-[90vh] max-h-[300px] relative font-[Open Sans] "
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    const formData = new FormData();
+    formData.append('code', addJewelleryTypeData.code);
+    formData.append('name', addJewelleryTypeData.name);
+    formData.append('item_type', addJewelleryTypeData.item_type);
+
+    try {
+      const response = await JewelleryTypeModel.CreateJewelleryType(formData);
+      if (response.status === 201) {
+        FetchJewelleryType();
+        handleCloseModal();
+        toast.success('Jewellery type created successfully!');
+      }
+    } catch (error) {
+      toast.error('Failed to create jewellery type!');
+      handleCloseModal();
+      if (error.response?.data?.errors) {
+        setErrors(prev => ({
+          ...prev,
+          ...error.response.data.errors
+        }));
+      }
+    }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!validateEditForm()) return;
+    setIsSubmitting(true);
+    try {
+      const response = await JewelleryTypeModel.updateJewelleryType(
+        editingjewelleryType.id,
+        {
+          code: editingjewelleryType.code,
+          name: editingjewelleryType.name,
+          item_type: editingjewelleryType.item_type,
+          status: editingjewelleryType.status
+        }
+      );
+      if (response.status === 200) {
+        FetchJewelleryType();
+        toast.success('Jewellery type updated successfully!');
+        handleEditCloseModal();
+      }
+    } catch (error) {
+      toast.error('Failed to update jewellery type!');
+      if (error.response?.data?.errors) {
+        setErrors(prev => ({
+          ...prev,
+          ...error.response.data.errors
+        }));
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Validation
+  const validateForm = () => {
+    let valid = true;
+    const newErrors = { code: '', name: '', item_type: '' };
+
+    if (!addJewelleryTypeData.code) {
+      newErrors.code = 'Jewellery type code is required';
+      valid = false;
+    } else if (addJewelleryTypeData.code.length < 2) {
+      newErrors.code = 'Must be at least 2 characters';
+      valid = false;
+    }
+    if (!addJewelleryTypeData.name) {
+      newErrors.name = 'Jewellery type name is required';
+      valid = false;
+    } else if (addJewelleryTypeData.name.length < 2) {
+      newErrors.name = 'Must be at least 2 characters';
+      valid = false;
+    }
+    if (!addJewelleryTypeData.item_type) {
+      newErrors.item_type = 'Please select an item type';
+      valid = false;
+    }
+    setErrors(newErrors);
+    return valid;
+  };
+
+  const validateEditForm = () => {
+    let valid = true;
+    const newErrors = { code: '', name: '', item_type: '', status: '' };
+
+    if (!editingjewelleryType?.code) {
+      newErrors.code = 'Jewellery type code is required';
+      valid = false;
+    } else if (editingjewelleryType.code.length < 2) {
+      newErrors.code = 'Must be 2-3 letters or valid item type code';
+      valid = false;
+    }
+    if (!editingjewelleryType?.name) {
+      newErrors.name = 'Item type name is required';
+      valid = false;
+    } else if (editingjewelleryType.name.length < 2) {
+      newErrors.name = 'Must be at least 2 characters';
+      valid = false;
+    }
+    if (!editingjewelleryType?.item_type) {
+      newErrors.item_type = 'Please select an item type';
+      valid = false;
+    }
+    if (editingjewelleryType?.status === undefined || editingjewelleryType.status === '') {
+      newErrors.status = 'Status is required';
+      valid = false;
+    }
+    setErrors(newErrors);
+    return valid;
+  };
+
+  // Delete handler
+  const handleDeleteJewelleryType = async (id) => {
+    if (!id) return toast.error("No item selected for deletion");
+    try {
+      setDeletingId(id);
+      await JewelleryTypeModel.deleteJewelleryType(id);
+      await FetchJewelleryType();
+      toast.success("Jewellery type deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete jewellery type");
+    } finally {
+      setDeletingId(null);
+      setJewelleryTypeToDelete(null);
+    }
+  };
+
+  // Modal close handlers
+  const handleCloseModal = () => {
+    setaddJewelleryTypeData({ code: '', name: '', item_type: '' });
+    setModal(false);
+  };
+  const handleEditCloseModal = () => setEditModal(false);
+
+  // Render
+  return (
+    <>
+      <CustomScrollbar />
+      <div className="bg-white w-full max-w-[95vw] xl:max-w-[90vw] 2xl:max-w-[95vw] h-auto max-h-[80vh] rounded-xl px-4 md:px-8 lg:px-12 mx-auto overflow-auto custom-scrollbar" style={{ fontFamily: 'Open Sans', overflow: 'auto' }}>
+        <CreateButton buttoncontent="+ New Jewellery Type" onClick={() => setModal(true)} />
+        <ItemsPerPageSelector items={items} setItems={setItems} />
+
+        {/* Table */}
+        <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto" style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '700px' }}>
+          <thead className="text-xs text-gray-400 uppercase bg-white">
+            <tr>
+              <th style={{ width: '80px', paddingLeft: '20px' }}>SL NO</th>
+              <th style={{ width: '120px' }}>CODE</th>
+              <th style={{ width: '120px' }}>NAME</th>
+              <th style={{ width: '120px' }}>ITEM TYPE</th>
+              <th style={{ width: '120px' }}>STATUS</th>
+              <th style={{ width: '150px' }}>ACTION</th>
+            </tr>
+          </thead>
+          <tbody>
+            {jewelleryTypeData.map((jewellerytype, index) => (
+              <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>{index + 1}</td>
+                <td className="py-4 border-b border-gray-200 text-xs">{jewellerytype.code}</td>
+                <td className="py-4 border-b border-gray-200 text-xs">{jewellerytype.name}</td>
+                <td className="py-4 border-b border-gray-200 text-xs">
+                  {itemTypeOptions.find(item => String(item.id) === String(jewellerytype.item_type))?.name || jewellerytype.item_type}
+                </td>
+                <td className="py-4 border-b border-gray-200 text-xs">
+                  {jewellerytype.status ? (
+                    <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>Active</span>
+                  ) : (
+                    <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>INACTIVE</span>
+                  )}
+                </td>
+                <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
+                  <div className="flex gap-2.5 items-center">
+                    <EditButton
                       onClick={() => {
-                      document.getElementById('my_modal_cancel').close();
-                      }}>
-                      <div className="flex justify-center mb-4" style={{opacity:'.5'}}>
-                      <div className="text-blue-400 text-6xl">
-                          <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth=".7"
-                          stroke="currentColor"
-                          className="w-30 h-30"
-                          >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m0 3.75h.008v.008H12v-.008zM12 3.75c4.556 0 8.25 3.694 8.25 8.25s-3.694 8.25-8.25 8.25S3.75 16.556 3.75 12 7.444 3.75 12 3.75z" />
-                          </svg>
-                      </div>
-                      </div>
-                      <h3 className="text-3xl font-bold text-gray-500 " style={{margin:'20px'}}>Cancelled</h3>
-                      <p className="text-lg text-gray-500  font-semibold " style={{margin:'20px'}}>Your Jewellery Type is safe</p>
-                      <button className="btn border-none bg-blue-500 w-[50px] rounded-lg" > ok</button>
+                        setEditingJewelleryType(jewellerytype);
+                        setEditModal(true);
+                      }}
+                    />
+                    <DeleteButton
+                      buttonText={deletingId === jewellerytype.id ? 'Deleting...' : 'Delete'}
+                      onOpenModal={() => setJewelleryTypeToDelete(jewellerytype)}
+                      onConfirmDelete={() => handleDeleteJewelleryType(jewelleryTypeToDelete?.id)}
+                      disabled={deletingId === jewellerytype.id}
+                    />
                   </div>
-                  </dialog>
-                      </div>
-      
-                      {modal && (
-                                <div className="fixed inset-0   bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[90vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}> 
-                                                
-                                    <h3 className="font-bold text-[22px] text-[#344767] " 
-                                        >
-                                         Create Jewellery Type                       </h3>
-                                    <hr className="my-4 border-gray-300" />
-      
-                                    <div className="flex flex-col text-gray-300 justify-start gap-4 items-center flex-grow"> {/* Added flex-grow */}
-                                   
-                                      <label 
-                                      
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Code:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className=" bg-white border border-gray-200 w-[100%] h-[35px] text-[12px]  rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                        onChange={(e)=>handleChange(e)}
-                                        style={{paddingLeft:'12px'}}
-                                        name=""
-                                      />
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Name:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className=" border   bg-white text-[12px] border-gray-200 h-[35px] w-[100%] rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"                          
-                                        onChange={(e)=>handleChange(e)}
-                                        style={{paddingLeft:'12px'}}
-                                        name=""
-                                      />
-                                      
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
-                                      
-                                           
-                                            <label 
-                                               
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Item type:
-                                            </label>
-                                            <select defaultValue="Select Item Type"
-                                                className="select w-[100%] text-[12px]  bg-white border-gray-200 h-[35px] focus:outline-none text-gray-300 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                value={formData.status}
-                                                style={{paddingLeft:'12px'}}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600" disabled>Select Item Type</option>
-                                                <option className=" text-gray-600"> Gold</option>
-                                                <option className=" text-gray-600"> Diamond</option>
-                                            </select>
-                                            <label 
-                                                s
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select  bg-white text-[12px] border-gray-200 w-[100%] h-[35px] focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                                style={{paddingLeft:'12px'}}
-                                            >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                            </div> 
-                                            <div className="flex flex-col h-[20vh] md:flex-row gap-2 items-end justify-end  bg-white " 
-                                            
-                                                >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px]  h-[35px] border-none rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px]  h-[35px] border-none rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                                )}      
-      
-      
-                      {editModal &&  (
-                               <div className="fixed inset-0   bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[90vh] max-h-[500px] flex flex-col gap-3 overflow-y-auto" style={{padding:'20px'}}> 
-                                                
-                                    <h3 className="font-bold text-[22px] text-[#344767] " 
-                                        >
-                                        Edit Jewellery Type                       </h3>
-                                    <hr className="my-4 border-gray-300" />
-      
-                                    <div className="flex flex-col text-gray-300 justify-start gap-4 items-center flex-grow"> {/* Added flex-grow */}
-                                   
-                                      <label 
-                                      
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Code:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className=" bg-white border border-gray-200 w-[100%] h-[35px] text-[12px]  rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
-                                        onChange={(e)=>handleChange(e)}
-                                        style={{paddingLeft:'12px'}}
-                                        name=""
-                                      />
-                                      <label 
-                                        
-                                        className="font-semibold text-xs text-[#344767] w-[100%]"
-                                      >
-                                       Name:
-                                      </label>
-                                      <input type="text" 
-                                        placeholder="Type here" 
-                                        className=" border   bg-white text-[12px] border-gray-200 h-[35px] w-[100%] rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"                          
-                                        onChange={(e)=>handleChange(e)}
-                                        style={{paddingLeft:'12px'}}
-                                        name=""
-                                      />
-                                      
+        <Pagination />
+      </div>
 
-                                      
-                                           
-                                            <label 
-                                               
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Item type:
-                                            </label>
-                                            <select defaultValue="Select Item Type"
-                                                className="select w-[100%] text-[12px]  bg-white border-gray-200 h-[35px] focus:outline-none text-gray-300 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                value={formData.status}
-                                                style={{paddingLeft:'12px'}}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                            >
-                                                <option className=" text-gray-600" disabled>Select Item Type</option>
-                                                <option className=" text-gray-600"> Gold</option>
-                                                <option className=" text-gray-600"> Diamond</option>
-                                            </select>
-                                            <label 
-                                                s
-                                                className="font-semibold text-xs text-[#344767] w-[100%]"
-                                            >
-                                                Status:
-                                            </label>
-                                            <select defaultValue=""
-                                                className="select  bg-white text-[12px] border-gray-200 w-[100%] h-[35px] focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" 
-                                                value={formData.status}
-                                                name=''
-                                                onChange={(e)=>handleChange(e)}
-                                                style={{paddingLeft:'12px'}}
-                                            >
-                                                <option className=" text-gray-600"></option>
-                                                <option className=" text-gray-600"> Active</option>
-                                                <option className=" text-gray-600"> InActive</option>
-                                            </select>
-            
-                                            </div> 
-                                            <div className="flex flex-col h-[20vh] md:flex-row gap-2 items-end justify-end  bg-white " 
-                                            
-                                                >
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px]  h-[35px] border-none rounded-lg text-white"
-                                                style={{ backgroundColor: '#8392ab' }}
-                                                onClick={(e) => handleSubmit(e)}
-                                            >
-                                                Submit
-                                            </button>
-                                            <button
-                                                type="button"
-                                                className="btn w-[100px]  h-[35px] border-none rounded-lg text-white"
-                                                style={{ backgroundColor: '#5E72e4' }}
-                                                onClick={handleCloseModal}
-                                            >
-                                                Close
-                                            </button>
-                                            </div>
-                                        </div>
-                                        </div>
-                                )}
-      
-                         
-                    </>)
-     }
-     
-     export default Jewellery_Type;
+      {/* Create Modal */}
+      {modal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[400px] h-[95vh] max-h-[450px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+            <h3 className="font-bold text-[22px] text-[#344767]">Create Jewellery Type</h3>
+            <hr className="border-gray-300" />
+            <div className="flex flex-col flex-grow gap-4">
+              {/* Code */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">
+                  Code:<span className="text-red-500 text-[14px]">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Type here"
+                  className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                  style={{ paddingLeft: '12px' }}
+                  name="code"
+                  value={addJewelleryTypeData.code}
+                  onChange={handleChange}
+                />
+                {errors.code && <p className="text-red-500 text-xs mt-1">{errors.code}</p>}
+              </div>
+              {/* Name */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">
+                  Name:  <span className="text-red-500 text-[14px]">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Type here"
+                  className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
+                  style={{ paddingLeft: '12px' }}
+                  name="name"
+                  value={addJewelleryTypeData.name}
+                  onChange={handleChange}
+                />
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+              </div>
+              {/* Item Type */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">
+                  Item Type:<span className="text-red-500 text-[14px]">*</span>
+                </label>
+                <select
+                  name="item_type"
+                  value={addJewelleryTypeData.item_type}
+                  onChange={handleChange}
+                  className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                  style={{ paddingLeft: '12px', color: '#374151' }}
+                >
+                  <option value="">Select Item Type</option>
+                  {itemTypeOptions.map((item) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
+                </select>
+                {errors.item_type && <p className="text-red-500 text-xs mt-1">{errors.item_type}</p>}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
+              <button
+                type="button"
+                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                style={{ backgroundColor: '#8392ab' }}
+                onClick={handleCloseModal}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                style={{ backgroundColor: '#5E72E4' }}
+                onClick={handleSubmit}
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {editModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[550px] flex flex-col gap-4 overflow-y-auto" style={{ padding: '20px' }}>
+            <h3 className="font-bold text-[22px] text-[#344767]">Edit Jewellery Type</h3>
+            <hr className="border-gray-300" />
+            <div className="flex flex-col flex-grow gap-4">
+              {/* Code */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">
+                  Code:  <span className="text-red-500 text-[14px]">*</span>
+                  </label>
+                <input
+                  type="text"
+                  placeholder="Type here"
+                  className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${errors.code ? 'border-red-500' : 'border-gray-300'} focus:border-b-2 focus:border-blue-500`}
+                  style={{ paddingLeft: '12px' }}
+                  name="code"
+                  value={editingjewelleryType?.code || ''}
+                  onChange={e => {
+                    setEditingJewelleryType({ ...editingjewelleryType, code: e.target.value });
+                    if (errors.code) setErrors({ ...errors, code: '' });
+                  }}
+                />
+                {errors.code && <p className="text-red-500 text-xs mt-1">{errors.code}</p>}
+              </div>
+              {/* Name */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[80%]">
+                  Name: <span className="text-red-500 text-[14px]">*</span>
+                  </label>
+                <input
+                  type="text"
+                  placeholder="Type here"
+                  className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:border-b-2 focus:border-blue-500`}
+                  style={{ paddingLeft: '12px' }}
+                  name="name"
+                  value={editingjewelleryType?.name || ''}
+                  onChange={e => {
+                    setEditingJewelleryType({ ...editingjewelleryType, name: e.target.value });
+                    if (errors.name) setErrors({ ...errors, name: '' });
+                  }}
+                />
+                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+              </div>
+              {/* Item Type */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">
+                  Item Type: <span className="text-red-500 text-[14px]">*</span>
+                  </label>
+                <select
+                  name="item_type"
+                  value={editingjewelleryType?.item_type || ''}
+                  onChange={e => {
+                    setEditingJewelleryType({ ...editingjewelleryType, item_type: e.target.value });
+                    if (errors.item_type) setErrors({ ...errors, item_type: '' });
+                  }}
+                  className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                  style={{ paddingLeft: '12px', color: '#374151' }}
+                >
+                  <option value="">Select Item Type</option>
+                  {itemTypeOptions.map((item) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
+                </select>
+                {errors.item_type && <p className="text-red-500 text-xs mt-1">{errors.item_type}</p>}
+              </div>
+              {/* Status */}
+              <div>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Status:</label>
+                <select
+                  name="status"
+                  value={editingjewelleryType?.status === true ? "Active" : editingjewelleryType?.status === false ? "Inactive" : ""}
+                  onChange={e => {
+                    setEditingJewelleryType({ ...editingjewelleryType, status: e.target.value === "Active" });
+                    if (errors.status) setErrors({ ...errors, status: '' });
+                  }}
+                  className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
+                  style={{ paddingLeft: '12px', color: '#374151' }}
+                >
+                  <option value="">Select Status</option>
+                  <option value="Active">Active</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+                {errors.status && <p className="text-red-500 text-xs mt-1">{errors.status}</p>}
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
+              <button
+                type="button"
+                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                style={{ backgroundColor: '#8392ab' }}
+                onClick={handleEditCloseModal}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn w-[100px] h-[35px] rounded-lg text-white border-none"
+                style={{ backgroundColor: '#5E72E4' }}
+                onClick={handleEditSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Updating...' : 'Update'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+export default JewelleryType;

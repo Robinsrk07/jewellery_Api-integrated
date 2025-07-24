@@ -504,9 +504,9 @@ const ItemDetails = () => {
                             step='.1'
                             min='0'
                              name="pearl_weight"
-
+                            placeholder="0"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                          <label className="text-gray-400 font-semibold text-[11px] mb-1">
                             Other Store Weight:
@@ -516,10 +516,11 @@ const ItemDetails = () => {
                             value={data.other_stone_weight}
                             onChange={handleChange}
                             step='.1'
+                            placeholder="0"
                             min='0'
                             name="other_stone_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
                     
@@ -581,9 +582,11 @@ const ItemDetails = () => {
                             onChange={handleChange}
                             step='.1'
                             min='0'
+                            placeholder="0"
+
                             name="ruby_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
  <label className="text-gray-400 font-semibold text-[11px] mb-1">
       Size:
@@ -679,9 +682,10 @@ const ItemDetails = () => {
                             onChange={handleChange}
                             step='.1'
                             min='0'
+                            placeholder="0"
                             name="emerald_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                          
                     </div>
@@ -740,7 +744,7 @@ const ItemDetails = () => {
                             step='.1'
                              name="mark_up"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                 </div>
 
@@ -786,10 +790,11 @@ const ItemDetails = () => {
           type="number"
           min='0'
           step='.1'
+          placeholder="0"
           style={{paddingLeft:'12px'}}
           value={items[rowIndex]?.carat || ''}
           onChange={(e) => handleCellChange(rowIndex, 'carat', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
+          className="w-full px-2 py-1 text-gray-500 border-none focus:outline-none"
         />
       </td>
       
@@ -801,7 +806,7 @@ const ItemDetails = () => {
 
           value={items[rowIndex]?.no_of_pieces || ''}
           onChange={(e) => handleCellChange(rowIndex, 'no_of_pieces', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
+          className="w-full px-2 py-1 text-gray-500 border-none focus:outline-none"
         />
       </td>
       
@@ -838,7 +843,7 @@ const ItemDetails = () => {
         <select
           type="number"
           style={{paddingLeft:'12px'}}
-
+          
           value={items[rowIndex]?.item_cut || ''}
           onChange={(e) => handleCellChange(rowIndex, 'item_cut', e.target.value)}
           className="w-full text-xs text-gray-400 border-none focus:outline-none"
@@ -932,9 +937,9 @@ const ItemDetails = () => {
         <tbody className="bg-white border border-gray-200">
           <tr>
             <td className=" bg-blue-100 flex justify-end text-blue-600 font-semibold"> Total</td>
-            <td className=" rounded-sm  border border-gray-200 h-[0px]"                      style={{paddingLeft:'12px'}}
+            <td className=" rounded-sm text-gray-500  border border-gray-200 h-[0px]"                      style={{paddingLeft:'12px'}}
 >{totalCarat}</td>
-            <td className=" rounded-sm  border border-gray-200"                      style={{paddingLeft:'12px'}}
+            <td className=" rounded-sm text-gray-500  border border-gray-200"                      style={{paddingLeft:'12px'}}
 >{totalPieces}</td>
             
             
@@ -965,7 +970,7 @@ const ItemDetails = () => {
       onChange={handleChange}
      placeholder="0.00"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs text-gray-500  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
     <label className="text-gray-400 font-semibold text-[12px] mb-1">
       Additional Charge :<span className="text-red-500 text-[14px]">*</span>
@@ -978,7 +983,7 @@ const ItemDetails = () => {
       onChange={handleChange}
      placeholder="0.00"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs  rounded-sm text-gray-500  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
   </div>
 
@@ -993,9 +998,9 @@ const ItemDetails = () => {
       value={data.discount}
       min='0'
       onChange={handleChange}
-     placeholder="0%"
+     placeholder="0"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs text-gray-500  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
     {/* <label className="text-gray-400 font-semibold text-[11px] mb-1">
       Mark up:
@@ -1019,7 +1024,7 @@ const ItemDetails = () => {
       onChange={handleChange}
      placeholder="0"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs  text-gray-500 rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
   </div>
 

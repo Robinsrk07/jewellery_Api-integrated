@@ -8,6 +8,7 @@ import { useDispatch } from 'react-redux';
 import AuthModel from '../models/authModels';
 import { setLogin } from '../StateManagement/authSlice';
 import { setToken } from '../Data/local/tokenUtils';
+import { toast } from 'react-toastify';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Login = () => {
     e.preventDefault();
 
     const newErrors = {};
-    if (!userCredentials.email) newErrors.userName = "Username is required.";
+if (!userCredentials.email) newErrors.email = "Email is required.";
     if (!userCredentials.password) newErrors.password = "Password is required.";
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
@@ -50,8 +51,9 @@ const Login = () => {
     }));
       navigate('/dashboard'); // redirect after successful login
     } catch (err) {
+      console.log(err)
       const errorMsg = err?.response?.data?.message || 'Login failed. Please try again.';
-      setErrors({ userName: errorMsg });
+      setErrors({ common: errorMsg });
     }
   };
 
@@ -81,6 +83,11 @@ const Login = () => {
         )}
 
         <div className="w-full max-w-[300px]">
+            {errors.common && (
+    <div className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 w-full text-center flex items-center justify-center h-[50px]">
+      {errors.common}
+    </div>
+  )}
           <h1 className="text-[1.65rem] font-bold mb-4 text-gray-700 tracking-tight leading-relaxed" style={{ fontFamily: "Open Sans" }}>Sign In</h1>
           <p className="text-gray-500 text-[16px]" style={{ paddingTop: '10px', marginBottom: '30px', fontFamily: "Open Sans" }}>
             Enter your username and password to<br /> sign in
@@ -88,34 +95,48 @@ const Login = () => {
 
        
 
-          <div className="flex justify-center">
-            <input
+          <div className="flex flex-col justify-center">
+            {errors.email && (
+  <p className="text-red-500 text-xs mb-1">{errors.email}</p>
+)}
+           <input
               type="text"
+              name="email" // Important for dynamic error clearing
               value={userCredentials.email}
-            onChange={(e) =>
-                setUserCredentials((prev) => ({ ...prev, email: e.target.value }))
-              }             
-               placeholder="User Name"
+              onChange={(e) => {
+                const { name, value } = e.target;
+                setUserCredentials((prev) => ({ ...prev, [name]: value }));
+                setErrors((prev) => ({ ...prev, [name]: '' }));
+              }}
+              placeholder="User Name"
               className="input input-md text-[16px] border-b bg-white border-gray-300 focus:outline-none focus:border-blue-500 rounded-md placeholder-gray-400 text-black"
               style={{ paddingLeft: '10px', height: '50px', marginBottom: '15px', width: '300px' }}
             />
+
           </div>
 
           
 
-          <div className="flex justify-center">
+          <div className="flex flex-col justify-center">
+            {errors.password && (
+              <p className="text-red-500 text-xs mb-1">{errors.password}</p>
+            )}
             <input
               type="password"
+              name="password" 
               placeholder="Password"
               value={userCredentials.password}
-              onChange={(e) =>
-                setUserCredentials((prev) => ({ ...prev, password: e.target.value }))
-              }
+              onChange={(e) => {
+                const { name, value } = e.target;
+                setUserCredentials((prev) => ({ ...prev, [name]: value }));
+                setErrors((prev) => ({ ...prev, [name]: '' }));
+              }}
               className="input input-md text-[16px] border-b bg-white border-gray-300 focus:outline-none focus:border-blue-500 rounded-md placeholder-gray-400 text-black"
               style={{ paddingLeft: '10px', height: '50px', width: '300px' }}
               required
             />
           </div>
+
 
           <div className="flex ">
             <fieldset className="fieldset bg-white rounded-box p-4" style={{ marginTop: '17px' }}>
@@ -133,7 +154,7 @@ const Login = () => {
 
           <div className="flex justify-center">
             <button
-              className="btn btn-primary  bg-[#5E72E4] rounded-lg"
+              className="btn btn-primary  border-none bg-[#5E72E4] rounded-lg"
               style={{ marginTop: '20px', height: '50px', width: '300px', fontFamily: "Open Sans" }}
               onClick={handleSignIn}
             >

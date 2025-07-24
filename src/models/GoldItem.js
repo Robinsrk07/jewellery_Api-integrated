@@ -24,6 +24,17 @@ const GoldItemModel={
 },
     getSingleItem:(uuid)=>{
         return axiosInstance.get(`/get-gold-items/${uuid}`)
+    },
+    getUnfixGold:(user_id,user_type,  limit, page , search = "", status = "")=>{
+         const params = new URLSearchParams({
+            user_types: user_type,
+            user_id: user_id,
+            limit: limit,
+            page: page,
+            search: search,
+            status: status
+        })
+        return axiosInstance.get(`/get-unfix-sold-gold/?${params.toString()}`)
     }
 
 

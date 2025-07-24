@@ -8,6 +8,7 @@ import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+import TableSkelton from "../../components/tableSkelton";
      
      const  TermsOfPayment = () => {
      
@@ -18,6 +19,8 @@ import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
   const [editModal, setEditModal] = useState(false);
 
   const [termsData, setTermsData] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
 
 
   const [limit, setLimit] = useState(10);
@@ -48,19 +51,29 @@ import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
   const user_id = login_id;
   const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
-  const fetchTermsOfPayments = async () => {
-    try {
-      const response = await TermsOfPaymentModel.getTermsOfPayments(user_id, user_types, limit, page, search, status);
-      if (response?.data?.data) {
-        setTermsData(response.data.data);
-      } else {
-        toast.error("Unable to fetch Terms of Payments");
-      }
-    } catch (error) {
-      console.error("Error fetching Terms of Payments:", error);
-      toast.error("Failed to load Terms of Payments");
-    }
-  };
+                        const fetchTermsOfPayments = async () => {
+                          setIsLoading(true);
+                          try {
+                            const response = await TermsOfPaymentModel.getTermsOfPayments(
+                              user_id,
+                              user_types,
+                              limit,
+                              page,
+                              search,
+                              status
+                            );
+
+                            if (response?.data?.data) {
+                              setTermsData(response.data.data);
+                              setTotalPages(response.data.pagination?.pages );
+                            }
+                          } catch (error) {
+                            console.error("Error fetching state data:", error);
+                            toast.error("Failed to fetch states.");
+                          } finally {
+                            setIsLoading(false);
+                          }
+                        };
 
   useEffect(() => {
     fetchTermsOfPayments();
@@ -137,7 +150,6 @@ const handleAddTermChange = (e) => {
 
 
 useEffect(() => {
-  console.log("Updated Terms of Payment form state:", addTermData);
 }, [addTermData]);
 
 
@@ -155,11 +167,8 @@ const handleSubmitTerm = async () => {
     status: addTermData.status === true || addTermData.status === 'true',
   };
 
-  console.log("Terms of Payment Payload being sent:", payload);
-
   try {
     const response = await TermsOfPaymentModel.createTerm(payload);
-    console.log("Create Terms of Payment response:", response);
 
     if (response.status === 201 || response.status === 200) {
       fetchTermsOfPayments();        
@@ -365,47 +374,13 @@ const handleDeleteTerm = async (id) => {
                               minWidth: '100%' // Ensures it matches table width
                               }}
                           >
-                              <button
-                              className="text-xs font-bold"
-                              style={{
-                                  width: '160px',
-                                  height: '30px',
-                                  borderRadius: '8px',
-                                  backgroundColor: isHovered ? 'rgb(97, 113, 228)' : 'rgb(126, 96, 228)',
-                                  color: 'white',
-                                  transition: 'background-color 0.3s ease',
-                                  cursor: 'pointer',
-                              }}
-                              onMouseEnter={() => setIsHovered(true)}
-                              onMouseLeave={() => setIsHovered(false)}
-                              onClick={() => setModal(true)}
-                              >
-                              + New Terms Of Payment
-                              </button>
+                              <CreateButton
+                                buttoncontent="+ New Terms"
+                                onClick={() => setModal(true)}  
+                              />  
                           </div>
+                          <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
-                       {/* <div className="text-gray-400" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingLeft: '5px' }}>
-                         <p className="text-xs font-semibold" style={{ marginLeft: '5px' }}>Items per page: {termsData}</p>
-                         <select
-                           className="border border-gray-300 rounded-lg w-[114px] h-[35px] px-2"
-                           style={{
-                             appearance: 'none',
-                             WebkitAppearance: 'none',
-                             MozAppearance: 'none',
-                             backgroundColor: 'white',
-                             backgroundImage: 'none',
-                             paddingLeft: '5px',
-                           }}
-                           onChange={(e) => setItems(Number(e.target.value))}
-                           value={termsData}
-                         >
-                           <option value={10}>10</option>
-                           <option value={25}>25</option>
-                           <option value={50}>50</option>
-                         </select>
-                       </div> */}
-                 
-                       
                  
                       <table
                         className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1000px] flex items-justify"
@@ -413,20 +388,29 @@ const handleDeleteTerm = async (id) => {
                       >
                         <thead className="text-xs text-gray-400 uppercase bg-white">
                           <tr>
-                            <th className="px-6 py-3 w-[100px]">SL NO</th>
-                            <th className="px-6 py-3 w-[100px]">NAME</th>
-                            <th className="px-6 py-3 w-[100px]">BRANCH</th>
-                            <th className="px-6 py-3 w-[100px]">DESCRIPTION</th>
-                            <th className="px-6 py-3 w-[100px]">STATUS</th>
-                            <th className="px-6 py-3 w-[100px]">ACTION</th>
+                            <th style={{ width: '80px', paddingLeft: '40px' }}>SL NO</th>
+                            <th style={{ width: '80px' }}>NAME</th>
+                            <th style={{ width: '80px'}}>BRANCH</th>
+                            <th style={{ width: '80px' }}>DESCRIPTION</th>
+                            <th style={{ width: '80px'}}>STATUS</th>
+                            <th style={{ width: '80px' }}>ACTION</th>
                           </tr>
                         </thead>
 
                        <tbody>
-                        {termsData.length > 0 ? (
+                        {isLoading ? (
+                          <TableSkelton />
+                         ) : termsData.length === 0 ? (
+                        <tr>
+                          <td className="text-center py-4 text-gray-500 text-sm" colSpan="5">
+                            No data available
+                        </td>
+                      </tr>
+                      ) : (
+                        termsData.length > 0 ? (
                           termsData.map((term, index) => (
                             <tr key={term.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '50px' }}>
                                 {index + 1}
                               </td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{term.name}</td>
@@ -463,37 +447,23 @@ const handleDeleteTerm = async (id) => {
                               No Terms of Payment found.
                             </td>
                           </tr>
-                        )}
+                        )
+                      )}
                       </tbody>
 
                        </table>
                        
                  
                        {/* Pagination */}
-                       <Pagination/>
+                         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
 
-
-                       {/* <div className="flex gap-1 justify-center">
-                         <button className="btn border-none bg-gray-50 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'<'}
-                         </button>
-                         <button className="btn border-none rounded-full w-[40px] h-[40px] flex items-center justify-center font-semibold bg-blue-500 text-white">
-                           1
-                         </button>
-                         <button className="btn border-none bg-gray-50 rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'>'}
-                         </button>
-                       </div> */}
                  
                        {/* Modal */}
-      
-      
-                      
                       </div>
       
                       {modal && (
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[480px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                          Create Terms Of Payment                    </h3>

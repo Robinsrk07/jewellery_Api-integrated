@@ -80,7 +80,6 @@ const StockPoint = () => {
               const validate = () => {
                 const newErrors = {};
                 if (!addStockPointData.name.trim()) newErrors.name = 'Please enter name';
-                if (!addStockPointData.description.trim()) newErrors.description = 'Please enter description';
                 return newErrors;
               };
 
@@ -96,7 +95,6 @@ const StockPoint = () => {
 
 
               useEffect(() => {
-                console.log("Updated StockPoint form state:", addStockPointData);
               }, [addStockPointData]);
 
 
@@ -156,7 +154,7 @@ const StockPoint = () => {
 
               const validateEditForm = () => {
                 let valid = true;
-                const newErrors = { name: '', description: '', status: '' };
+                const newErrors = { name: '', };
 
                 if (!editingStockPoint?.name?.trim()) {
                   newErrors.name = 'Stock Point name is required';
@@ -166,15 +164,6 @@ const StockPoint = () => {
                   valid = false;
                 }
 
-                if (!editingStockPoint?.description?.trim()) {
-                  newErrors.description = 'Description is required';
-                  valid = false;
-                }
-
-                if (editingStockPoint?.status === undefined || editingStockPoint.status === '') {
-                  newErrors.status = 'Status is required';
-                  valid = false;
-                }
 
                 setEditErrors(newErrors);
                 return valid;
@@ -254,7 +243,7 @@ const StockPoint = () => {
                     name: '',
                     description: '',
                   });
-                  setErrors({ name: '', description: '', status: '' }); // ✅ clear errors
+                  setErrors({ name: '', description: '', status: '' });
                 };
                 const handleEditCloseModal = () => {
                   (false);
@@ -331,12 +320,6 @@ const StockPoint = () => {
                                     <EditButton 
                                           onClick={() => handleEditClick(stock)} 
                                           />
-                                        {/* DeleteButton  */}
-                                        {/* <DeleteButton
-                                            buttonText="Delete "
-                                            modalId={`delete_modal_${category.id}`}  
-                                            onConfirmDelete={() => handleDeleteStockPoint(category.id)}
-                                          /> */}
                                           <DeleteButton 
                                               buttonText={deletingId === stock.id ? 'Deleting...' : 'Delete'}
                                               item="Diamond Item"
@@ -369,7 +352,9 @@ const StockPoint = () => {
                                   <hr className="border-gray-300" />
 
                                   <div className="flex flex-col flex-grow gap-2">
-                                    <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
+                                    <label className="font-semibold text-xs text-[#344767] w-[80%]">
+                                      Name: <span className="text-xs text-red-400">*</span>
+                                      </label>
                                     <div>
                                     <input
                                       type="text"
@@ -380,7 +365,7 @@ const StockPoint = () => {
                                       value={addStockPointData.name}
                                       onChange={handleAddStockPointChange}
                                     />
-                                    <p className="text-xs text-red-200">{errors.name}</p>
+                                    <p className="text-xs text-red-500">{errors.name}</p>
                                     </div>
 
 
@@ -394,7 +379,6 @@ const StockPoint = () => {
                                       value={addStockPointData.description}
                                       onChange={handleAddStockPointChange}
                                     ></textarea>
-                                     <p className="text-xs text-red-200">{errors.description}</p>
                                     </div>
 
                                     {/* <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>
@@ -466,7 +450,7 @@ const StockPoint = () => {
                                         
                                         className="font-semibold text-xs text-[#344767] w-[100%]"
                                        >
-                                        Description:<span className="text-red-500 text-[14px]">*</span>
+                                        Description:
                                       </label>
                                       <div>
                                       <textarea className="textarea w-[100%] bg-white border-gray-300 text-gray-500 rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500" 
@@ -476,14 +460,13 @@ const StockPoint = () => {
                                         onChange={handleEditStockPointChange}
                                         name="description"
                                       ></textarea>
-                                        <p className="text-xs text-red-500">{editErrors.description}</p>
                                        </div>
                                            
                                             <label 
                                                 
                                                 className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
-                                                Status:<span className="text-red-500 text-[14px]">*</span>
+                                                Status:
                                             </label>
                                             <div>
                                             <select defaultValue=""
@@ -497,7 +480,6 @@ const StockPoint = () => {
                                                 <option value={true} className=" text-gray-600 text-xs"> Active</option>
                                                 <option value={false} className=" text-gray-600 text-xs"> InActive</option>
                                             </select>
-                                             <p className="text-xs text-red-500">{editErrors.status}</p>
                                               </div>
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}

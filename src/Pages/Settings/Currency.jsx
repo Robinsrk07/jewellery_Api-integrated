@@ -10,6 +10,7 @@ import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+import TableSkelton from "../../components/tableSkelton";
      
 const  Currency = () => {
      
@@ -17,6 +18,8 @@ const  Currency = () => {
                         const [isHovered, setIsHovered] = useState(false);
                         const [modal, setModal] = useState(false);
                         const [editModal, setEditModal] = useState(false);
+                        const [totalPages, setTotalPages] = useState(1);
+                        const [isLoading, setIsLoading] = useState(true);
 
                         const [currencyData, setCurrencyData] = useState([]);
 
@@ -53,20 +56,30 @@ const  Currency = () => {
                         const user_id = login_id;
                         const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
-                        const fetchCurrencies = async () => {
+                         const fetchCurrencies = async () => {
+                          setIsLoading(true);
                           try {
-                            const response = await CurrencyModel.getCurrency(user_id, user_types, limit, page, search, status);
+                            const response = await CurrencyModel.getCurrency(
+                              user_id,
+                              user_types,
+                              limit,
+                              page,
+                              search,
+                              status
+                            );
 
                             if (response?.data?.data) {
                               setCurrencyData(response.data.data);
-                            } else {
-                              toast.error("Unable to fetch currencies");
+                              setTotalPages(response.data.pagination?.pages );
                             }
                           } catch (error) {
-                            console.error("Error fetching currencies:", error);
-                            toast.error("Failed to load currencies");
+                            console.error("Error fetching state data:", error);
+                            toast.error("Failed to fetch states.");
+                          } finally {
+                            setIsLoading(false);
                           }
                         };
+
 
                         useEffect(() => {
                           fetchCurrencies();
@@ -374,24 +387,12 @@ const handleDeleteCurrency = async (id) => {
                               minWidth: '100%' 
                               }}
                           >
-                              <button
-                              className="text-xs font-bold"
-                              style={{
-                                  width: '160px',
-                                  height: '30px',
-                                  borderRadius: '8px',
-                                  backgroundColor: isHovered ? 'rgb(97, 113, 228)' : 'rgb(126, 96, 228)',
-                                  color: 'white',
-                                  transition: 'background-color 0.3s ease',
-                                  cursor: 'pointer',
-                              }}
-                              onMouseEnter={() => setIsHovered(true)}
-                              onMouseLeave={() => setIsHovered(false)}
-                              onClick={() => setModal(true)}
-                              >
-                              + New Currency
-                              </button>
+                              <CreateButton
+                                buttoncontent="+ New Currency"
+                                onClick={() => setModal(true)}  
+                              />  
                           </div>
+                          <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
                       
                  
@@ -400,7 +401,7 @@ const handleDeleteCurrency = async (id) => {
                        <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1100px]  " style={{ borderSpacing: '0 12px', borderCollapse: 'separate', }}>
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
+                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'40px'}} >SL NO</th>
                              <th className="px-6 py-3 w-[80px]"  >CODE</th>
                              <th className="px-6 py-3 w-[120px]"  >NAME </th>
                              <th className="px-6 py-3 w-[120px]" >EXCHANGE RATE </th>
@@ -410,10 +411,20 @@ const handleDeleteCurrency = async (id) => {
                              <th className="px-6 py-3 w-[100px]"  >ACTION</th>
                            </tr>
                          </thead>
-                         <tbody>
-                            {currencyData.map((currency, index) => (
+                         <tbody> 
+                          
+                          {isLoading ? (
+                            <TableSkelton />
+                        ) : currencyData.length === 0 ? (
+                            <tr>
+                            <td className="text-center py-4 text-gray-500 text-sm" colSpan="5">
+                                No data available
+                            </td>
+                            </tr>
+                        ) : (
+                          currencyData.map((currency, index) => (
                               <tr key={currency.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400">
-                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>
+                                <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '50px' }}>
                                   {index + 1}
                                 </td>
 
@@ -442,21 +453,22 @@ const handleDeleteCurrency = async (id) => {
                                   <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                                     <EditButton onClick={() => handleEditClickCurrency(currency)} />
                                     <DeleteButton
-                                      buttonText="Delete Currency"
+                                      buttonText="Delete "
                                       modalId={`delete_currency_modal_${currency.id}`}
                                       onConfirmDelete={() => handleDeleteCurrency(currency.id)}
                                     />
                                   </div>
                                 </td>
                               </tr>
-                            ))}
+                            )) )
+                          }
                           </tbody>
 
                        </table>
                        
                  
                        {/* Pagination */}
-                       <Pagination/>
+                         <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
                        
                        {/* Modal */}
       

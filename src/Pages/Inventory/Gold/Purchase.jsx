@@ -186,7 +186,12 @@ const  Purchase = () => {
 
                     <tr key={item.id} className="bg-white hover:bg-gray-50 h-[30px] text-gray-400">
                       <td className=" border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
-                      <td className="px-6 py-5 border-b border-gray-200 text-xs hover:text-blue-300"> <Link to={`/dashboard/viewpurchase/${item.id}`}>{item.invoice_no}</Link></td>
+<td className="px-6 py-5 border-b border-gray-200 text-xs text-blue-500 cursor-pointer hover:text-blue-600 hover:underline transition-all duration-200">
+  <Link to={`/dashboard/viewpurchase/${item.id}`} className="block w-full h-full">
+    {item.invoice_no}
+  </Link>
+</td>
+
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.supplier_name}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_stone_weight}</td>
                       <td className="px-6 py-5 border-b border-gray-200 text-xs">{item.total_gross_weight}</td>

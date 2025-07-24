@@ -64,7 +64,7 @@ const State =()=>{
 
       if (response?.data?.data) {
         setStateData(response.data.data);
-        setTotalPages(response.data.pagination?.pages || 1);
+        setTotalPages(response.data.pagination?.pages );
       }
     } catch (error) {
       console.error("Error fetching state data:", error);

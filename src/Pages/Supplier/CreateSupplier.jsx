@@ -3,10 +3,17 @@ import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { Link } from "react-router-dom";
 
-import createSupplierModel from "../../models/createSuppliersModel";
 import supplierModel from "../../models/supplierModel";
 import CurrencyModel from "../../models/currencyModel";
+import controlAccountModel from "../../models/controlAccountModel";
+import supplierGroupModel from "../../models/supplierGroupModel";
+import taxCategoryModel from "../../models/taxCategoryModel";
+import TermsOfPayment from "../Settings/TermsOfPayment";
+import addressTypeModel from "../../models/addressTypeModel";
+import CountryModel from "../../models/countryModel";
+import CityModel from "../../models/CityModel";
 import PurchaseUtils from "../../models/PurchaseUtils";
+import TermsOfPaymentModel from "../../models/TermsOfPaymentModel";
 
 const CreateSupplier = () => {
   const auth = useSelector((state) => state.auth);
@@ -50,112 +57,234 @@ const CreateSupplier = () => {
   const [modal, setModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
 
-  const [supplierGroups, setSupplierGroups] = useState([]);
-  const [controlAccounts, setControlAccounts] = useState([]);
-  const [taxCategories, setTaxCategories] = useState([]);
-  const [addressTypes, setAddressTypes] = useState([]);
-  const [countries, setCountries] = useState([]);
-  const [cities, setCities] = useState([]);
-  const [currencies, setCurrencies] = useState([]);
-  const [termsOfPayment, setTermsOfPayment] = useState([]);
-
   const handleCloseModal = () => {
     setModal(false);
     setEditModal(false);
   };
 
-  
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [
-          supplierGroupRes,
-          controlAccountRes,
-          taxCategoryRes,
-          addressTypeRes,
-          countryRes,
-          cityRes,
-          currencyRes,
-          purchaseUtilsRes
-        ] = await Promise.all([
-          createSupplierModel.getSupplierGroups(user_id),
-          createSupplierModel.getControlAccounts(user_id, user_types),
-          createSupplierModel.getTaxCategories(user_id, user_types),
-          createSupplierModel.getAddressTypes(user_id, user_types),
-          createSupplierModel.getCountries(user_id, user_types),
-          createSupplierModel.getCities(user_id, user_types),
-          CurrencyModel.getCurrency(user_id, user_types),
-          PurchaseUtils.getPurchaseUtils()
-        ]);
-
-        setSupplierGroups(supplierGroupRes.data.data || []);
-        setControlAccounts(controlAccountRes.data.data || []);
-        setTaxCategories(taxCategoryRes.data.data || []);
-        setAddressTypes(addressTypeRes.data.data || []);
-        setCountries(countryRes.data.data || []);
-        setCities(cityRes.data.data || []);
-        setCurrencies(currencyRes.data.data || []);
-
-        const utils = purchaseUtilsRes.data.data;
-        const termsData = utils.find(item => item.terms_of_payment);
-        setTermsOfPayment(termsData?.terms_of_payment || []);
-      } catch (error) {
-        toast.error("Failed to fetch supplier metadata");
-        console.error("Fetch error:", error);
-      }
-    };
-
-    fetchData();
-  }, [user_id, user_types]);
 
 
-  const handleAddSupplierChange = (e) => {
-    const { name, value, type, files } = e.target;
-    setAddSupplierData((prev) => ({
-      ...prev,
-      [name]: type === "file" ? files[0] : value,
-    }));
-  };
+const [currencies, setCurrencies] = useState([]);
 
-  
-  const validateForm = () => {
-    const requiredFields = [
-      "code", "name", "country", "address_type",
-      "currency"
-    ];
-    const newErrors = {};
-
-    requiredFields.forEach((field) => {
-      if (!addSupplierData[field]?.toString().trim()) {
-        newErrors[field] = "This field is required";
-      }
-    });
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  
-  const handleSubmitSupplier = async () => {
-    if (!validateForm()) {
-      toast.error("Please fill all required fields.");
-      return;
-    }
-     console.log(addSupplierData)
-    
-
+useEffect(() => {
+  const fetchCurrencies = async () => {
     try {
-      const response = await supplierModel.createSupplier(addSupplierData);
-      toast.success("Supplier created successfully!");
-      
+      const response = await CurrencyModel.getCurrency(user_id, user_types);
+      if (response.status === 200) {
+        setCurrencies(response.data?.data || []);
+      }
     } catch (error) {
-      console.error("Create supplier error:", error);
-      const backendErrors = error?.response?.data?.errors || {};
-      Object.entries(backendErrors).forEach(([field, messages]) => {
-        toast.error(`${field}: ${messages.join(", ")}`);
-      });
+      console.error("Failed to fetch currencies:", error);
     }
   };
+
+  fetchCurrencies();
+}, []);
+
+
+const [countries, setCountries] = useState([]);
+
+useEffect(() => {
+  const fetchCountries = async () => {
+    try {
+      const response = await CountryModel.getCountries(user_id, user_types);
+      if (response.status === 200) {
+        setCountries(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch countries:", error);
+    }
+  };
+
+  fetchCountries();
+}, []);
+
+const [controlAccounts, setControlAccounts] = useState([]);
+
+useEffect(() => {
+  const fetchControlAccounts = async () => {
+    try {
+      const response = await controlAccountModel.getControlAccounts(user_id, user_types);
+      if (response.status === 200) {
+        setControlAccounts(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch control accounts:", error);
+    }
+  };
+
+  fetchControlAccounts();
+}, []);
+
+const [supplierGroups, setSupplierGroups] = useState([]);
+
+useEffect(() => {
+
+  const fetchSupplierGroups = async () => {
+    try {
+      const response = await supplierGroupModel.getSupplierGroups(user_id, user_types);
+      if (response.status === 200) {
+        setSupplierGroups(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch supplier groups:", error);
+    }
+  };
+
+  fetchSupplierGroups();
+}, []);
+
+
+const [taxCategories, setTaxCategories] = useState([]);
+
+useEffect(() => {
+  const fetchTaxCategories = async () => {
+    try {
+      const response = await taxCategoryModel.getTaxCategories(user_id, user_types);
+      if (response.status === 200) {
+        setTaxCategories(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tax categories:", error);
+    }
+  };
+
+  fetchTaxCategories();
+}, []);
+
+const [termsOfPayment, setTermsOfPayment] = useState([]);
+
+useEffect(() => {
+  const fetchTermsOfPayment = async () => {
+    try {
+      const response = await TermsOfPaymentModel.getTermsOfPayments(user_id, user_types);
+      if (response.status === 200) {
+        setTermsOfPayment(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch terms of payment:", error);
+    }
+  };
+
+  fetchTermsOfPayment();
+}, []);
+
+const [addressTypes, setAddressTypes] = useState([]);
+
+useEffect(() => {
+  const fetchAddressTypes = async () => {
+    try {
+      const response = await addressTypeModel.getAddressTypes(user_id, user_types);
+      if (response.status === 200) {
+        setAddressTypes(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch address types:", error);
+    }
+  };
+
+  fetchAddressTypes();
+}, []);
+
+const [cities, setCities] = useState([]);
+
+useEffect(() => {
+  const fetchCities = async () => {
+    try {
+      const response = await CityModel.getCities(user_id, user_types);
+      if (response.status === 200) {
+        setCities(response.data?.data || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch cities:", error);
+    }
+  };
+
+  fetchCities();
+}, []);
+
+
+
+
+const handleAddSupplierChange = (e) => {
+  const { name, value } = e.target;
+  setAddSupplierData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+};
+
+// Validation 
+const validateSupplier = () => {
+  const newErrors = {};
+
+  if (!addSupplierData.code?.trim()) {
+    newErrors.code = "Supplier code is required";
+  }
+
+  if (!addSupplierData.name?.trim()) {
+    newErrors.name = "Supplier name is required";
+  }
+
+  if (!addSupplierData.currency) {
+    newErrors.currency = "Currency is required";
+  }
+
+
+  if (!addSupplierData.country) {
+    newErrors.country = "Country is required";
+  }
+
+  if (!addSupplierData.address_type) {
+    newErrors.address_type = "Address type is required";
+  }
+
+  
+
+  return newErrors;
+};
+
+const handleSubmitSupplier = async () => {
+  const validationErrors = validateSupplier();
+  if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
+    return;
+  }
+
+  const payload = {
+    code: addSupplierData.code.trim(),
+    name: addSupplierData.name.trim(),
+    currency: parseInt(addSupplierData.currency),
+    address_type: parseInt(addSupplierData.address_type),
+    country: parseInt(addSupplierData.country),
+    
+  };
+
+  console.log("Supplier Payload being sent:", payload);
+
+  try {
+    const response = await supplierModel.createSupplier(payload);
+    console.log("Create Supplier response:", response);
+
+    if (response.status === 201 || response.status === 200) {
+      toast.success("Supplier created successfully!");
+      fetchSuppliers(); // optional refresh method
+      handleCloseModal(); // close modal after success
+    }
+  } catch (error) {
+    console.error("Create supplier error:", error);
+    toast.error("Failed to create supplier!");
+    handleCloseModal();
+
+    if (error.response?.data?.errors) {
+      setErrors((prev) => ({
+        ...prev,
+        ...error.response.data.errors,
+      }));
+    }
+  }
+};
+
 
 
   return (
@@ -183,6 +312,9 @@ const CreateSupplier = () => {
             onChange={handleAddSupplierChange}
             name="code"
             />
+            {errors.code && (
+            <span className="text-red-500 text-xs mt-1">{errors.code}</span>
+          )}
         </div>
       
         <div className="w-full">
@@ -195,6 +327,10 @@ const CreateSupplier = () => {
             value={addSupplierData.name}
             onChange={handleAddSupplierChange}
             name="name"/>
+
+            {errors.name && (
+            <span className="text-red-500 text-xs mt-1">{errors.name}</span>
+          )}
             
         </div>
         
@@ -384,6 +520,9 @@ const CreateSupplier = () => {
               </option>
             ))}
           </select>
+          {errors.address_type && (
+            <span className="text-red-500 text-xs mt-1">{errors.address_type}</span>
+          )}
         </div>
 
 
@@ -438,6 +577,9 @@ const CreateSupplier = () => {
                 </option>
               ))}
             </select>
+            {errors.country && (
+            <span className="text-red-500 text-xs mt-1">{errors.country}</span>
+          )}
         </div>
 
 
@@ -603,7 +745,7 @@ const CreateSupplier = () => {
             onChange={handleAddSupplierChange}
             name="IBAN"/>
         </div>
-        <div className="w-full">
+        {/* <div className="w-full">
         <label className="text-xs font-bold  text-[#344767]"> Status</label>
         <select defaultValue=""
           className="select select-bordered select-sm w-full bg-white text-gray-500  rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -615,7 +757,7 @@ const CreateSupplier = () => {
           <option value='true' className="text-sm text-gray-500">Active </option>
           <option value='false' className="text-sm text-gray-500">Inactive</option>
         </select>
-        </div>
+        </div> */}
 
          
 

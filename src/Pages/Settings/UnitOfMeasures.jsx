@@ -8,6 +8,7 @@ import DeleteButton from '../../components/DeleteButton';
 import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+import TableSkelton from "../../components/tableSkelton";
      
 const  UnitOfMeasures = () => {
      
@@ -15,6 +16,8 @@ const  UnitOfMeasures = () => {
                         const [isHovered, setIsHovered] = useState(false);
                         const [modal, setModal] = useState(false);
                         const [editModal, setEditModal] = useState(false);
+                        const [totalPages, setTotalPages] = useState(1);
+                        const [isLoading, setIsLoading] = useState(true);
 
                         const [uomData, setUOMData] = useState([]);
 
@@ -59,18 +62,29 @@ const  UnitOfMeasures = () => {
                         const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
                         const fetchUOMs = async () => {
+                          setIsLoading(true);
                           try {
-                            const response = await UOMModel.getUOMs(user_id, user_types, limit, page, search, status);
+                            const response = await UOMModel.getUOMs(
+                              user_id,
+                              user_types,
+                              limit,
+                              page,
+                              search,
+                              status
+                            );
+
                             if (response?.data?.data) {
                               setUOMData(response.data.data);
-                            } else {
-                              toast.error("Unable to fetch UOMs");
+                              setTotalPages(response.data.pagination?.pages );
                             }
                           } catch (error) {
-                            console.error("Error fetching UOMs:", error);
-                            toast.error("Failed to load UOMs");
+                            console.error("Error fetching state data:", error);
+                            toast.error("Failed to fetch states.");
+                          } finally {
+                            setIsLoading(false);
                           }
                         };
+
 
                         useEffect(() => {
                           fetchUOMs();
@@ -395,29 +409,19 @@ const handleDeleteUOM = async (id) => {
                               minWidth: '100%' // Ensures it matches table width
                               }}
                           >
-                              <button
-                              className="text-xs font-bold"
-                              style={{
-                                  width: '160px',
-                                  height: '30px',
-                                  borderRadius: '8px',
-                                  backgroundColor: isHovered ? 'rgb(97, 113, 228)' : 'rgb(126, 96, 228)',
-                                  color: 'white',
-                                  transition: 'background-color 0.3s ease',
-                                  cursor: 'pointer',
-                              }}
-                              onMouseEnter={() => setIsHovered(true)}
-                              onMouseLeave={() => setIsHovered(false)}
-                              onClick={() => setModal(true)}
-                              >
-                              + New UOM
-                              </button>
+                              <CreateButton
+                                buttoncontent="+ New UOM"
+                                onClick={() => setModal(true)}  
+                              />  
                           </div>
+                          <ItemsPerPageSelector items={limit} setItems={setLimit} />
+                 
+
                  
                        <table className="table w-full text-sm text-left text-gray-500 border-collapse min-w-[1300px]   " style={{ borderSpacing: '0 12px', borderCollapse: 'separate'}}>
                          <thead className="text-xs text-gray-400 uppercase bg-white">
                            <tr>
-                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'20px'}} >SL NO</th>
+                             <th className="px-6 py-3 w-[100px]" style={{width:'90px',paddingLeft:'40px'}} >SL NO</th>
                              <th className="px-6 py-3 w-[80px]"  >CODE</th>
                              <th className="px-6 py-3 w-[80px]"  >NAME </th>
                              <th className="px-6 py-3 w-[100px]" >CONVERTION FACTOR IN GRAM </th>
@@ -428,9 +432,18 @@ const handleDeleteUOM = async (id) => {
                            </tr>
                          </thead>
                          <tbody>
-                          {uomData.map((uom, index) => (
+                          {isLoading ? (
+                            <TableSkelton />
+                        ) : uomData.length === 0 ? (
+                            <tr>
+                            <td className="text-center py-4 text-gray-500 text-sm" colSpan="5">
+                                No data available
+                            </td>
+                            </tr>
+                        ) : (
+                          uomData.map((uom, index) => (
                             <tr key={uom.id} className="bg-white hover:bg-gray-50 h-14 text-gray-400">
-                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '20px' }}>{index + 1}</td>
+                              <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '50px' }}>{index + 1}</td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{uom.code}</td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{uom.name}</td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">{uom.conversion_factor}</td>
@@ -453,32 +466,23 @@ const handleDeleteUOM = async (id) => {
                                     onClick={()=>handleEditClickUOM(uom)}
                                   />
                                   <DeleteButton 
-                                      buttonText="Delete UOM" 
+                                      buttonText="Delete " 
                                       modalId={`delete_modal_${uom.id}`} 
                                       onConfirmDelete={() => handleDeleteUOM(uom.id)} 
                                   />
                                 </div>
                               </td>
                             </tr>
-                          ))}
+                          ))
+                        )}
                         </tbody>
 
                        </table>
                        
                  
                        {/* Pagination */}
-                       <Pagination/>
-                       {/* <div className="flex gap-1 justify-center">
-                         <button className="btn bg-gray-50 border-none rounded-full w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'<'}
-                         </button>
-                         <button className="btn rounded-full border-none w-[40px] h-[40px] flex items-center justify-center font-semibold bg-blue-500 text-white">
-                           1
-                         </button>
-                         <button className="btn rounded-full bg-gray-50 border-none w-[40px] h-[40px] flex items-center justify-center font-bold text-gray-500">
-                           {'>'}
-                         </button>
-                       </div> */}
+                       <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+                       
                  
                        {/* Modal */}
       
@@ -486,7 +490,7 @@ const handleDeleteUOM = async (id) => {
       
                       {modal && (
                                 <div className="fixed inset-0 text-black  border-gray-400  bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[90vh] max-h-[600px] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[90vh] max-h-[550px] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
                                                 
                                                 {/* Added flex-col */}
                                     <h3 className="font-bold text-[22px] text-[#344767]"

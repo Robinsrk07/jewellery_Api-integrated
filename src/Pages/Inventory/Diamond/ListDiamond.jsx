@@ -101,7 +101,9 @@ console.log("check",goldUtils);
               <th className="px-4 py-3 "style={{width:'100px' ,paddingLeft:'20px'}}>SL NO</th>
               <th className="px-4 py-3" style={{width:'120px'}}>ITEM NAME</th>
               <th className="px-4 py-3"style={{width:'120px'}}>ITEM TYPE</th>
-              <th className="px-4 py-3"style={{width:'220px'}}>DESCRIPTION</th>
+              
+              <th className="px-4 py-3"style={{width:'150px'}}>DESCRIPTION</th>
+              <th className="px-4 py-3"style={{width:'220px'}}>SERIAL NUMBER</th>
               <th className="px-4 py-3"style={{width:'120px'}}>UOM</th>
               <th className="px-4 py-3"style={{width:'120px'}}>CATEGORY</th>
               <th className="px-4 py-3"style={{width:'120px'}}>SUBCATEGORY</th>
@@ -140,6 +142,10 @@ console.log("check",goldUtils);
                 <td className="px-4 py-3">{item.diamond_item}</td>
                 <td className="px-4 py-3">{item.item_type}</td>
                 <td className="px-4 py-3">{item.description || "N/A"}</td>
+             <td className="px-4 py-3 text-blue-500 cursor-pointer underline hover:text-blue-600 transition-all duration-200">
+                {item.serial_no || "N/A"}
+              </td>
+
                 <td className="px-4 py-3">{item.uom}</td>
                 <td className="px-4 py-3">{item.category || "N/A"}</td>
                 <td className="px-4 py-3">{item.subcategory || "N/A"}</td>
@@ -161,9 +167,23 @@ console.log("check",goldUtils);
                 <td className="px-4 py-3">
                   {item.consider_profit_margin ? "Yes" : "No"}
                 </td>
-                <td className="px-4 py-3">
-                  {item.status ? "Active" : "Inactive"}
-                </td>
+                <td
+  className={`px-4 py-3 text-ger text-center rounded 
+    
+  `}
+>
+  {item.status ? (
+                                <span className="bg-green-300 font-bold text-[10px] text-green-700 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                  Active
+                                </span>
+                              ) : (
+                                <span className="bg-gray-200 font-bold text-[10px] text-gray-400 px-2 py-0.5 rounded" style={{ padding: '2px 6px' }}>
+                                  INACTIVE
+                                </span>
+                              )}
+</td>
+
+
                 <td className="px-4 py-3">
                   <div className="flex flex-row gap-2">
                     <Link to={`/dashboard/editDiamond/${item.uuid}`} state={{ item }}>

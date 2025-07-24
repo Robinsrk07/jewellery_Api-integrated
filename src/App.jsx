@@ -71,10 +71,12 @@ import { ToastContainer } from 'react-toastify';
 import EditSupplier from './Pages/Supplier/EditSupplier.jsx';
 import CreatePayslip from './Pages/Employees/CreatePaySlip.jsx';
 import PayslipList from './Pages/Employees/PayslipList.jsx';
+import Profile from './components/Profile.jsx'
 import City_Area from './Pages/Manage/Location-Management/CityArea.jsx';
 import State from "./Pages/Manage/Location-Management/State.jsx"
 import District from "./Pages/Manage/Location-Management/District.jsx"
 import EditPayslip from './Pages/Employees/EditPaySlip.jsx';
+import UnfixPurchase from './Pages/Inventory/Gold/UnfixPurchase.jsx';
 import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
@@ -86,6 +88,7 @@ function App() {
           <Route path="/" element={<AuthRedirect />} />
           <Route path='/login' element={<Login />} />
           <Route path="/logout" element={<Logout />} />
+         
 
 
           <Route element={<ProtectedRoute />}>
@@ -93,6 +96,7 @@ function App() {
           <Route path='/dashboard' element={<Body />} >
                 <Route path='' element={<DashBoard/>}/>
           {/* basic configuration */}
+           <Route path="profile" element={<Profile />} />
                 <Route path='country' element={<Country/>} />
                 <Route path='city' element={<City/>} />
                 <Route path='address_type' element={<Adress_Type/>} />
@@ -145,6 +149,7 @@ function App() {
                 <Route path='ListPurchase' element={<PurchaseFix/>} />
                 <Route path='creategoldpurchase' element={<CreateGoldPurchase/>} />
                 <Route path='createnewpurchase/:id' element={<CreateNewPurchase/>} />
+                <Route path='unfix gold sale' element={<UnfixPurchase/>} />
                 <Route path='viewpurchase/:id' element={<ViewPurchase/>} />
                 <Route path='updatepurchase/:itemId/:id' element={<UpdateGoldPurchase/>} />
                 <Route path='updateitem/:id' element={<UpdateItem/>} />
@@ -153,7 +158,7 @@ function App() {
                 <Route path='createDiamondPurchase' element={<CreateDiamondPurchase/>} />
                 <Route path='itemDetials/:id' element={<ItemDetials/>} />
                 <Route path='editDiamondItems' element={<EditDiamondItem/>} />
-                <Route path='listDiamond/:uuid/:id' element={<ListDiamond/>}/>
+                <Route path='list_diamond/:uuid/:id' element={<ListDiamond/>}/>
                 <Route path='createDiamond' element={<CreateDiamond/>}/>
                 <Route path='editDiamond/:uuid' element={<Tagging/>}/>
                 <Route path='completePayment' element={<CompletePayment/>}/>
@@ -172,7 +177,7 @@ function App() {
 
                 <Route path='payslip' element={<PaySlip/>} />
                 <Route path='createPayslip' element={<CreatePayslip/>} />
-                <Route path='paysliplist/:id' element={<PayslipList/>} />
+                <Route path='pay_slip_list/:id' element={<PayslipList/>} />
                 <Route path='editPayslip/:id' element={<EditPayslip/>} />
 
                 {/* branch */}
@@ -197,7 +202,7 @@ function App() {
             </Route>
             <Route path='branch'>
               <Route path='branches' element={<Branches/>} />
-              <Route path='branchwiseemployee' element={<BranchWiseEmployee/>} />
+              <Route path='branch_wise_employee/:id' element={<BranchWiseEmployee/>} />
             </Route>
             <Route path='inventory'>
               <Route path='createItem' element={<CreateItem/>} />

@@ -439,7 +439,7 @@ const Tagging = () => {
                            name="gold_weight"
 
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] rounded-sm bg-white text-gray-500 border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                         <label className="text-gray-400 font-semibold text-[11px] mb-1">
                           saphire weight</label>
@@ -451,7 +451,7 @@ const Tagging = () => {
                             min='0'
                             name="sapphire_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] rounded-sm bg-white text-gray-500 border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                          <label className="text-gray-400 font-semibold text-[11px] mb-1">
                             Design:
@@ -524,7 +524,7 @@ const Tagging = () => {
                              name="pearl_weight"
 
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                          <label className="text-gray-400 font-semibold text-[11px] mb-1">
                             Other Store Weight:
@@ -537,7 +537,7 @@ const Tagging = () => {
                             min='0'
                             name="other_stone_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                     </div>
                     
@@ -601,7 +601,7 @@ const Tagging = () => {
                             min='0'
                             name="ruby_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
  <label className="text-gray-400 font-semibold text-[11px] mb-1">
       Size:
@@ -696,7 +696,7 @@ const Tagging = () => {
                             min='0'
                             name="emerald_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                          
                     </div>
@@ -727,7 +727,7 @@ const Tagging = () => {
                             step='.1'
                             name="mark_up"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
                 </div>
 
@@ -799,8 +799,11 @@ const Tagging = () => {
         <input
           type="number"
           value={items[rowIndex]?.carat || ''}
+          step='.1'
+          min='0'
           onChange={(e) => handleCellChange(rowIndex, 'carat', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
+          className="w-full px-2 py-1 text-gray-500 border-none focus:outline-none"
+          style={{paddingLeft:'12px'}}
         />
       </td>
       
@@ -808,9 +811,11 @@ const Tagging = () => {
       <td className="rounded-sm border border-gray-200">
         <input
           type="number"
+          min='0'
           value={items[rowIndex]?.pcs || ''}
           onChange={(e) => handleCellChange(rowIndex, 'pcs', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
+          className="w-full  text-gray-500 px-2 py-1 border-none focus:outline-none"
+          style={{paddingLeft:'12px'}}
         />
       </td>
       
@@ -953,7 +958,7 @@ const Tagging = () => {
       onChange={handleChange}
      placeholder="0.00"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs  text-gray-400 rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
     <label className="text-gray-400 font-semibold text-[12px] mb-1">
       Additional Charge :<span className="text-red-500 text-[14px]">*</span>
@@ -966,7 +971,7 @@ const Tagging = () => {
       onChange={handleChange}
      placeholder="0.00"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs text-gray-400  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
   </div>
 
@@ -981,9 +986,9 @@ const Tagging = () => {
       value={data.discount}
       min='0'
       onChange={handleChange}
-     placeholder="0%"
+     placeholder="0"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs  rounded-sm text-gray-400  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
     {/* <label className="text-gray-400 font-semibold text-[11px] mb-1">
       Mark up:
@@ -1006,7 +1011,7 @@ const Tagging = () => {
       min='0'
      placeholder="0"
      style={{paddingLeft:'12px'}}
-      className="border w-full h-[30px] text-xs  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+      className="border w-full h-[30px] text-xs text-gray-400  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
   </div>
 

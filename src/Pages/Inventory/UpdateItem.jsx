@@ -521,7 +521,12 @@ navigate('/dashboard/item')
             name="item_image"
             onChange={handleChange}
             style={{ paddingLeft: '10px' }}
-            className="file-input bg-white text-gray-500 border-gray-300 rounded-lg file-input-sm w-full"
+            className="w-full text-sm text-gray-500
+               file:mr-4 file:py-1 file:px-4
+               file:rounded-lg file:border-0
+               file:text-sm file:font-semibold
+               file:bg-gray-100 file:text-gray-600
+               hover:file:bg-gray-200 border border-gray-200 rounded-lg h-[33px]"
           />
         </div>
 

@@ -112,6 +112,7 @@ const PaySlip = () => {
             const res = await employeeModel.getEmployees(user_id, user_types, limit, page, search, status);
             if (isMounted) {
                 setEmployees(res?.data?.data || []);
+                setTotalPages(res.data.pagination.pages);
             }
             } catch (error) {
             if (isMounted) {
@@ -246,7 +247,7 @@ const PaySlip = () => {
                                                                                 }}>
                                                  <button className="w-[100px] h-[25px] text-white rounded-sm bg-[#646FE4]">Create Payslip</button>
                                                 </Link>
-                                               <Link to={`/dashboard/paysliplist/${emp?.id}`}>
+                                               <Link to={`/dashboard/pay_slip_list/${emp?.id}`}>
                                                  <button className="w-[100px] h-[25px] text-white rounded-sm bg-[#646FE4]">View</button>
                                                  </Link>
                                                  </div>

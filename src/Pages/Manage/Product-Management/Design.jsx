@@ -25,8 +25,8 @@ const Design= ()=>{
                   const [editErrors, setEditErrors] = useState({});
                   const [isLoading, setIsLoading] = useState(true);
                   const [deletingId, setDeletingId] = useState(null);
-  const [itemToDelete, setItemToDelete] = useState(null);
-                   const [totalPages, setTotalPages] = useState(1);
+                  const [itemToDelete, setItemToDelete] = useState(null);
+                  const [totalPages, setTotalPages] = useState(1);
                   const [isSubmitting, setIsSubmitting] = useState(false);
                   const auth = useSelector((state) => state.auth);
                   const { login_id, can_manage_user_types } = auth;
@@ -334,7 +334,7 @@ const Design= ()=>{
        
                        {modal && (
                            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[500px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
+                                  <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[430px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>                                                 
                                     <h3 className="font-bold text-[22px] text-[#344767] "
                                        >
                                          Create Design                     </h3>
@@ -347,7 +347,7 @@ const Design= ()=>{
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
                                       <div>
                                       <input type="text" 
@@ -377,7 +377,7 @@ const Design= ()=>{
                                       ></textarea>
                             
                                            
-                                            <label 
+                                            {/* <label 
                                                 
                                                 className="font-semibold text-xs text-[#344767] w-[80%]"
                                             >
@@ -394,7 +394,7 @@ const Design= ()=>{
                                                 <option value="" className="text-gray-600">Select</option>
                                                 <option value="true" className="text-gray-600">Active</option>
                                                 <option value="false" className="text-gray-600">InActive</option>
-                                            </select>
+                                            </select> */}
             
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
@@ -438,7 +438,7 @@ const Design= ()=>{
                                        
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
-                                       Name:
+                                       Name: <span className="text-red-500 text-[14px]">*</span>
                                       </label>
                                       <div>
                                       <input type="text" 

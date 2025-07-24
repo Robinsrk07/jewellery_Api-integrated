@@ -547,7 +547,7 @@ import TableSkelton from "../../../components/tableSkelton";
                                                 Status:
                                             </label>
                                             <select defaultValue=""
-                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-00 rounded-lg focus:border-b-2 focus:border-blue-500" 
+                                                className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500" 
                                                 style={{paddingLeft:'12px'}}
                                                 value={String(editingBrand?.status)}
                                                 onChange={handleEditBrandChange}

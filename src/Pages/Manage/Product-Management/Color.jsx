@@ -88,8 +88,6 @@ const Color = ()=>{
     if (!code.trim()) newErrors.code = 'Please enter code';
     if (!hex_code.trim()) newErrors.hex_code = 'Please enter hex code';
     if (!color.trim()) newErrors.color = 'Please enter color';
-    if (!description.trim()) newErrors.description = 'Please enter description';
-    if (status === '') newErrors.status = 'Please select status';
     return newErrors;
   };
 
@@ -147,9 +145,7 @@ const Color = ()=>{
     if (!name?.trim()) newErrors.name = 'Name is required';
     if (!code?.trim()) newErrors.code = 'Code is required';
     if (!hex_code?.trim()) newErrors.hex_code = 'Hex code is required';
-    if (!color?.trim()) newErrors.color = 'Color is required';
-    if (!description?.trim()) newErrors.description = 'Description is required';
-    if (status === undefined || status === '') newErrors.status = 'Status is required';
+    if (!color?.trim()) newErrors.color = 'Color is required';;
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -287,7 +283,7 @@ const Color = ()=>{
       </div>
       {modal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[650px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[600px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
             <h3 className="font-bold text-[22px] text-[#344767]">Create Color</h3>
             <hr className="my-4 border-gray-300" />
             <div className="flex flex-col gap-4 flex-grow">
@@ -314,18 +310,16 @@ const Color = ()=>{
                 {errors.color && (<p className="text-red-500 text-xs mt-1">{errors.color}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: </label>
                 <textarea className="textarea w-[100%] text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" value={addColorData.description} onChange={handleAddColorChange} name="description" style={{padding:'12px'}}></textarea>
-                {errors.description && (<p className="text-red-500 text-xs mt-1">{errors.description}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Status: <span className="text-red-500 text-[14px]">*</span></label>
+                {/* <label className="font-semibold text-xs text-[#344767] w-[100%]">Status: </label>
                 <select className="select w-[100%] h-[35px] border-gray-300 text-gray-500 bg-white focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" value={addColorData.status} onChange={handleAddColorChange} name="status">
                   <option value="" className="text-gray-600">Select</option>
                   <option value="true" className="text-gray-600">Active</option>
                   <option value="false" className="text-gray-600">InActive</option>
-                </select>
-                {errors.status && (<p className="text-red-500 text-xs mt-1">{errors.status}</p>)}
+                </select> */}
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row justify-end items-end ">
@@ -364,18 +358,16 @@ const Color = ()=>{
                 {errors.color && (<p className="text-red-500 text-xs mt-1">{errors.color}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Description:</label>
                 <textarea className="textarea w-[100%] text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" placeholder="Description" value={editingColor?.description || ''} onChange={handleEditColorChange} name="description" style={{padding:'12px'}}></textarea>
-                {errors.description && (<p className="text-red-500 text-xs mt-1">{errors.description}</p>)}
               </div>
               <div>
-                <label className="font-semibold text-xs text-[#344767] w-[100%]">Status: <span className="text-red-500 text-[14px]">*</span></label>
+                <label className="font-semibold text-xs text-[#344767] w-[100%]">Status: </label>
                 <select className="select w-[100%] h-[35px] border-gray-300 text-gray-500 bg-white focus:outline-none text-gray-400 rounded-lg focus:border-b-2 focus:border-blue-500" value={String(editingColor?.status)} onChange={handleEditColorChange} name="status">
                   <option value="" className="text-gray-600">Select</option>
                   <option value="true" className="text-gray-600">Active</option>
                   <option value="false" className="text-gray-600">InActive</option>
                 </select>
-                {errors.status && (<p className="text-red-500 text-xs mt-1">{errors.status}</p>)}
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row justify-end items-end ">
