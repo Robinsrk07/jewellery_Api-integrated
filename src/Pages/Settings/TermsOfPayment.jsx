@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import TermsOfPaymentModel from "../../models/TermsOfPaymentModel";
@@ -14,7 +14,6 @@ import TableSkelton from "../../components/tableSkelton";
      
           
 
-  const [isHovered, setIsHovered] = useState(false);
   const [modal, setModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
 
@@ -45,6 +44,13 @@ import TableSkelton from "../../components/tableSkelton";
     branch: '',
     status: '',
   });
+
+const createNameRef = useRef(null);
+const createBranchRef = useRef(null);
+
+// Edit Modal Refs
+const editNameRef = useRef(null);
+const editBranchRef = useRef(null);
 
   const auth = useSelector((state) => state.auth);
   const { login_id, can_manage_user_types } = auth;
@@ -121,9 +127,14 @@ const [addTermData, setAddTermData] = useState({
 const validateTerm = () => {
   const newErrors = {};
 
-  if (!addTermData.name.trim()) {
-    newErrors.name = 'Please enter name';
-  }
+ const nameRegex = /^[a-zA-Z0-9 ]{3,50}$/; // Letters, numbers, spaces. 3-50 characters.
+
+if (!addTermData.name.trim()) {
+  newErrors.name = 'Please enter name';
+} else if (!nameRegex.test(addTermData.name.trim())) {
+  newErrors.name = 'Name must be 3-50 characters, letters or numbers only';
+}
+
 
   if (!addTermData.branch) {
     newErrors.branch = 'Please select a branch';
@@ -148,15 +159,25 @@ const handleAddTermChange = (e) => {
   }));
 };
 
+const focusFirstCreateError = (errors) => {
+  if (errors.name) createNameRef.current?.focus();
+  else if (errors.branch) createBranchRef.current?.focus();
+};
+
+const focusFirstEditError = (errors) => {
+  if (errors.name) editNameRef.current?.focus();
+  else if (errors.branch) editBranchRef.current?.focus();
+};
 
 useEffect(() => {
 }, [addTermData]);
 
 
 const handleSubmitTerm = async () => {
-  const validationErrors = validateTerm();
+   const validationErrors = validateTerm();
   if (Object.keys(validationErrors).length > 0) {
     setErrors(validationErrors);
+    focusFirstCreateError(validationErrors); // ✅ ADD THIS
     return;
   }
 
@@ -176,17 +197,18 @@ const handleSubmitTerm = async () => {
       toast.success('Terms of Payment created successfully!');
     }
   } catch (error) {
-    console.error("Create Terms of Payment error:", error);
-    toast.error('Failed to create Terms of Payment!');
-    handleCloseModal();
-
-    if (error.response?.data?.errors) {
-      setErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  }
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Currency !";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+            ...error.response.data.errors,
+             }));
+                 }
+                        } 
 };
 
 
@@ -210,10 +232,15 @@ const [editingTerm, setEditingTerm] = useState({
     status: ''
   };
 
-  if (!editingTerm?.name?.trim()) {
-    newErrors.name = 'Name is required';
-    valid = false;
-  }
+  
+const nameRegex = /^[a-zA-Z0-9 ]{3,50}$/; // Letters, numbers, spaces. 3-50 characters.
+
+if (!editingTerm.name.trim()) {
+  newErrors.name = 'Please enter name';
+} else if (!nameRegex.test(editingTerm.name.trim())) {
+  newErrors.name = 'Name must be 3-50 characters, letters or numbers only';
+}
+
 
 
   if (!editingTerm?.branch) {
@@ -261,7 +288,35 @@ const handleEditSubmitTerm = async () => {
     return;
   }
 
-  if (!validateEditTerm()) return;
+  const newErrors = {
+    name: '',
+    description: '',
+    branch: '',
+    status: ''
+  };
+
+  let valid = true;
+  const nameRegex = /^[a-zA-Z0-9 ]{3,50}$/;
+
+  if (!editingTerm.name.trim()) {
+    newErrors.name = 'Please enter name';
+    valid = false;
+  } else if (!nameRegex.test(editingTerm.name.trim())) {
+    newErrors.name = 'Name must be 3-50 characters, letters or numbers only';
+    valid = false;
+  }
+
+  if (!editingTerm?.branch) {
+    newErrors.branch = 'Branch is required';
+    valid = false;
+  }
+
+  setEditErrors(newErrors);
+
+  if (!valid) {
+    focusFirstEditError(newErrors); // ✅ ADD THIS
+    return;
+  }
 
   setIsSubmitting(true);
 
@@ -281,18 +336,22 @@ const handleEditSubmitTerm = async () => {
       setEditModal(false);
     }
   } catch (error) {
-    console.error("Update Term error:", error);
-    toast.error('Failed to update Term of Payment!');
-    if (error.response?.data?.errors) {
-      setEditErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  } finally {
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Currency !";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+            ...error.response.data.errors,
+             }));
+                 }
+                        }  finally {
     setIsSubmitting(false);
   }
 };
+
 
 
 
@@ -342,6 +401,10 @@ const handleDeleteTerm = async (id) => {
                     })
                      setModal(false);
                      setEditModal(false)
+                     setAddTermData({
+                      name:'',
+                      branch:''
+                     })
                    };         
                  
                  
@@ -359,26 +422,12 @@ const handleDeleteTerm = async (id) => {
                     mx-auto overflow-auto  custom-scrollbar"
                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                    >
-                                  <div
-                              style={{
-                              position: 'sticky',
-                              left: 0,
-                              top: 0,
-                              zIndex: 10,
-                              backgroundColor: 'white',
-                              padding: '1.5rem',
-                              boxSizing: 'border-box',
-                              display: 'flex',
-                              justifyContent: 'flex-end',
-                              width: 'fit-content', // Changed from 100%
-                              minWidth: '100%' // Ensures it matches table width
-                              }}
-                          >
+                                 
                               <CreateButton
                                 buttoncontent="+ New Terms"
                                 onClick={() => setModal(true)}  
                               />  
-                          </div>
+                         
                           <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
                  
@@ -480,6 +529,7 @@ const handleDeleteTerm = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                         ref={createNameRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={addTermData.name}
@@ -497,6 +547,7 @@ const handleDeleteTerm = async (id) => {
                                                   </label>
                                                   <select
                                                     name="branch"
+                                                      ref={createBranchRef}
                                                     value={addTermData.branch}
                                                     onChange={handleAddTermChange}
                                                     className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
@@ -594,6 +645,7 @@ const handleDeleteTerm = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                         ref={editNameRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingTerm.name}
@@ -610,6 +662,7 @@ const handleDeleteTerm = async (id) => {
                                                   </label>
                                                   <select
                                                     name="branch"
+                                                     ref={editBranchRef}
                                                     value={editingTerm?.branch || ''}
                                                     onChange={handleEditTermChange}
                                                     className="select select-bordered bg-white text-gray-500  select-sm w-full rounded-lg focus:outline-none border-gray-300"

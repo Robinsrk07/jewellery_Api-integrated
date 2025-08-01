@@ -1,5 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
+
 import '@fontsource/open-sans'; // Default weight 400
 import '@fontsource/open-sans/600.css'; // Semi-bold
 import '@fontsource/open-sans/700.css'; // Bold
@@ -77,7 +79,7 @@ import { useRef } from 'react';
                   );
       
                    
-                  console.log(branches)
+                  // console.log(branches)
                  
 
                    const [branch, setBranch] = useState({
@@ -487,7 +489,8 @@ import { useRef } from 'react';
                           setBranches(res?.data?.data)
                           setTotalPages(res?.data?.pagination?.pages);
                       }catch(error){
-                           console.log(error)  
+                          toast.error("Something went wrong. Please try again.");
+
                       }finally{
                            setLoading(false)
                       }
@@ -532,13 +535,13 @@ import { useRef } from 'react';
                           employeesRes,
                           currencyRes
                         ] = await Promise.all([
-                          CountryModel.getCountries(user_id, user_types, 1000),
-                          StateModel.getStates(user_id, user_types, 1000),
-                          DistrictModel.getDistricts(user_id, user_types, 1000),
-                          CityModel.getCities(user_id, user_types, 1000),
-                          CityAreaModel.getCityAreas(user_id, user_types, 1000),
-                          employeeModel.getEmployees(user_id, user_types, 1000),
-                          CurrencyModel.getCurrency(user_id, user_types, 1000)
+                          CountryModel.getCountries(user_id, user_types, 1000,1,"",'True'),
+                          StateModel.getStates(user_id, user_types, 1000,1,"",'True'),
+                          DistrictModel.getDistricts(user_id, user_types, 1000,1,"",'True'),
+                          CityModel.getCities(user_id, user_types, 1000,1,"",'True'),
+                          CityAreaModel.getCityAreas(user_id, user_types, 1000,1,"",'True'),
+                          employeeModel.getEmployees(user_id, user_types, 1000,1,"",'True'),
+                          CurrencyModel.getCurrency(user_id, user_types, 1000,1,"",'True')
                         ]);
 
                         if (isMounted) {
@@ -579,14 +582,14 @@ import { useRef } from 'react';
                     max-w-[99vw] 
                     xl:max-w-[90vw] 
                     2xl:max-w-[95vw] 
-                    h-auto max-h-[70vh] 
+                    h-auto max-h-[80vh] 
                     rounded-xl px-4 md:px-8 lg:px-12
                     mx-auto overflow-auto  custom-scrollbar"
                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                    >
                       <CreateButton
                          buttoncontent="+ New Branch"
-                         onClick={() => setModal(true)}  // This will now work!
+                         onClick={() => setModal(true)}  
                       />                 
                     <ItemsPerPageSelector items={limit} setItems={setLimit} />
                        
@@ -636,7 +639,7 @@ import { useRef } from 'react';
                               <td className="px-6 py-5 border-b border-gray-200 text-xs">
                                 <span
                                   className={`${
-                                    branch.status ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-700'
+                                    branch.status ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-400'
                                   } font-bold text-[10px] px-2 py-0.5 rounded`}
                                   style={{ padding: '2px 6px' }}
                                 >
@@ -694,7 +697,13 @@ import { useRef } from 'react';
  {modal && (
   <div className="fixed text-black inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
     <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[600px] h-[95vh] max-h-[95vh] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
-      <h3 className="font-bold text-[22px] text-[#344767]">Create New Branch</h3>
+     <div className='flex justify-between'>
+      <h3 className="font-bold text-[22px] text-[#344767]">Create New Branch</h3> 
+     <button onClick={handleCloseModal}>
+    <X className="w-6 h-6 text-[#344767] cursor-pointer" />
+      </button>
+
+    </div>
       <hr className="my-4 border-gray-200" />
       <div className="flex flex-col flex-grow text-gray-600 gap-4 justify-center items-center w-full" >
         {/* Basic Info */}
@@ -1218,10 +1227,16 @@ import { useRef } from 'react';
 )}      
       
       
-                      {editModal &&  (
+ {editModal &&  (
    <div className="fixed text-black inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
     <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[600px] h-[95vh] max-h-[95vh] flex flex-col overflow-y-auto gap-3" style={{padding:'20px'}}> 
-      <h3 className="font-bold text-[22px] text-[#344767]">Edit Branch</h3>
+      <div className='flex justify-between'>
+      <h3 className="font-bold text-[22px] text-[#344767]">Edit Branch</h3> 
+     <button onClick={handleCloseModal}>
+    <X className="w-6 h-6 text-[#344767] cursor-pointer" />
+      </button>
+
+    </div>
       <hr className="my-4 border-gray-200" />
       <div className="flex flex-col flex-grow text-gray-600 gap-4 justify-center items-center w-full" >
         {/* Basic Info */}

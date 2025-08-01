@@ -1,4 +1,5 @@
 import axiosPublicInstance from  '../Data/server/axiosPublicInstance'
+import axiosInstance from '../Data/server/axiosinstance'
 
 
 
@@ -10,6 +11,9 @@ const AuthModel = {
                  password: password,
                  ip_address: ipAddress
             })
+    },
+    logOut:(data)=>{
+      return  axiosInstance.post(`/logout/`,data)
     }
 }
 

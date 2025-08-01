@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef  } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import designModel from "../../../models/designModel"; 
@@ -45,10 +45,12 @@ const Design= ()=>{
                     description: '',
                     status: '',
                   });
-    
+                 const nameCreateRef = useRef(null);
+                 const nameEditRef = useRef(null);
 
                         // Fetch designs
                         const fetchDesigns = async () => {
+                          setIsLoading(true)
                           try {
                             const response = await designModel.getDesigns(
                               user_id,
@@ -58,7 +60,7 @@ const Design= ()=>{
                               search,
                               status
                             );
-                            console.log("Response from API:", response);
+                           
 
                             if (response.data && response.data.data) {
                               setDesigns(response.data.data);
@@ -97,18 +99,20 @@ const Design= ()=>{
                         }));
                       };
 
-                      // Debug useEffect
-                      useEffect(() => {
-                        console.log("Updated Design form state:", addDesignData);
-                      }, [addDesignData]);
+                    
 
                       // Submit handler
                       const handleSubmitDesign = async () => {
                         const validationErrors = validateDesign();
-                        if (Object.keys(validationErrors).length > 0) {
-                          setErrors(validationErrors);
-                          return;
-                        }
+                          if (Object.keys(validationErrors).length > 0) {
+                            setErrors(validationErrors);
+
+                            if (validationErrors.name && nameCreateRef.current) {
+                              nameCreateRef.current.focus();
+                            }
+
+                            return;
+                          }
 
                         const payload = {
                           name: addDesignData.name,
@@ -125,17 +129,18 @@ const Design= ()=>{
                             toast.success('Design created successfully!');
                           }
                         } catch (error) {
-                          console.error("Create design error:", error);
-                          toast.error('Failed to create design!');
-                          handleCloseModal();
-
-                          if (error.response?.data?.errors) {
-                            setErrors((prev) => ({
+                            const message =
+                            error?.response?.data?.errors?.name?.[0] ||
+                            error?.response?.data?.message ||
+                            "Failed to create Adress Type!";
+                            toast.error(message);
+                            if (error.response?.data?.errors) {
+                              setErrors(prev => ({
                               ...prev,
                               ...error.response.data.errors,
                             }));
                           }
-                        }
+                    }
                       };
 
 
@@ -163,6 +168,8 @@ const Design= ()=>{
                             setEditErrors(newErrors);
                             return valid;
                           };
+
+
                           const handleEditSubmitDesign = async () => {
 
                             if (!editingDesign?.id) {
@@ -170,7 +177,13 @@ const Design= ()=>{
                               return;
                             }
 
-                            if (!validateEditDesign()) return;
+                            const isValid = validateEditDesign();
+                                if (!isValid) {
+                                  if (editErrors.name && nameEditRef.current) {
+                                    nameEditRef.current.focus();
+                                  }
+                                  return;
+                                }
 
                             setIsSubmitting(true);
                             try {
@@ -189,22 +202,25 @@ const Design= ()=>{
                                 setEditModal(false);
                               }
                             } catch (error) {
-                              console.error("Update error:", error);
-                              toast.error('Failed to update design!');
-                              if (error.response?.data?.errors) {
-                                setEditErrors(prev => ({
-                                  ...prev,
-                                  ...error.response.data.errors,
-                                }));
-                              }
-                            } finally {
+                            const message =
+                            error?.response?.data?.errors?.name?.[0] ||
+                            error?.response?.data?.message ||
+                            "Failed to create Adress Type!";
+                            toast.error(message);
+                            if (error.response?.data?.errors) {
+                              setErrors(prev => ({
+                              ...prev,
+                              ...error.response.data.errors,
+                            }));
+                          }
+                    }finally {
                               setIsSubmitting(false);
                             }
                           };
 
 
                         const handleDeleteDesign = async (id) => {
-                          console.log("Deleting design with ID:", id);
+                         
                           if (!id) return;
 
                           try {
@@ -231,6 +247,7 @@ const Design= ()=>{
                    
                     // Handle close modal
                     const handleCloseModal = () => {
+                      setAddDesignData({})
                       setModal(false);
                       setErrors({
                         name: '',
@@ -240,6 +257,11 @@ const Design= ()=>{
                     };
                     const handleEditCloseModal = () => {
                       setEditModal(false)
+                      setEditErrors({
+                        name: '',
+                        description: '',
+                        status: '',
+                      })
                     };
                   
                   
@@ -352,6 +374,7 @@ const Design= ()=>{
                                       <div>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                         ref={nameCreateRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={addDesignData.name}
@@ -443,6 +466,7 @@ const Design= ()=>{
                                       <div>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                          ref={nameEditRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingDesign.name}

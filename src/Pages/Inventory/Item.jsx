@@ -12,13 +12,11 @@ import TableSkelton from "../../components/tableSkelton";
 
 const  Item = () => {
 
-const [items, setItems] = useState(10);
 const [isLoading, setIsLoading] = useState(true);
 const auth= useSelector((state) => state.auth);
 const {login_type,login_id} =auth
 const [limit, setLimit] = useState(10);
 const [page, setPage] = useState(1);
- const [purchaseData, setPurchaseData] = useState([]);
  const [totalPages, setTotalPages] = useState(1);
 const [search, setSearch] = useState('');
 const [status, setStatus] = useState('');
@@ -32,7 +30,7 @@ const FetchGoldItemData =async()=>{
   }catch(error){
     console.error("Error fetching gold item data:", error);
   }finally {
-    setIsLoading(false); // stop loading
+    setIsLoading(false);
   }
 }
 
@@ -59,14 +57,14 @@ useEffect(() => {
                    >
                     
                                   
-                              <Link to="/dashboard/inventory/createItem">
+                              <Link to="/dashboard/inventory/create_gold_item">
                        <CreateButton
                         buttoncontent="+ Create New Item"
                         />                 
                       </Link>
                           
                  
-                        <ItemsPerPageSelector items={items} setItems={setItems} />
+                        <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
                        
                  
@@ -100,7 +98,7 @@ useEffect(() => {
                             </td>
                           </tr>
                         ) : (
-                          goldItemData.slice().reverse().map((item, index) => (
+                          goldItemData.map((item, index) => (
                             <tr key={index} className="bg-white hover:bg-gray-50 h-[50px] text-gray-400">
                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
                                 {index + 1}
@@ -133,10 +131,11 @@ useEffect(() => {
                               </td>
                               <td className="px-6 py-5 border-b border-gray-200 text-xs" style={{ paddingLeft: '10px' }}>
                                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                                  <Link to={`/dashboard/updateitem/${item.id}`}>
+                                  <Link to={`/dashboard/update_item/${item.id}`}>
                                     <EditButton />
                                   </Link>
                                   <DeleteButton buttonText="Delete Item" modalId="my_modal_8" />
+                                  
                                 </div>
                               </td>
                             </tr>

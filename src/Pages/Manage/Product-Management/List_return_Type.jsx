@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState,useRef} from "react";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
@@ -39,7 +39,8 @@ const List_return_Type =()=>{
                   const user_id = login_id;
                   const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
-
+                 const nameRef = useRef(null)
+                 const nameEditRef = useRef(null)
 
                   const [addReturnTypeData, setAddReturnTypeData] = useState({
                     name: '',
@@ -58,6 +59,7 @@ const List_return_Type =()=>{
 
 
               const fetchReturnTypes = async () => {
+                setIsLoading(true)
                 try {
                   const response = await returnTypeModel.getReturnTypes(
                     user_id,
@@ -67,7 +69,7 @@ const List_return_Type =()=>{
                     search,
                     status
                   );
-                  console.log("Response from API:", response);
+                 
 
                   if (response?.data && response?.data?.data) {
                       setReturnPolicies(response?.data?.data);
@@ -90,10 +92,25 @@ const List_return_Type =()=>{
 
 
               const validateReturnType = () => {
-                const newErrors = {};
-                if (!addReturnTypeData.name.trim()) newErrors.name = 'Please enter name';
-                return newErrors;
-              };
+              const newErrors = {};
+              const name = addReturnTypeData.name.trim();
+
+              if (!name) {
+                newErrors.name = 'Please enter name';
+              } else {
+                const nameRegex = /^[A-Za-z\s]+$/;
+                if (!nameRegex.test(name)) {
+                  newErrors.name = 'Name must contain only letters and spaces';
+                } else if (name.length < 2) {
+                  newErrors.name = 'Name must be at least 2 characters';
+                } else if (name.length > 50) {
+                  newErrors.name = 'Name must not exceed 50 characters';
+                }
+              }
+
+              return newErrors;
+            };
+
 
               const handleAddReturnTypeChange = (e) => {
                 const { name, value } = e.target;
@@ -103,15 +120,19 @@ const List_return_Type =()=>{
                 }));
               };
 
-              useEffect(() => {
-                console.log("Updated ReturnType form state:", addReturnTypeData);
-              }, [addReturnTypeData]);
+            
 
 
               const handleSubmitReturnType = async () => {
                 const validationErrors = validateReturnType();
                 if (Object.keys(validationErrors).length > 0) {
                   setErrors(validationErrors);
+
+                  if (validationErrors.name && nameRef.current) {
+                    nameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    nameRef.current.focus();
+                  }
+
                   return;
                 }
 
@@ -132,7 +153,7 @@ const List_return_Type =()=>{
                 } catch (error) {
                   toast.error('Failed to create return type!');
                   handleCloseModal();
-                     console.log("test",error)
+                    
                   if (error.response?.data?.errors) {
                     setErrors((prev) => ({
                       ...prev,
@@ -144,9 +165,9 @@ const List_return_Type =()=>{
 
 
               const handleEditClick = (returnTypeObj) => {
-                console.log("Selected for Edit:", returnTypeObj);
+                
                 setEditingReturnType({ ...returnTypeObj }); 
-                console.log("Editing Stock Point ID:", returnTypeObj.id, "Name:", returnTypeObj.name);
+               
                 setEditModal(true);
               };
 
@@ -160,26 +181,44 @@ const List_return_Type =()=>{
               };
 
 
+const validateEditReturnType = () => {
+  let valid = true;
+  const newErrors = { name: '', description: '', status: '' };
+  const name = editingReturnType?.name?.trim();
 
+  if (!name) {
+    newErrors.name = 'Return Type name is required';
+    valid = false;
+  } else {
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(name)) {
+      newErrors.name = 'Name must contain only letters and spaces';
+      valid = false;
+    } else if (name.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+      valid = false;
+    } else if (name.length > 50) {
+      newErrors.name = 'Name must not exceed 50 characters';
+      valid = false;
+    }
+  }
 
-                const validateEditReturnType = () => {
-                  let valid = true;
-                  const newErrors = { name: '', description: '', status: '' };
+  setEditErrors(newErrors);
+  return valid;
+};
 
-                  if (!editingReturnType?.name?.trim()) {
-                    newErrors.name = 'Return Type name is required';
-                    valid = false;
-                  }
-
-                  setEditErrors(newErrors);
-                  return valid;
-                };
 
                 const handleEditSubmit = async () => {
 
 
 
-                  if (!validateEditReturnType()) return;
+                 if (!validateEditReturnType()) {
+                if (editErrors.name && nameEditRef.current) {
+                  nameEditRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  nameEditRef.current.focus();
+                }
+                return;
+              }
 
                   setIsSubmitting(true);
                   try {
@@ -354,6 +393,7 @@ const List_return_Type =()=>{
                                       <div>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                         ref={nameRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         // onChange={(e)=>handleAddReturnTypeChange(e)}
@@ -444,6 +484,7 @@ const List_return_Type =()=>{
                                       <div>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                         ref={nameEditRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingReturnType?.name || ''} 

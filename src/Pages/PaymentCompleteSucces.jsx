@@ -20,23 +20,23 @@ const PaymentSuccessPage = () => {
     status: "Completed"
   };
 
-  const handleCopyTransaction = () => {
-    navigator.clipboard.writeText(paymentDetails.transactionId);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  // const handleCopyTransaction = () => {
+  //   navigator.clipboard.writeText(paymentDetails.transactionId);
+  //   setCopied(true);
+  //   setTimeout(() => setCopied(false), 2000);
+  // };
 
-  const handleDownloadReceipt = () => {
-    console.log('Downloading receipt...');
-  };
+  // const handleDownloadReceipt = () => {
+  //   console.log('Downloading receipt...');
+  // };
 
-  const handleEmailReceipt = () => {
-    console.log('Emailing receipt...');
-  };
+  // const handleEmailReceipt = () => {
+  //   console.log('Emailing receipt...');
+  // };
 
-  const handleContinue = () => {
-    console.log('Continuing to dashboard...');
-  };
+  // const handleContinue = () => {
+  //   console.log('Continuing to dashboard...');
+  // };
 
   return (
     <div className=" bg-white flex items-center justify-center rounded-lg h-[70vh]">

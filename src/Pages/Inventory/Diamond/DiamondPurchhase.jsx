@@ -36,10 +36,10 @@ const DiamondPurchhase = () => {
     const [itemToDelete, setItemToDelete] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
  
-    console.log(diamondItem)
+    
     const fetchDiamondItems = async () => {
-  setIsLoading(true); // start loading
-  try {
+     setIsLoading(true); // start loading
+     try {
     const response = await DiamondModel.getDiamondItems(
       user_types,
       user_id,
@@ -75,8 +75,6 @@ const DiamondPurchhase = () => {
            'branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
             }
             ]
-console.log(utils)
-console.log(DiamondUtils)
 
 
 
@@ -120,7 +118,7 @@ console.log(DiamondUtils)
   const fetchDiamondUtils =async () =>{
           try{
              const response = await DiamondModel.GetDiamondUtils()
-             console.log(response?.data?.data)
+           
              setDiamondUtils(response?.data?.data)
              }catch(error){
          console.log(error)
@@ -133,7 +131,7 @@ console.log(DiamondUtils)
 
     useEffect(() => {
         fetchDiamondItems()
-    }, [])  
+    }, [page, limit, search, status])  
 
     return (
       <>
@@ -148,12 +146,12 @@ console.log(DiamondUtils)
           style={{ fontFamily: 'Open Sans', overflow: 'auto' }}
         >
           
-            <Link to="/dashboard/createDiamondPurchase">
+            <Link to="/dashboard/create_diamond_purchase">
               <CreateButton buttoncontent="+ Create New Item" />
             </Link>
          
 
-          <ItemsPerPageSelector />
+        <ItemsPerPageSelector items={limit} setItems={setLimit} />
 
           <table className="table w-full text-sm text-left text-gray-500 min-w-[1500px] table-fixed border-collapse">
     <thead className="text-xs text-gray-400 uppercase bg-white border-b">
@@ -245,7 +243,7 @@ console.log(DiamondUtils)
       </td>
       <td className="px-4 py-3 text-xs">
         <div className="flex flex-row gap-2">
-          <Link to={'/dashboard/editDiamondItems'} state={{ item }}>
+          <Link to={`/dashboard/edit_diamond_items/${item.uuid}`} state={{ item }}>
             <EditButton />
           </Link>
           <DeleteButton 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import colorModel from "../../../models/colorModel";
@@ -45,6 +45,16 @@ const Color = ()=>{
   const auth = useSelector((state) => state.auth);
   const user_id = auth?.login_id;
   const user_types = Object.keys(auth?.can_manage_user_types || {}).join(',');
+   
+  const nameRef = useRef(null)
+  const codeRef = useRef(null)
+  const hexCodeRef = useRef(null)
+  const ColourRef = useRef(null)
+  const nameEditRef = useRef(null)
+  const codeEditRef = useRef(null)
+  const hexEditCodeRef = useRef(null)
+  const ColourEditRef = useRef(null)
+
 
   const fetchColors = async () => {
     try {
@@ -81,27 +91,49 @@ const Color = ()=>{
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const validateColor = () => {
-    const newErrors = {};
-    const { name, code, hex_code, color, description, status } = addColorData;
-    if (!name.trim()) newErrors.name = 'Please enter name';
-    if (!code.trim()) newErrors.code = 'Please enter code';
-    if (!hex_code.trim()) newErrors.hex_code = 'Please enter hex code';
-    if (!color.trim()) newErrors.color = 'Please enter color';
-    return newErrors;
-  };
+ const validateColor = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addColorData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  }
+
+  if (!addColorData.code.trim()) {
+    newErrors.code = 'Please enter code';
+    if (!firstInvalidRef) firstInvalidRef = codeRef;
+  }
+
+  if (!addColorData.hex_code.trim()) {
+    newErrors.hex_code = 'Please enter hex code';
+    if (!firstInvalidRef) firstInvalidRef = hexCodeRef;
+  }
+
+  if (!addColorData.color.trim()) {
+    newErrors.color = 'Please enter color';
+    if (!firstInvalidRef) firstInvalidRef = ColourRef;
+  }
+
+  setErrors(newErrors);
+
+  // Focus the first invalid field
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleSubmitColor = async () => {
-    const validationErrors = validateColor();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+  if (!validateColor()) return;
+
+   
     const payload = {
       ...addColorData,
       status: addColorData.status === 'true',
-      created_by: user_id,
-      created_by_type: user_types,
+      
     };
     try {
       const response = await colorModel.createColor(payload);
@@ -111,12 +143,21 @@ const Color = ()=>{
         toast.success('Color created successfully!');
       }
     } catch (error) {
-      console.error("Create error:", error);
-      toast.error('Failed to create color!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.errors?.code?.[0] ||
+            error?.response?.data?.errors?.hex_code?.[0] ||
+            error?.response?.data?.errors?.color?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Color!";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+           ...error.response.data.errors,
+                          }));
+              }
+                                }
   };
 
   const handleEditClickColor = (colorObj) => {
@@ -140,15 +181,41 @@ const Color = ()=>{
   };
 
   const validateEditColor = () => {
-    const newErrors = {};
-    const { name, code, hex_code, color, description, status } = editingColor || {};
-    if (!name?.trim()) newErrors.name = 'Name is required';
-    if (!code?.trim()) newErrors.code = 'Code is required';
-    if (!hex_code?.trim()) newErrors.hex_code = 'Hex code is required';
-    if (!color?.trim()) newErrors.color = 'Color is required';;
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  const { name, code, hex_code, color } = editingColor || {};
+
+  if (!name?.trim()) {
+    newErrors.name = 'Name is required';
+    firstInvalidRef = nameEditRef;
+  }
+
+  if (!code?.trim()) {
+    newErrors.code = 'Code is required';
+    if (!firstInvalidRef) firstInvalidRef = codeEditRef;
+  }
+
+  if (!hex_code?.trim()) {
+    newErrors.hex_code = 'Hex code is required';
+    if (!firstInvalidRef) firstInvalidRef = hexEditCodeRef;
+  }
+
+  if (!color?.trim()) {
+    newErrors.color = 'Color is required';
+    if (!firstInvalidRef) firstInvalidRef = ColourEditRef;
+  }
+
+  setErrors(newErrors);
+
+  // Focus the first invalid field
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditSubmitColor = async () => {
     if (!editingColor?.id) {
@@ -169,12 +236,21 @@ const Color = ()=>{
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update error:", error);
-      toast.error('Failed to update color!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.errors?.code?.[0] ||
+            error?.response?.data?.errors?.hex_code?.[0] ||
+            error?.response?.data?.errors?.color?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Color!";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+           ...error.response.data.errors,
+                          }));
+              }
+                                } finally {
       setIsSubmitting(false);
     }
   };
@@ -289,23 +365,23 @@ const Color = ()=>{
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input input-sm w-[100%] border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" value={addColorData.name} onChange={handleAddColorChange} name="name" style={{paddingLeft:'12px'}} />
+                <input type="text" ref={nameRef} placeholder="Type here" className="input input-sm w-[100%] border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" value={addColorData.name} onChange={handleAddColorChange} name="name" style={{paddingLeft:'12px'}} />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Code: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input input-sm w-[100%] rounded-lg border-gray-300 text-gray-500 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addColorData.code} onChange={handleAddColorChange} name="code" />
+                <input type="text" ref={codeRef} placeholder="Type here" className="input input-sm w-[100%] rounded-lg border-gray-300 text-gray-500 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addColorData.code} onChange={handleAddColorChange} name="code" />
                 {errors.code && (<p className="text-red-500 text-xs mt-1">{errors.code}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Hex code: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" name="hex_code" value={addColorData.hex_code} onChange={handleAddColorChange} className="input w-full border-gray-300 text-gray-500 text-xs bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} placeholder="#000000" />
+                <input type="text" name="hex_code" ref={hexCodeRef} value={addColorData.hex_code} onChange={handleAddColorChange} className="input w-full border-gray-300 text-gray-500 text-xs bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} placeholder="#000000" />
                 {errors.hex_code && (<p className="text-red-500 text-xs mt-1">{errors.hex_code}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Color: <span className="text-red-500 text-[14px]">*</span></label>
                 <div className="flex items-center gap-2 w-full">
-                  <input type="color" name="color" value={addColorData.color} onChange={handleAddColorChange} className="h-5 w-full cursor-pointer rounded border border-gray-300" />
+                  <input type="color" name="color" ref={ColourRef} value={addColorData.color} onChange={handleAddColorChange} className="h-5 w-full cursor-pointer rounded border border-gray-300" />
                 </div>
                 {errors.color && (<p className="text-red-500 text-xs mt-1">{errors.color}</p>)}
               </div>
@@ -337,23 +413,23 @@ const Color = ()=>{
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input input-sm w-[100%] border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" value={editingColor?.name || ''} onChange={handleEditColorChange} name="name" style={{paddingLeft:'12px'}} />
+                <input type="text" placeholder="Type here" ref={nameEditRef} className="input input-sm w-[100%] border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" value={editingColor?.name || ''} onChange={handleEditColorChange} name="name" style={{paddingLeft:'12px'}} />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Code: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input input-sm w-[100%] rounded-lg border-gray-300 text-gray-500 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingColor?.code || ''} onChange={handleEditColorChange} name="code" />
+                <input type="text" placeholder="Type here" ref={codeEditRef} className="input input-sm w-[100%] rounded-lg border-gray-300 text-gray-500 bg-white focus:outline-none focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingColor?.code || ''} onChange={handleEditColorChange} name="code" />
                 {errors.code && (<p className="text-red-500 text-xs mt-1">{errors.code}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Hex code: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" name="hex_code" value={editingColor?.hex_code || ''} onChange={handleEditColorChange} className="input w-full border-gray-300 text-gray-500 text-xs bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} placeholder="#000000" />
+                <input type="text" name="hex_code" ref={hexEditCodeRef} value={editingColor?.hex_code || ''} onChange={handleEditColorChange} className="input w-full border-gray-300 text-gray-500 text-xs bg-white rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} placeholder="#000000" />
                 {errors.hex_code && (<p className="text-red-500 text-xs mt-1">{errors.hex_code}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Color: <span className="text-red-500 text-[14px]">*</span></label>
                 <div className="flex items-center gap-2 w-full">
-                  <input type="color" name="color" value={editingColor?.color || ''} onChange={handleEditColorChange} className="h-5 w-full cursor-pointer rounded border border-gray-300" />
+                  <input type="color" name="color"ref={ColourEditRef} value={editingColor?.color || ''} onChange={handleEditColorChange} className="h-5 w-full cursor-pointer rounded border border-gray-300" />
                 </div>
                 {errors.color && (<p className="text-red-500 text-xs mt-1">{errors.color}</p>)}
               </div>

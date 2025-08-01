@@ -24,9 +24,7 @@ const UnfixPurchase =()=>{
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
   const [data,setData]=useState([])
-console.log(data)
-console.log(user_id)
-console.log(user_types)
+
 useEffect(() => {
   if (!user_id) return;
 
@@ -64,10 +62,11 @@ useEffect(() => {
                                           mx-auto overflow-auto  custom-scrollbar"
                                       style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                                         >
-                         <CreateButton
+                         {/* <CreateButton
                           buttoncontent="+ New Items"
                         //   onClick={() => setModal(true)}  
-                         />                 
+                         />                  */}
+                         <div className="w-full h-[50px]"></div>
                          <ItemsPerPageSelector items={limit} setItems={setLimit} />
                           
                                 

@@ -1,6 +1,6 @@
 
 
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import employeePaymentMethodModel from "../../models/employeePaymentMethodModel";
@@ -39,6 +39,8 @@ const PaymentMethodes = () => {
   const auth = useSelector((state) => state.auth || {});
   const user_id = auth.login_id || 1;
   const user_types = auth.can_manage_user_types ? Object.keys(auth.can_manage_user_types).join(',') : 'Admin,Head Office';
+  const nameRef = useRef(null)
+  const EditNameRef = useRef(null)
 
   const fetchPaymentMethods = async () => {
     try {
@@ -64,11 +66,31 @@ const PaymentMethodes = () => {
     fetchPaymentMethods();
   }, [limit, page, search, status]);
 
-  const validatePaymentMethod = () => {
-    const newErrors = {};
-    if (!addPaymentMethodData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+const validatePaymentMethod = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  const nameRegex = /^[A-Za-z\s-]{2,}$/;
+
+  if (!addPaymentMethodData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  } else if (!nameRegex.test(addPaymentMethodData.name.trim())) {
+    newErrors.name = 'Name can only contain letters, spaces, and hyphens';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+    firstInvalidRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
+
 
   const handleAddPaymentMethodChange = (e) => {
     const { name, value } = e.target;
@@ -77,11 +99,7 @@ const PaymentMethodes = () => {
   };
 
   const handleSubmitPaymentMethod = async () => {
-    const validationErrors = validatePaymentMethod();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+     if (!validatePaymentMethod()) return;
     const payload = {
       name: addPaymentMethodData.name,
     };
@@ -93,28 +111,57 @@ const PaymentMethodes = () => {
         toast.success('Payment method created successfully!');
       }
     } catch (error) {
-      console.error("Create payment method error:", error);
-      toast.error('Failed to create payment method!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Payment Methode!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               }
   };
 
-  const validateEditPaymentMethod = () => {
-    const newErrors = { name: '', status: '' };
-    let valid = true;
-    if (!editingPaymentMethod?.name?.trim()) {
-      newErrors.name = 'Payment method name is required';
-      valid = false;
+const validateEditPaymentMethod = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  const nameRegex = /^[A-Za-z\s-]{2,}$/;
+
+  if (!editingPaymentMethod?.name?.trim()) {
+    newErrors.name = 'Payment method name is required';
+    firstInvalidRef = EditNameRef;
+  } else if (!nameRegex.test(editingPaymentMethod.name.trim())) {
+    newErrors.name = 'Name can only contain letters, spaces, and hyphens';
+    firstInvalidRef = EditNameRef;
+  }
+
+  if (
+    editingPaymentMethod?.status === undefined ||
+    editingPaymentMethod.status === ''
+  ) {
+    newErrors.status = 'Status is required';
+    if (!firstInvalidRef) {
+      const statusInput = document.querySelector('select[name="status"]');
+      if (statusInput) {
+        firstInvalidRef = { current: statusInput };
+      }
     }
-    if (editingPaymentMethod?.status === undefined || editingPaymentMethod.status === '') {
-      newErrors.status = 'Status is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+    firstInvalidRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickPaymentMethod = (pmObj) => {
     if (!pmObj || typeof pmObj !== 'object' || !pmObj.id) {
@@ -154,13 +201,19 @@ const PaymentMethodes = () => {
         toast.success('Payment method updated successfully!');
         setEditModal(false);
       }
-    } catch (error) {
-      console.error("Update payment method error:", error);
-      toast.error('Failed to update payment method!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+    }catch (error) {
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Payment Methode!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               }finally {
       setIsSubmitting(false);
     }
   };
@@ -251,8 +304,9 @@ const PaymentMethodes = () => {
             <hr className=" border-gray-300"/>
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addPaymentMethodData.name} onChange={handleAddPaymentMethodChange} name="name" />
+              <div><input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addPaymentMethodData.name} onChange={handleAddPaymentMethodChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
               <button type="button" className="btn w-[100px] h-[35px] rounded-lg text-white border-none" style={{ backgroundColor: '#8392ab' }} onClick={handleCloseModal}>Close</button>
@@ -269,7 +323,7 @@ const PaymentMethodes = () => {
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
               <div>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingPaymentMethod?.name || ''} onChange={handleEditPaymentMethodChange} name="name" />
+              <input type="text" placeholder="Type here" ref={EditNameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingPaymentMethod?.name || ''} onChange={handleEditPaymentMethodChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>

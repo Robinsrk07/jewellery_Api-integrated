@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -15,7 +15,7 @@ import { toast } from 'react-toastify';
 
 
 const Category =()=>{
-                    const [items, setItems] = useState(10);
+                    
                     const [modal, setModal] = useState(false)   
                     const [editModal,setEditModal]= useState(false)
                     const [categoryData, setCategoryData] = useState([]);
@@ -51,7 +51,22 @@ const Category =()=>{
                      const user_types = Object.keys(can_manage_user_types).join(',');
                      const [itemTypeOptions, setItemTypeOptions] = useState([]);
 
+                    const codeRef = useRef(null);
+                    const nameRef = useRef(null);
+                    const purityRef = useRef(null);
+                    const itemTypeRef = useRef(null);
+                    const isDefaultRef = useRef(null);
+                    // For edit modal
+                    const codeEditRef = useRef(null);
+                    const nameEditRef = useRef(null);
+                    const purityEditRef = useRef(null);
+                    const itemTypeEditRef = useRef(null);
+                    const isDefaultEditRef = useRef(null);
+                    const statusEditRef = useRef(null);
+
+
                      const FetchCategory = async () => {
+                      setIsLoading(true)
                         try {
                           const response = await CategoryModel.getCategorys(
                             user_id,          
@@ -62,12 +77,14 @@ const Category =()=>{
                             status               
                           );
 
-                          if (response.data && response.data.data) {
+                         
                             setCategoryData(response.data.data);
                             setTotalPages(response.data.pagination.pages);
-                          }
+                          
                         } catch (error) {
                           console.error("Error fetching category data:", error);
+                        }finally{
+                          setIsLoading(false)
                         }
                       };
                   const handleChange = (e) => {
@@ -75,18 +92,8 @@ const Category =()=>{
 
                       setaddCategoryData(prev => ({ ...prev, [name]: value }));
 
-                    
-                      if (name === 'code') {
-                        const isDuplicate = categoryData.some(
-                          (item) => item.code.toLowerCase().trim() === value.toLowerCase().trim()
-                        );
-
-                        if (isDuplicate) {
-                          setErrors(prev => ({ ...prev, code: "Code already exists" }));
-                        } else {
-                          setErrors(prev => ({ ...prev, code: "" })); 
-                        }
-                      }
+                      setErrors((prev)=>({...prev,[name]:''}))
+                     
                     };
 
                     const handleSubmit = async () => {
@@ -104,7 +111,7 @@ const Category =()=>{
 
                     try {
                       const response = await CategoryModel.CreateCategory(formData);
-                      console.log("Update response:", response);  
+                   
                       if (response.status === 201) {
                         FetchCategory(); // Refresh the list
                         handleCloseModal();    
@@ -113,15 +120,18 @@ const Category =()=>{
                                         
 
                     }catch (error) {
-
-                       toast.error('Failed to create category!');
-                       handleCloseModal();    
-                      if (error.response?.data?.errors) {
-                        setErrors(prev => ({
-                          ...prev,
-                          ...error.response.data.errors
-                        }));
-                      }
+                    const message =
+                      error?.response?.data?.errors?.name?.[0] ||
+                      error?.response?.data?.errors?.code?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Adress Type!";
+                    toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                      ...prev,
+                      ...error.response.data.errors,
+                     }));
+                  }
                     }
                   };
 
@@ -148,33 +158,42 @@ const Category =()=>{
                       handleEditCloseModal();
                     }
                   } catch (error) {
-                      console.log(error);
-                      
-                       toast.error('Failed to update category!');
-               
-                  } finally {
+                   
+                    const message =
+                       error?.response?.data?.errors?.code?.[0] ||
+                       error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Adress Type!";
+                    toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                      ...prev,
+                      ...error.response.data.errors,
+                     }));
+                  }
+                    } finally {
                     setIsSubmitting(false);
                   }
                 };
 
-  const validateForm = () => {
-  let valid = true;
-  const newErrors = {
-  code: '',
-  name: '',
-  item_type: '',
-  standard_purity: '',
-  is_default: ''
-};
+                const validateForm = () => {
+                let valid = true;
+                const newErrors = {
+                code: '',
+                name: '',
+                item_type: '',
+                standard_purity: '',
+                is_default: ''
+              };
 
-// Code validation
-if (!addCategoryData.code) {
-  newErrors.code = 'Category code is required';
-  valid = false;
-} else if (addCategoryData.code.length < 2) {
-  newErrors.code = 'Must be at least 2 characters';
-  valid = false;
-}
+              // Code validation
+              if (!addCategoryData.code) {
+                newErrors.code = 'Category code is required';
+                valid = false;
+              } else if (addCategoryData.code.length < 2) {
+                newErrors.code = 'Must be at least 2 characters';
+                valid = false;
+              }
 
 
 // Name validation
@@ -204,12 +223,19 @@ if (
   newErrors.standard_purity = 'Must be a valid non-negative number';
   valid = false;
 }
+ if (addCategoryData?.is_default === undefined || addCategoryData.is_default === '') {
+    newErrors.is_default = 'Please select if this is default or not';
+    valid = false;
+  }
 
 
 // Is Default validation
-if (!addCategoryData.is_default && addCategoryData.is_default !== false) {
-  newErrors.is_default = 'Please select if this is default or not';
-  valid = false;
+if (!valid) {
+  if (newErrors.code && codeRef.current) codeRef.current.focus();
+  else if (newErrors.name && nameRef.current) nameRef.current.focus();
+  else if (newErrors.item_type && itemTypeRef.current) itemTypeRef.current.focus();
+  else if (newErrors.standard_purity && purityRef.current) purityRef.current.focus();
+  else if (newErrors.is_default && isDefaultRef.current) isDefaultRef.current.focus();
 }
 
 
@@ -281,6 +307,17 @@ const validateEditForm = () => {
 
 
   setErrors(newErrors);
+
+  if(!valid) {
+  if (newErrors.code && codeEditRef.current) codeEditRef.current.focus();
+  else if (newErrors.name && nameEditRef.current) nameEditRef.current.focus();
+  else if (newErrors.item_type && itemTypeEditRef.current) itemTypeEditRef.current.focus();
+  else if (newErrors.standard_purity && purityEditRef.current) purityEditRef.current.focus();
+  else if (newErrors.is_default && isDefaultEditRef.current) isDefaultEditRef.current.focus();
+  else if (newErrors.status && statusEditRef.current) statusEditRef.current.focus();
+}
+
+
   return valid;
 };
 
@@ -338,12 +375,12 @@ const validateEditForm = () => {
                   
                   useEffect(() => {
                     // Fetch categories
-                    FetchCategory();
+                    
 
                     // Fetch item types
                     const fetchItemTypes = async () => {
                       try {
-                        const response = await ItemTypeModel.getItemTypes(user_id, user_types);
+                        const response = await ItemTypeModel.getItemTypes(user_id, user_types,1000,1,search,'True');
                         if (response.data && response.data.data) {
                           setItemTypeOptions(response.data.data);
                         }
@@ -356,6 +393,10 @@ const validateEditForm = () => {
 
                     fetchItemTypes();
                   },[])
+
+                  useEffect(()=>{
+                    FetchCategory();
+                  },[limit,page])
                   
                   
                     return (
@@ -376,6 +417,7 @@ const validateEditForm = () => {
                   onClick={() => setModal(true)}  // This will now work!
                  />                 
                 <ItemsPerPageSelector items={limit} setItems={setLimit} />
+
                   
                         
                      <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto"
@@ -402,7 +444,7 @@ const validateEditForm = () => {
                             </td>
                           </tr>
                         ) : categoryData.map((category,index) => (
-                          console.log(category),
+                          
                           <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                             <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>
                               {index+1}
@@ -473,6 +515,7 @@ const validateEditForm = () => {
                                       </label>
                                       <input
                                         type="text"
+                                        ref={codeRef}
                                         placeholder="Type here"
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
@@ -495,6 +538,7 @@ const validateEditForm = () => {
                                      <input
                                       type="text"
                                       placeholder="Type here"
+                                       ref={nameRef}
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
                                       name="name"
@@ -513,6 +557,7 @@ const validateEditForm = () => {
                                       <select
                                         name="item_type"
                                         value={addCategoryData.item_type}
+                                        ref={itemTypeRef}
                                         onChange={handleChange}
                                         className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px', color: '#374151' }}
@@ -537,6 +582,7 @@ const validateEditForm = () => {
                                       <input
                                       type="number"
                                       placeholder="Type here"
+                                        ref={purityRef}
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
                                       name="standard_purity"
@@ -556,6 +602,7 @@ const validateEditForm = () => {
                                       <select
                                         name="is_default"
                                         value={addCategoryData.is_default}
+                                          ref={isDefaultRef}
                                         onChange={handleChange}
                                         className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px', color: '#374151' }}
@@ -637,10 +684,10 @@ const validateEditForm = () => {
           </label>
           <input
             type="text"
+            ref={codeEditRef}
             placeholder="Type here"
-            className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${
-              errors.code ? 'border-red-500' : 'border-gray-300'
-            } focus:border-b-2 focus:border-blue-500`}
+            className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border border-gray-300
+            focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="code"
             value={editingCategory?.code || ''}
@@ -660,10 +707,11 @@ const validateEditForm = () => {
           </label>
           <input
             type="text"
+            ref={nameEditRef}
+
             placeholder="Type here"
-            className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${
-              errors.name ? 'border-red-500' : 'border-gray-300'
-            } focus:border-b-2 focus:border-blue-500`}
+            className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border border-gray-300
+             focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="name"
             value={editingCategory?.name || ''}
@@ -683,6 +731,7 @@ const validateEditForm = () => {
           </label>
           <select
             name="item_type"
+             ref={itemTypeEditRef}
             value={editingCategory?.item_type || ''}
             onChange={e => {
               setEditingCategory({...editingCategory, item_type: e.target.value});
@@ -708,6 +757,7 @@ const validateEditForm = () => {
           <input
             type="number"
             placeholder="Type here"
+              ref={purityEditRef}
             className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
             style={{ paddingLeft: '12px' }}
             name="standard_purity"
@@ -728,6 +778,7 @@ const validateEditForm = () => {
           </label>
           <select
             name="is_default"
+              ref={isDefaultEditRef}
             value={editingCategory?.is_default === true ? "true" : editingCategory?.is_default === false ? "false" : ""}
             onChange={e => {
               setEditingCategory({...editingCategory, is_default: e.target.value === "true"});

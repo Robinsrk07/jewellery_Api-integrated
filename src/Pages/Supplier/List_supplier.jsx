@@ -34,39 +34,7 @@ const List_supplier=()=>{
 
               const user_id = login_id;
               const user_types = Object.keys(can_manage_user_types || {}).join(',');
-              // For client-side validation
-              // const [errors, setErrors] = useState({
-              //   code: '',
-              //   name: '',
-              //   currency: '',
-              //   control_account: '',
-              //   supplier_group: '',
-              //   tax_category: '',
-              //   tax_in_no: '',
-              //   tin_no: '',
-              //   terms_of_payment: '',
-              //   eun: '',
-              //   supplier_image: '',
-              //   address_type: '',
-              //   address: '',
-              //   language: '',
-              //   country: '',
-              //   city: '',
-              //   zip_code: '',
-              //   gsm_no: '',
-              //   phone_no: '',
-              //   fax_no: '',
-              //   email: '',
-              //   website: '',
-              //   note: '',
-              //   bank_name: '',
-              //   bank_address: '',
-              //   account_holder_name: '',
-              //   account_number: '',
-              //   account_code: '',
-              //   IBAN: '',
-              //   status: '',
-              // });
+            
 
 
 
@@ -310,7 +278,7 @@ const handleEditClick = (supplier) => {
                         </tr>
                         ) : (
 
-                      supplierData.map((supplier, index) => (
+                      supplierData.slice().reverse().map((supplier, index)  => (
                         <tr key={supplier.id} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                           <td className="px-4 py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '35px' }}>{index+1}</td>
                           <td className="px-4 py-4 border-b border-gray-200 text-xs">{supplier.code}</td>

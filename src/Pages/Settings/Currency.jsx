@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import CurrencyModel from "../../models/currencyModel";
@@ -15,7 +15,6 @@ import TableSkelton from "../../components/tableSkelton";
 const  Currency = () => {
      
           
-                        const [isHovered, setIsHovered] = useState(false);
                         const [modal, setModal] = useState(false);
                         const [editModal, setEditModal] = useState(false);
                         const [totalPages, setTotalPages] = useState(1);
@@ -55,6 +54,22 @@ const  Currency = () => {
                         const { login_id, can_manage_user_types } = auth;
                         const user_id = login_id;
                         const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+
+                        // Refs for Create Modal
+const codeRef = useRef(null);
+const nameRef = useRef(null);
+const exchangeRateRef = useRef(null);
+const symbolRef = useRef(null);
+const branchRef = useRef(null);
+
+// Refs for Edit Modal
+const editCodeRef = useRef(null);
+const editNameRef = useRef(null);
+const editExchangeRateRef = useRef(null);
+const editSymbolRef = useRef(null);
+const editBranchRef = useRef(null);
+
 
                          const fetchCurrencies = async () => {
                           setIsLoading(true);
@@ -97,7 +112,7 @@ const  Currency = () => {
 
                       const fetchBranches = async () => {
                         try {
-                          const response = await BranchModel.getBranches(user_id, user_types);
+                          const response = await BranchModel.getBranches(user_id, user_types,1000,1,"",'True');
                           if (response?.data?.data) {
                             setBranches(response.data.data);
                           } else {
@@ -152,86 +167,75 @@ const  Currency = () => {
                           ...prev,
                           [name]: name === 'status' ? value === 'true' : value,
                         }));
+                        setErrors((prev)=>({
+                          ...prev,
+                          [name]:''
+                        }))
                       };
 
 
-                      const handleSubmitCurrency = async () => {
-                        const validationErrors = validateCurrency();
+                     const handleSubmitCurrency = async () => {
+  const validationErrors = validateCurrency();
+  setErrors(validationErrors);
 
-                        if (Object.keys(validationErrors).length > 0) {
-                          setErrors(validationErrors);
-                          return;
-                        }
+  if (Object.keys(validationErrors).length > 0) {
+    // Focus the first invalid field
+    if (validationErrors.code) codeRef.current?.focus();
+    else if (validationErrors.name) nameRef.current?.focus();
+    else if (validationErrors.exchange_rate) exchangeRateRef.current?.focus();
+    else if (validationErrors.symbol) symbolRef.current?.focus();
+    else if (validationErrors.branch) branchRef.current?.focus();
+    return;
+  }
 
-                        const payload = {
-                          code: addCurrencyData.code.trim(),
-                          name: addCurrencyData.name.trim(),
-                          exchange_rate: parseFloat(addCurrencyData.exchange_rate),
-                          symbol: addCurrencyData.symbol.trim(),
-                          branch: parseInt(addCurrencyData.branch),
-                          status: addCurrencyData.status === true || addCurrencyData.status === 'true',
-                        };
+  const payload = {
+    code: addCurrencyData.code.trim(),
+    name: addCurrencyData.name.trim(),
+    exchange_rate: parseFloat(addCurrencyData.exchange_rate),
+    symbol: addCurrencyData.symbol.trim(),
+    branch: parseInt(addCurrencyData.branch),
+    status: addCurrencyData.status === true || addCurrencyData.status === 'true',
+  };
 
-                        console.log("Currency Payload being sent:", payload);
-
-                        try {
-                          const response = await CurrencyModel.createCurrency(payload);
-                          console.log("Create Currency response:", response);
-
-                          if (response.status === 201 || response.status === 200) {
-                            fetchCurrencies();
-                            handleCloseModal();
-                            toast.success('Currency created successfully!');
-                          }
-                        } catch (error) {
-                          console.error("Create currency error:", error);
-                          toast.error('Failed to create currency!');
-                          handleCloseModal();
-
-                          if (error.response?.data?.errors) {
-                            setErrors((prev) => ({
+  try {
+    const response = await CurrencyModel.createCurrency(payload);
+    if (response.status === 201 || response.status === 200) {
+      fetchCurrencies();
+      handleCloseModal();
+      toast.success('Currency created successfully!');
+    }
+  } catch (error) {
+                              const message =
+                              error?.response?.data?.errors?.name?.[0] ||
+                              error?.response?.data?.message ||
+                              "Failed to create Currency !";
+                              toast.error(message);
+                              if (error.response?.data?.errors) {
+                              setErrors(prev => ({
                               ...prev,
                               ...error.response.data.errors,
-                            }));
-                          }
+                                  }));
+                            }
                         }
-                      };
+};
+
 
 
 
                         
-  
- const validateEditCurrency = () => {
-  let valid = true;
+const validateEditCurrency = () => {
   const errors = {};
 
-  if (!editingCurrency?.code?.trim()) {
-    errors.code = 'Currency code is required';
-    valid = false;
-  }
+  if (!editingCurrency?.code?.trim()) errors.code = 'Currency code is required';
+  if (!editingCurrency?.name?.trim()) errors.name = 'Currency name is required';
+  if (!editingCurrency?.exchange_rate?.toString().trim() || isNaN(editingCurrency.exchange_rate)) errors.exchange_rate = 'Valid exchange rate is required';
+  if (!editingCurrency?.symbol?.trim()) errors.symbol = 'Currency symbol is required';
+  if (!editingCurrency?.branch) errors.branch = 'Please select a branch';
 
-  if (!editingCurrency?.name?.trim()) {
-    errors.name = 'Currency name is required';
-    valid = false;
-  }
-
-  if (!editingCurrency?.exchange_rate?.toString().trim() || isNaN(editingCurrency.exchange_rate)) {
-    errors.exchange_rate = 'Valid exchange rate is required';
-    valid = false;
-  }
-
-  if (!editingCurrency?.symbol?.trim()) {
-    errors.symbol = 'Currency symbol is required';
-    valid = false;
-  }
-
-  if (!editingCurrency?.branch) {
-    errors.branch = 'Please select a branch';
-    valid = false;
-  }
   setEditErrors(errors);
-  return valid;
+  return Object.keys(errors).length === 0;
 };
+
 
 
 const handleEditClickCurrency = (currencyObj) => {
@@ -261,6 +265,11 @@ const handleEditCurrencyChange = (e) => {
     ...prev,
     [name]: name === 'status' ? value === 'true' : value,
   }));
+
+  setEditErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 
@@ -269,8 +278,17 @@ const handleEditSubmitCurrency = async () => {
     toast.error("Invalid currency selected for editing.");
     return;
   }
+const isValid = validateEditCurrency();
 
-  if (!validateEditCurrency()) return;
+  if (!isValid) {
+    // Focus first invalid field
+    if (editErrors.code) editCodeRef.current?.focus();
+    else if (editErrors.name) editNameRef.current?.focus();
+    else if (editErrors.exchange_rate) editExchangeRateRef.current?.focus();
+    else if (editErrors.symbol) editSymbolRef.current?.focus();
+    else if (editErrors.branch) editBranchRef.current?.focus();
+    return;
+  }
 
   setIsSubmitting(true);
 
@@ -292,15 +310,18 @@ const handleEditSubmitCurrency = async () => {
       setEditModal(false);
     }
   } catch (error) {
-    console.error("Update currency error:", error);
-    toast.error('Failed to update currency!');
-    if (error.response?.data?.errors) {
-      setEditErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  } finally {
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Currency !";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+            ...error.response.data.errors,
+             }));
+                 }
+                        } finally {
     setIsSubmitting(false);
   }
 };
@@ -351,6 +372,13 @@ const handleDeleteCurrency = async (id) => {
                     })
                      setModal(false);
                      setEditModal(false)
+                     setAddCurrencyData({
+                        code: '',
+                        name: '',
+                        exchange_rate: '',
+                        symbol: '',
+                        branch: '',
+                     })
                    };
               useEffect(() => {
                         fetchBranches();
@@ -494,6 +522,7 @@ const handleDeleteCurrency = async (id) => {
                                        code:<span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
+                                      ref={codeRef}
                                         placeholder="Type here" 
                                         className="input w-[100%]  text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
@@ -513,6 +542,7 @@ const handleDeleteCurrency = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={nameRef}
                                         className="input w-full text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         value={addCurrencyData.name}
@@ -533,7 +563,8 @@ const handleDeleteCurrency = async (id) => {
 
                                             <input 
                                                 type="number" 
-                                                name="exchange_rate"  
+                                                name="exchange_rate"
+                                                ref={exchangeRateRef}  
                                                 placeholder="Type here" 
                                                 className="input border-gray-300 text-xs bg-white w-full rounded-lg border text-gray-500 border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                  style={{paddingLeft:'12px'}}
@@ -556,6 +587,7 @@ const handleDeleteCurrency = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={symbolRef}
                                         className="input w-full text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                        value={addCurrencyData.symbol}
@@ -571,6 +603,7 @@ const handleDeleteCurrency = async (id) => {
                                         <select
                                           name="branch"
                                           value={addCurrencyData.branch}
+                                          ref={branchRef}
                                           onChange={handleAddCurrencyChange}
                                           className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
                                           style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -635,6 +668,7 @@ const handleDeleteCurrency = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={editCodeRef}
                                         className="input w-[100%]  text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         value={editingCurrency.code || ''}
@@ -652,7 +686,8 @@ const handleDeleteCurrency = async (id) => {
                                        Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
-                                        placeholder="Type here" 
+                                        placeholder="Type here"
+                                        ref={editNameRef} 
                                         className="input w-full text-xs border-gray-300 text-gray-500 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         value={editingCurrency.name || ''}
@@ -674,7 +709,8 @@ const handleDeleteCurrency = async (id) => {
                                             <input 
                                                 type="number" 
                                                 name="exchange_rate"  // Must match your formData key
-                                                placeholder="Type here" 
+                                                placeholder="Type here"
+                                                ref={editExchangeRateRef} 
                                                 className="input text-gray-500 text-xs bg-white w-full rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                  style={{paddingLeft:'12px'}}
 
@@ -694,6 +730,7 @@ const handleDeleteCurrency = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={editSymbolRef}
                                         className="input w-full text-xs tex-gray-500 border-gray-300 bg-white rounded-lg focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         value={editingCurrency.symbol || ''}
@@ -712,6 +749,7 @@ const handleDeleteCurrency = async (id) => {
                                         <select
                                           name="branch"
                                           value={editingCurrency?.branch || ""}
+                                          ref={editBranchRef}
                                           onChange={handleEditCurrencyChange}
                                           className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
                                           style={{ paddingLeft: '12px', fontSize: '11px' }}

@@ -1,7 +1,7 @@
 import axiosInstance from "../Data/server/axiosinstance";
 
 const BranchModel = {
-  getBranches: (user_id, user_types, limit = 10, page = 1, search = '', status = '') => {
+  getBranches: (user_id, user_types='', limit = 10, page = 1, search = '', status = '') => {
     const params = new URLSearchParams({
       user_id,
       user_types,

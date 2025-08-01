@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "react-toastify";
+import BackButton from "../../components/BackButton";
 import createSupplierModel from "../../models/createSuppliersModel";
 import supplierModel from "../../models/supplierModel";
 import CurrencyModel from "../../models/currencyModel";
@@ -42,19 +43,19 @@ const EditSupplier = () => {
 
               const location = useLocation();
               const supplier = location.state?.supplier;
-              // console.log(supplier)
+               console.log(supplier)
 
               useEffect(() => {
                 const fetchData = async () => {
                   try {
                     const [supplierGroupRes, controlAccountRes, taxCategoryRes, addressTypeRes, countryRes, cityRes, currencyRes, purchaseUtilsRes] = await Promise.all([
-                      createSupplierModel.getSupplierGroups(user_id),
-                      createSupplierModel.getControlAccounts(user_id, user_types),
-                      createSupplierModel.getTaxCategories(user_id, user_types),
-                      createSupplierModel.getAddressTypes(user_id, user_types),
-                      createSupplierModel.getCountries(user_id, user_types),
-                      createSupplierModel.getCities(user_id, user_types),
-                      CurrencyModel.getCurrency(user_id, user_types),
+                      createSupplierModel.getSupplierGroups(user_id,user_types,1000, 1, '','True'),
+                      createSupplierModel.getControlAccounts(user_id,user_types,1000, 1, '','True'),
+                      createSupplierModel.getTaxCategories(user_id,user_types,1000, 1, '','True'),
+                      createSupplierModel.getAddressTypes(user_id,user_types,1000, 1, '','True'),
+                      createSupplierModel.getCountries(user_id,user_types,1000, 1, '','True'),
+                      createSupplierModel.getCities(user_id,user_types,1000, 1, '','True'),
+                      CurrencyModel.getCurrency(user_id,user_types,1000, 1, '','True'),
                       PurchaseUtils.getPurchaseUtils(),
                     ]);
 
@@ -86,21 +87,154 @@ const EditSupplier = () => {
                 }
                 }, [supplier]);
 
+                 const fieldRefs = {
+                  code: useRef(null),
+                  name: useRef(null),
+                  currency: useRef(null),
+                  control_account: useRef(null),
+                  supplier_group: useRef(null),
+                  tax_category: useRef(null),
+                  tax_in_no: useRef(null),
+                  tin_no: useRef(null),
+                  terms_of_payment: useRef(null),
+                  eun: useRef(null),
+                  supplier_image: useRef(null),
+                  address_type: useRef(null),
+                  address: useRef(null),
+                  language: useRef(null),
+                  country: useRef(null),
+                  city: useRef(null),
+                  zip_code: useRef(null),
+                  gsm_no: useRef(null),
+                  phone_no: useRef(null),
+                  fax_no: useRef(null),
+                  email: useRef(null),
+                  website: useRef(null),
+                  note: useRef(null),
+                  bank_name: useRef(null),
+                  bank_address: useRef(null),
+                  account_holder_name: useRef(null),
+                  account_number: useRef(null),
+                  account_code: useRef(null),
+                  IBAN: useRef(null),
+                  status: useRef(null),
+                };
+
                 const handleEditSupplierChange = (e) => {
                   const { name, value } = e.target;
                   setEditSupplierData((prev) => ({ ...prev, [name]: value }));
+                  setErrors((prevErrors) => {
+                    if (!prevErrors[name]) return prevErrors;
+                    const updatedErrors = { ...prevErrors };
+                    delete updatedErrors[name];
+                    return updatedErrors;
+                  });
                 };
 
+                // const validateEditSupplier = () => {
+                //   const newErrors = {};
+                //   if (!editSupplierData.name) newErrors.name = 'Name is required';
+                //   if (!editSupplierData.code) newErrors.code = 'Code is required';
+                //   if (!editSupplierData.currency) newErrors.currency = 'Currency is required';
+                //   if (!editSupplierData.address_type) newErrors.address_type = 'Adress_type is required';
+                //   if (!editSupplierData.country) newErrors.country = 'country is required';
+                //   setErrors(newErrors);
+                //   return Object.keys(newErrors).length === 0;
+                // };
                 const validateEditSupplier = () => {
-                  const newErrors = {};
-                  if (!editSupplierData.name) newErrors.name = 'Name is required';
-                  if (!editSupplierData.code) newErrors.code = 'Code is required';
-                  if (!editSupplierData.currency) newErrors.currency = 'Currency is required';
-                  if (!editSupplierData.address_type) newErrors.address_type = 'Adress_type is required';
-                  if (!editSupplierData.country) newErrors.country = 'country is required';
-                  setErrors(newErrors);
-                  return Object.keys(newErrors).length === 0;
-                };
+  const newErrors = {};
+
+  // Regex patterns
+  const alphanumericPattern = /^[a-zA-Z0-9-_]+$/;
+  const namePattern = /^[a-zA-Z\s.'-]{2,}$/;
+  const taxPattern = /^[A-Z0-9]{5,20}$/;
+  const zipCodePattern = /^[A-Za-z0-9\s-]{3,10}$/;
+  const phonePattern = /^\+?[0-9\s().-]{7,20}$/;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const ibanPattern = /^[A-Z]{2}[0-9]{2}[A-Z0-9]{11,30}$/;
+  const accountCodePattern = /^[A-Z0-9-_]{3,20}$/;
+
+  // Required field validations
+  if (!editSupplierData.code?.trim()) {
+    newErrors.code = "Supplier code is required";
+  } else if (!alphanumericPattern.test(editSupplierData.code)) {
+    newErrors.code = "Code must be alphanumeric (A-Z, 0-9) and may include '-' or '_'";
+  }
+
+  if (!editSupplierData.name?.trim()) {
+    newErrors.name = "Supplier name is required";
+  } else if (!namePattern.test(editSupplierData.name)) {
+    newErrors.name = "Name must contain only letters, spaces, apostrophes, or hyphens";
+  }
+
+  if (!editSupplierData.currency) {
+    newErrors.currency = "Currency is required";
+  }
+
+  if (!editSupplierData.country) {
+    newErrors.country = "Country is required";
+  }
+
+  if (!editSupplierData.address_type) {
+    newErrors.address_type = "Address type is required";
+  }
+
+  // Optional format validations
+  if (editSupplierData.tax_in_no && !taxPattern.test(editSupplierData.tax_in_no)) {
+    newErrors.tax_in_no = "Tax Identification Number must be 5–20 uppercase letters or numbers";
+  }
+
+  if (editSupplierData.tin_no && !taxPattern.test(editSupplierData.tin_no)) {
+    newErrors.tin_no = "TIN must be 5–20 uppercase letters or numbers";
+  }
+
+  if (editSupplierData.eun && !alphanumericPattern.test(editSupplierData.eun)) {
+    newErrors.eun = "EUN must be alphanumeric and may include '-' or '_'";
+  }
+
+  if (editSupplierData.zip_code && !zipCodePattern.test(editSupplierData.zip_code)) {
+    newErrors.zip_code = "ZIP Code must be 3–10 characters (letters, digits, spaces, or hyphens)";
+  }
+
+  if (editSupplierData.gsm_no && !phonePattern.test(editSupplierData.gsm_no)) {
+    newErrors.gsm_no = "GSM number must be 7–20 digits and may include '+', '(', ')', or dashes";
+  }
+
+  if (editSupplierData.phone_no && !phonePattern.test(editSupplierData.phone_no)) {
+    newErrors.phone_no = "Phone number must be 7–20 digits and may include '+', '(', ')', or dashes";
+  }
+
+  if (editSupplierData.fax_no && !phonePattern.test(editSupplierData.fax_no)) {
+    newErrors.fax_no = "Fax number must be 7–20 digits and may include '+', '(', ')', or dashes";
+  }
+
+  if (editSupplierData.email && !emailPattern.test(editSupplierData.email)) {
+    newErrors.email = "Email must be a valid format (e.g., example@domain.com)";
+  }
+
+  if (editSupplierData.bank_name && !namePattern.test(editSupplierData.bank_name)) {
+    newErrors.bank_name = "Bank name must contain only letters, spaces, apostrophes, or hyphens";
+  }
+
+  if (editSupplierData.account_holder_name && !namePattern.test(editSupplierData.account_holder_name)) {
+    newErrors.account_holder_name = "Account holder name must contain only letters, spaces, apostrophes, or hyphens";
+  }
+
+  if (editSupplierData.account_number && !/^[0-9]{6,20}$/.test(editSupplierData.account_number)) {
+    newErrors.account_number = "Account number must be 6–20 digits";
+  }
+   if (editSupplierData.account_code && !accountCodePattern.test(editSupplierData.account_code)) {
+    newErrors.account_code = "Account code must be 3–20 characters (uppercase letters, numbers, '-' or '_')";
+  }
+
+  if (editSupplierData.IBAN && !ibanPattern.test(editSupplierData.IBAN)) {
+    newErrors.IBAN = "IBAN must be in standard format (e.g., GB33BUKB20201555555555)";
+  }
+
+ 
+
+  return newErrors;
+};
 
 
               const handleEditSubmitSupplier = async () => {
@@ -109,7 +243,20 @@ const EditSupplier = () => {
                   return;
                 }
 
-                if (!validateEditSupplier()) return;
+               const validationErrors = validateEditSupplier();
+               console.log(validationErrors)
+                if (Object.keys(validationErrors).length > 0) {
+                setErrors(validationErrors);
+
+                const firstErrorKey = Object.keys(validationErrors)[0];
+                if (fieldRefs[firstErrorKey]?.current) {
+                  fieldRefs[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+                  fieldRefs[firstErrorKey].current.focus();
+                }
+
+                return;
+              }
+
                 setIsSubmitting(true);
 
                 try {
@@ -160,6 +307,7 @@ const EditSupplier = () => {
         mx-auto overflow-auto custom-scrollbar "
       style={{ fontFamily: 'Open Sans' }}
     >
+      <div style={{paddingTop:'20px',paddingRight:'20px'}}><BackButton to='/dashboard/supplier' /></div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7  justify-center items-center" style={{padding:'20px'}}>
 
         <div className="w-full">
@@ -168,12 +316,16 @@ const EditSupplier = () => {
             type="text"
             name="code"
             value={editSupplierData.code}
+              ref={fieldRefs.code}
             onChange={handleEditSupplierChange}
             placeholder="Type here"
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="input input-bordered bg-white input-sm w-full text-gray-500 rounded-lg 
                     focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.code && (
+            <span className="text-red-500 text-xs mt-1">{errors.code}</span>
+          )}
         </div>
 
       
@@ -183,12 +335,16 @@ const EditSupplier = () => {
             type="text"
             name="name"
             value={editSupplierData.name}
+              ref={fieldRefs.name}
             onChange={handleEditSupplierChange}
             placeholder="Type here"
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="input input-bordered bg-white input-sm w-full text-gray-500 rounded-lg 
                     focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.name && (
+            <span className="text-red-500 text-xs mt-1">{errors.name}</span>
+          )}
         </div>
 
          
@@ -198,6 +354,7 @@ const EditSupplier = () => {
             name="currency"
             onChange={handleEditSupplierChange}
             value={editSupplierData.currency}
+              ref={fieldRefs.currency}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
@@ -286,6 +443,7 @@ const EditSupplier = () => {
           <label className="text-xs font-bold text-[#344767]">Tax in no</label>
           <input
             type="text"
+              ref={fieldRefs.tax_in_no}
             placeholder="      Tax Identification Number"
             className="input bg-white text-gray-500 input-bordered input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -304,6 +462,7 @@ const EditSupplier = () => {
           <input
             type="text"
             placeholder="     TIN number"
+              ref={fieldRefs.tin_no}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             value={editSupplierData.tin_no}
@@ -344,6 +503,7 @@ const EditSupplier = () => {
           <input
             type="text"
             placeholder="    EUN"
+             ref={fieldRefs.eun}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             value={editSupplierData.eun}
@@ -371,7 +531,7 @@ const EditSupplier = () => {
               }
             }}
             style={{ paddingLeft: '10px' }}
-            className="file-input bg-white text-gray-500 border-gray-300 rounded-lg file-input-sm w-full"
+            className="border h-[33px] bg-white text-gray-500 border-gray-300 rounded-lg file-input-sm w-full"
           />
           {editSupplierData.supplier_image && typeof editSupplierData.supplier_image === "object" && (
             <p className="text-xs mt-1 text-gray-500">
@@ -387,6 +547,7 @@ const EditSupplier = () => {
           <select
             name="address_type"
             onChange={handleEditSupplierChange}
+             ref={fieldRefs.address_type}
             value={editSupplierData.address_type}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -443,6 +604,7 @@ const EditSupplier = () => {
         <select
           name="country"
           onChange={handleEditSupplierChange}
+            ref={fieldRefs.country}
           value={editSupplierData.country}
           style={{ paddingLeft: '12px', fontSize: '11px' }}
           className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -488,11 +650,15 @@ const EditSupplier = () => {
               type="text"
               name="zip_code"
               value={editSupplierData.zip_code}
+                ref={fieldRefs.zip_code}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="  Zip Code"
               className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+             {errors.zip_code && (
+            <span className="text-red-500 text-xs mt-1">{errors.zip_code}</span>
+          )}
           </div>
 
 
@@ -500,13 +666,18 @@ const EditSupplier = () => {
             <label className="text-xs font-bold text-[#344767]">GSM NUMBER</label>
             <input
               type="text"
-              name="gsm_number"
+              name="gsm_no"
               value={editSupplierData.gsm_no}
+                            ref={fieldRefs.gsm_no}
+
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="    GSM NUMBER"
               className="input input-bordered input-sm bg-white text-gray-500 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+            {errors.gsm_no && (
+            <span className="text-red-500 text-xs mt-1">{errors.gsm_no}</span>
+          )}
           </div>
 
           <div className="w-[90%]">
@@ -517,9 +688,13 @@ const EditSupplier = () => {
               value={editSupplierData.phone_no}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
+                ref={fieldRefs.phone_no}
               placeholder="    Phone no"
               className="input input-bordered input-sm bg-white text-gray-500 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+              {errors.phone_no && (
+            <span className="text-red-500 text-xs mt-1">{errors.phone_no}</span>
+          )}
           </div>
 
 
@@ -529,11 +704,16 @@ const EditSupplier = () => {
                 type="text"
                 name="fax_no"
                 value={editSupplierData.fax_no}
+                ref={fieldRefs.fax_no}
                 onChange={handleEditSupplierChange}
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 placeholder="   Fax no"
                 className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
               />
+               {errors.fax_no && (
+            <span className="text-red-500 text-xs mt-1">{errors.fax_no}</span>
+          )}
+              
           </div>
 
 
@@ -543,11 +723,15 @@ const EditSupplier = () => {
               type="text"
               name="email"
               value={editSupplierData.email}
+                ref={fieldRefs.email}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="   Email"
               className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+              {errors.email && (
+            <span className="text-red-500 text-xs mt-1">{errors.email}</span>
+          )}
           </div>
 
 
@@ -583,12 +767,16 @@ const EditSupplier = () => {
             <input
               type="text"
               name="bank_name"
+                ref={fieldRefs.bank_name}
               value={editSupplierData.bank_name}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="  Bank Name"
               className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+             {errors.bank_name && (
+            <span className="text-red-500 text-xs mt-1">{errors.bank_name}</span>
+          )}
           </div>
 
 
@@ -612,11 +800,15 @@ const EditSupplier = () => {
               type="text"
               name="account_holder_name"
               value={editSupplierData.account_holder_name}
+                ref={fieldRefs.account_holder_name}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="   Account Holder Name"
               className="input input-bordered input-sm w-full rounded-lg bg-white text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+             {errors.account_holder_name && (
+            <span className="text-red-500 text-xs mt-1">{errors.account_holder_name}</span>
+          )}
           </div>
 
 
@@ -627,10 +819,14 @@ const EditSupplier = () => {
               name="account_number"
               value={editSupplierData.account_number}
               onChange={handleEditSupplierChange}
+                ref={fieldRefs.account_number}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="  Account number"
               className="input input-bordered input-sm w-full rounded-lg bg-white text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+              {errors.account_number && (
+            <span className="text-red-500 text-xs mt-1">{errors.account_number}</span>
+          )}
           </div>
 
 
@@ -639,12 +835,16 @@ const EditSupplier = () => {
             <input
               type="text"
               name="account_code"
+               ref={fieldRefs.account_code}
               value={editSupplierData.account_code}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="  Account Code"
               className="input input-bordered input-sm w-full rounded-lg bg-white text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+             {errors.account_code && (
+            <span className="text-red-500 text-xs mt-1">{errors.account_code}</span>
+          )}
           </div>
 
 
@@ -653,12 +853,16 @@ const EditSupplier = () => {
             <input
               type="text"
               name="IBAN"
+               ref={fieldRefs.IBAN}
               value={editSupplierData.IBAN}
               onChange={handleEditSupplierChange}
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               placeholder="  International Bank Account Number"
               className="input input-bordered input-sm w-full rounded-lg bg-white text-gray-500 focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+             {errors.IBAN && (
+            <span className="text-red-500 text-xs mt-1">{errors.IBAN}</span>
+          )}
           </div>
 
 

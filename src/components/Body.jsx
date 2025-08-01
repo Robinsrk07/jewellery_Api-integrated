@@ -4,15 +4,18 @@ import { Link, Outlet, useNavigate } from 'react-router-dom';
 import '@fortawesome/fontawesome-free/css/all.min.css';
 import BreadCrump from './BreadCrump';
 import CardMoblie from './CardMoblie';
+import AuthModel from '../models/authModels';
+import { useSelector } from 'react-redux';
 
 
 const Body = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);   
   const panelRef = useRef();
   const navigate = useNavigate();
-  const handleLogout = () => {
+  const handleLogout = async() => {
+   
     navigate('/logout');
   };
   useEffect(() => {

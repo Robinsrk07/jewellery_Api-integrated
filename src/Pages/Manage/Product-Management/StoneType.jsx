@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import stoneTypeModel from "../../../models/stoneTypeModel";
@@ -44,7 +44,12 @@ const StoneType=()=>{
                         name: '',
                         description: '',
                         status: '',
-                      });
+                      }); 
+
+                        const nameRef = useRef(null);
+                        const editNameRef = useRef(null);
+
+
 
                       const fetchStoneTypes = async () => {
                         try {
@@ -58,10 +63,10 @@ const StoneType=()=>{
                             status
                           );
 
-                          console.log("Response from API:", response);
+                        
 
                           if (response.data && response.data.data) {
-                            console.log("Stone Types Received:", response.data.data);
+                          
                             setStoneTypes(response.data.data);
                             if (response.data.pagination) {
                               setTotalPages(response.data.pagination.pages);
@@ -81,11 +86,22 @@ const StoneType=()=>{
                         fetchStoneTypes();
                       }, [limit, page, search, status]);
 
-                      const validateStoneType = () => {
-                        const newErrors = {};
-                        if (!addStoneTypeData.name.trim()) newErrors.name = 'Please enter name';
-                        return newErrors;
-                      };
+const validateStoneType = () => {
+  const newErrors = {};
+  let focusRef = null;
+
+  if (!addStoneTypeData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    focusRef = nameRef;
+  }
+
+  setErrors(newErrors);
+
+  if (focusRef?.current) focusRef.current.focus();
+
+  return newErrors
+};
+
 
                       const handleAddStoneTypeChange = (e) => {
                         const { name, value } = e.target;
@@ -99,9 +115,7 @@ const StoneType=()=>{
                         }
                       };
 
-                      useEffect(() => {
-                        console.log("Updated Stone Type form state:", addStoneTypeData);
-                      }, [addStoneTypeData]);
+                    
 
                       const handleSubmitStoneType = async () => {
                         const validationErrors = validateStoneType();
@@ -114,47 +128,48 @@ const StoneType=()=>{
                           name: addStoneTypeData.name,
                           description: addStoneTypeData.description,
                           status: addStoneTypeData.status === 'true',
-                          created_by: user_id,
-                          created_by_type: user_types,
+                          
                         };
 
-                        console.log("Stone Type Payload being sent:", payload);
-
+                        
                         try {
                           const response = await stoneTypeModel.createStoneType(payload);
-                          console.log("Create Stone Type response:", response);
-
+                         
                           if (response.status === 201 || response.status === 200) {
-                            fetchStoneTypes();        
-                            handleCloseModal();       
+                            fetchStoneTypes();     
+                            handleCloseModal(); 
+   
                             toast.success('Stone type created successfully!');
                           }
-                        } catch (error) {
-                          console.error("Create stone type error:", error);
-                          toast.error('Failed to create stone type!');
-                          handleCloseModal();
-
+                        }  catch (error) {
+                          const message =
+                          error?.response?.data?.errors?.name?.[0] ||
+                          error?.response?.data?.message ||
+                          "Failed to create Adress Type!";
+                          toast.error(message);
                           if (error.response?.data?.errors) {
-                            setErrors((prev) => ({
-                              ...prev,
-                              ...error.response.data.errors,
-                            }));
-                          }
+                            setErrors(prev => ({
+                            ...prev,
+                            ...error.response.data.errors,
+                          }));
                         }
+                                }
                       };
 
                       const validateEditStoneType = () => {
-                        let valid = true;
-                        const newErrors = { name: '', description: '', status: '' };
+                      const newErrors = { };
+                      let focusRef = null;
 
-                        if (!editingStoneType?.name?.trim()) {
-                          newErrors.name = 'Stone type name is required';
-                          valid = false;
-                        }
+                      if (!editingStoneType?.name?.trim()) {
+                        newErrors.name = 'Stone type name is required';
+                        focusRef = editNameRef;
+                      }
 
-                        setErrors(newErrors);
-                        return valid;
-                      };
+                      setErrors(newErrors);
+                      if (focusRef?.current) focusRef.current.focus();
+                      return newErrors
+                    };
+
 
                       const handleEditStoneTypeChange = (e) => {
                         const { name, value } = e.target;
@@ -168,27 +183,30 @@ const StoneType=()=>{
                         }
                       };
 
-                      const handleEditClickStoneType = (typeObj) => {
-                        if (!typeObj || typeof typeObj !== 'object' || !typeObj.id) {
-                          console.warn("Invalid object passed to handleEditClickStoneType:", typeObj);
-                          toast.error("Invalid stone type selected.");
-                          return;
-                        }
+                      // const handleEditClickStoneType = (typeObj) => {
+                      //   if (!typeObj || typeof typeObj !== 'object' || !typeObj.id) {
+                      //     console.warn("Invalid object passed to handleEditClickStoneType:", typeObj);
+                      //     toast.error("Invalid stone type selected.");
+                      //     return;
+                      //   }
 
-                        console.log("Selected for Edit:", typeObj);
-                        setEditingStoneType({ ...typeObj });
-                        setEditModal(true);
-                      };
+                      //   console.log("Selected for Edit:", typeObj);
+                      //   setEditingStoneType({ ...typeObj });
+                      //   setEditModal(true);
+                      // };
 
                       const handleEditSubmitStoneType = async () => {
-                        console.log("Editing Stone Type:", editingStoneType);
 
                         if (!editingStoneType?.id) {
                           toast.error("Invalid stone type selected for editing.");
                           return;
                         }
 
-                        if (!validateEditStoneType()) return;
+                         const validationErrors = validateEditStoneType();
+                        if (Object.keys(validationErrors).length > 0) {
+                          setErrors(validationErrors);
+                          return;
+                        }
 
                         setIsSubmitting(true);
 
@@ -208,16 +226,19 @@ const StoneType=()=>{
                             toast.success('Stone type updated successfully!');
                             setEditModal(false);
                           }
-                        } catch (error) {
-                          console.error("Update error:", error);
-                          toast.error('Failed to update stone type!');
+                        }  catch (error) {
+                          const message =
+                          error?.response?.data?.errors?.name?.[0] ||
+                          error?.response?.data?.message ||
+                          "Failed to create Adress Type!";
+                          toast.error(message);
                           if (error.response?.data?.errors) {
-                            setErrors((prev) => ({
-                              ...prev,
-                              ...error.response.data.errors,
-                            }));
-                          }
-                        } finally {
+                            setErrors(prev => ({
+                            ...prev,
+                            ...error.response.data.errors,
+                          }));
+                        }
+                                } finally {
                           setIsSubmitting(false);
                         }
                       };
@@ -371,6 +392,7 @@ const StoneType=()=>{
                                         </label>
                                         <input type="text" 
                                           placeholder="Type here" 
+                                           ref={nameRef}
                                           className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                           style={{paddingLeft:'12px'}}
                                           value={addStoneTypeData.name}
@@ -467,6 +489,7 @@ const StoneType=()=>{
                                                     </label>
                                                     <input type="text" 
                                                       placeholder="Type here" 
+                                                       ref={editNameRef}
                                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                                       style={{paddingLeft:'12px'}}
                                                       value={editingStoneType?.name || ''}

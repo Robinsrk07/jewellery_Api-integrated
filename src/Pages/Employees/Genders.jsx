@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import employeeGenderModel from "../../models/employeeGenderModel";
@@ -32,7 +32,8 @@ const Genders = () => {
     name: '',
     status: '',
   });
-
+ const nameRef = useRef(null)
+ const EditNameREf = useRef(null)
   // Get user_id and user_types from redux if available, else fallback
   const auth = useSelector((state) => state.auth || {});
   const user_id = auth.login_id || 1;
@@ -62,11 +63,31 @@ const Genders = () => {
     fetchGenders();
   }, [limit, page, search, status]);
 
-  const validateGender = () => {
-    const newErrors = {};
-    if (!addGenderData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+const validateGender = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  const nameRegex = /^[A-Za-z\s-]{2,}$/; // Optional: validate name format
+
+  if (!addGenderData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  } else if (!nameRegex.test(addGenderData.name.trim())) {
+    newErrors.name = 'Only letters, spaces, and hyphens allowed';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+
+  // Focus the field
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+    firstInvalidRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleAddGenderChange = (e) => {
     const { name, value } = e.target;
@@ -75,11 +96,9 @@ const Genders = () => {
   };
 
   const handleSubmitGender = async () => {
-    const validationErrors = validateGender();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+    const isValid = validateGender();
+  if (!isValid) return; 
+
     const payload = {
       name: addGenderData.name,
     };
@@ -91,28 +110,52 @@ const Genders = () => {
         toast.success('Gender created successfully!');
       }
     } catch (error) {
-      console.error("Create gender error:", error);
-      toast.error('Failed to create gender!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Gender!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               }
   };
 
-  const validateEditGender = () => {
-    const newErrors = { name: '', status: '' };
-    let valid = true;
-    if (!editingGender?.name?.trim()) {
-      newErrors.name = 'Gender name is required';
-      valid = false;
+ const validateEditGender = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  const nameRegex = /^[A-Za-z\s-]{2,}$/;
+
+  if (!editingGender?.name?.trim()) {
+    newErrors.name = 'Gender name is required';
+    firstInvalidRef = EditNameREf;
+  } else if (!nameRegex.test(editingGender.name.trim())) {
+    newErrors.name = 'Only letters, spaces, and hyphens allowed';
+    firstInvalidRef = EditNameREf;
+  }
+
+  if (editingGender?.status === undefined || editingGender.status === '') {
+    newErrors.status = 'Status is required';
+    if (!firstInvalidRef) {
+      const statusElement = document.querySelector('select[name="status"]');
+      if (statusElement) firstInvalidRef = { current: statusElement };
     }
-    if (editingGender?.status === undefined || editingGender.status === '') {
-      newErrors.status = 'Status is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+    firstInvalidRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickGender = (genderObj) => {
     if (!genderObj || typeof genderObj !== 'object' || !genderObj.id) {
@@ -137,7 +180,9 @@ const Genders = () => {
       toast.error("Invalid gender selected for editing.");
       return;
     }
-    if (!validateEditGender()) return;
+    const isValid = validateEditGender();
+    if (!isValid) return;
+
     setIsSubmitting(true);
     try {
       const response = await employeeGenderModel.updateGender(
@@ -153,12 +198,18 @@ const Genders = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update gender error:", error);
-      toast.error('Failed to update gender!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+             const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Gender!";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+           ...error.response.data.errors,
+             }));
+                   }
+               } finally {
       setIsSubmitting(false);
     }
   };
@@ -249,8 +300,9 @@ const Genders = () => {
             <hr className=" border-gray-300"/>
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Gender:</label>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addGenderData.name} onChange={handleAddGenderChange} name="name" />
+            <div>  <input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addGenderData.name} onChange={handleAddGenderChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
+              </div>
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
               <button type="button" className="btn w-[100px] h-[35px] rounded-lg text-white border-none" style={{ backgroundColor: '#8392ab' }} onClick={handleCloseModal}>Close</button>
@@ -266,8 +318,9 @@ const Genders = () => {
             <hr className=" border-gray-300"/>
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Gender:</label>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingGender?.name || ''} onChange={handleEditGenderChange} name="name" />
+              <div><input type="text" placeholder="Type here" ref={EditNameREf} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingGender?.name || ''} onChange={handleEditGenderChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
+              </div>
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>
               <select
                 className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500"

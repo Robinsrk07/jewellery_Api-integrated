@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -49,6 +49,44 @@ const [errors, setErrors] = useState({
   state: '',
   district: '',
 });
+const [editErrors, seteditErrors] = useState({
+  code: '',
+  name: '',
+  country: '',
+  state: '',
+  district: '',
+});
+
+const codeRef = useRef(null)
+const nameRef = useRef(null)
+const countryRef = useRef(null)
+const stateRef = useRef(null)
+const districtRef = useRef(null)
+
+const refFeild ={
+  code :codeRef,
+  name:nameRef,
+  country:countryRef,
+  state:stateRef,
+  district:districtRef
+}
+const codeEditRef = useRef(null)
+const nameEditRef = useRef(null)
+const countryEditRef = useRef(null)
+const stateEditRef = useRef(null)
+const districtEditRef = useRef(null)
+
+const refEditFeild ={
+  code :codeEditRef,
+  name:nameEditRef,
+  country:countryEditRef,
+  state:stateEditRef,
+  district:districtEditRef
+}
+
+
+
+
 
 const auth = useSelector((state) => state.auth);
 const { login_id, can_manage_user_types } = auth;
@@ -184,6 +222,10 @@ const handleAddCityAreaChange = (e) => {
     ...prev,
     [name]: value,
   }));
+  setErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 
@@ -220,10 +262,17 @@ const validateCityArea = () => {
 
 const handleSubmitCityArea = async () => {
   const validationErrors = validateCityArea();
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    return;
-  }
+   if (Object.keys(validationErrors).length > 0) {
+                        setErrors(validationErrors);
+
+                        const firstErrorKey = Object.keys(validationErrors)[0];
+                        if (refFeild[firstErrorKey]?.current) {
+                          refFeild[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+                          refFeild[firstErrorKey].current.focus();
+                        }
+
+                        return;
+                      }
 
   const payload = {
     code: addCityAreaData.code.trim(),
@@ -235,11 +284,11 @@ const handleSubmitCityArea = async () => {
     status: Boolean(addCityAreaData.status),
   };
 
-  console.log("City Area Payload being sent:", payload);
+
 
   try {
     const response = await CityAreaModel.createCityArea(payload);
-    console.log("Create City Area response:", response);
+  
 
     if (response.status === 201 || response.status === 200) {
       toast.success("City Area created successfully!");
@@ -260,7 +309,7 @@ const handleSubmitCityArea = async () => {
     }
   } catch (error) {
     console.error("Create City Area error:", error);
-    console.log("Error response:", error.response?.data);
+ 
     toast.error("Failed to create city area!");
 
     handleCloseModal();
@@ -276,43 +325,42 @@ const handleSubmitCityArea = async () => {
 
 
 
-const [editCityAreaErrors, setEditCityAreaErrors] = useState({});
 
 const validateEditCityArea = () => {
-  let valid = true;
+  
   const errors = {};
 
   if (!editingCityArea?.country) {
     errors.country = 'Country is required';
-    valid = false;
+    
   }
   if (!editingCityArea?.city) {
     errors.city = 'City is required';
-    valid = false;
+    
   }
 
   if (!editingCityArea?.state) {
     errors.state = 'State is required';
-    valid = false;
+    
   }
 
   if (!editingCityArea?.district) {
     errors.district = 'District is required';
-    valid = false;
+   
   }
 
   if (!editingCityArea?.code?.trim()) {
     errors.code = 'Code is required';
-    valid = false;
+   
   }
 
   if (!editingCityArea?.name?.trim()) {
     errors.name = 'Name is required';
-    valid = false;
+    
   }
 
-  setEditCityAreaErrors(errors);
-  return valid;
+  
+  return errors
 };
 
 
@@ -343,7 +391,13 @@ const handleEditCityAreaChange = (e) => {
     ...prev,
     [name]: name === 'status' ? (value === 'true') : value,
   }));
+
+  seteditErrors((prev) => ({
+    ...prev,
+    [name]: ''
+  }));
 };
+
 
 const handleEditSubmitCityArea = async () => {
   if (!editingCityArea?.id) {
@@ -351,7 +405,19 @@ const handleEditSubmitCityArea = async () => {
     return;
   }
 
-  if (!validateEditCityArea()) return;
+
+   const validationErrors = validateEditCityArea();
+   if (Object.keys(validationErrors).length > 0) {
+          seteditErrors(validationErrors);
+
+           const firstErrorKey = Object.keys(validationErrors)[0];
+           if (refEditFeild[firstErrorKey]?.current) {
+           refEditFeild[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+           refEditFeild[firstErrorKey].current.focus();
+              }
+
+             return;
+            }
 
   setIsSubmitting(true);
 
@@ -375,12 +441,7 @@ const handleEditSubmitCityArea = async () => {
   } catch (error) {
     console.error("Update city area error:", error);
     toast.error('Failed to update city area!');
-    if (error.response?.data?.errors) {
-      setEditCityAreaErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
+   
   } finally {
     setIsSubmitting(false);
   }
@@ -413,9 +474,25 @@ const handleDeleteCityArea = async (id) => {
         name: '',
         status: ''
     });
+    seteditErrors({
+        code: '',
+        name: '',
+        status: ''
+    });
+    setAddCityAreaData({
+  code: '',
+  name: '',
+  country: '',
+  state: '',
+  district: '',  
+})
     setModal(false);
     setEditModal(false);
     };
+
+    const firstErrorKey = Object.keys(errors)[0];
+  
+    const firstEditErrorKey = Object.keys(editErrors)[0];
               
                     return (
                       
@@ -528,6 +605,7 @@ const handleDeleteCityArea = async (id) => {
                                       </label>
                                       <input
                                         type="text"
+                                        ref={refFeild.code}
                                         placeholder="Type here"
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
@@ -543,7 +621,7 @@ const handleDeleteCityArea = async (id) => {
                                       
                                       </div>
                                       <div>
-                                       <label                                      
+                                      <label                                      
                                         className="font-semibold text-xs text-[#344767] w-[80%]"
                                       >
                                        Name:<span className="text-xs text-red-400">*</span>
@@ -551,6 +629,7 @@ const handleDeleteCityArea = async (id) => {
                                      <input
                                       type="text"
                                       placeholder="Type here"
+                                      ref={refFeild.name}
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
                                       name="name"
@@ -572,10 +651,13 @@ const handleDeleteCityArea = async (id) => {
                                     <select
                                         name="country"
                                         value={addCityAreaData.country}
+                                        ref={refFeild.country}
                                         onChange={handleAddCityAreaChange}
-                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                         className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstErrorKey === 'country' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
                                         style={{ paddingLeft: '12px', fontSize: '11px' }}
-                                    >
+                                      >
                                         <option value="">Select Country</option>
                                         {countries.map((country) => (
                                         <option key={country.id} value={country.id}>
@@ -596,9 +678,12 @@ const handleDeleteCityArea = async (id) => {
                                         name="state"
                                         value={addCityAreaData.state}
                                         onChange={handleAddCityAreaChange}
-                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                        ref={refFeild.state}
+                                         className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstErrorKey === 'state' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
                                         style={{ paddingLeft: '12px', fontSize: '11px' }}
-                                    >
+                                      >
                                         <option value="">Select State</option>
                                         {states.map((state) => (
                                         <option key={state.id} value={state.id}>
@@ -615,10 +700,13 @@ const handleDeleteCityArea = async (id) => {
                                         <select
                                             name="district"
                                             value={addCityAreaData.district}
+                                            ref={refFeild.district}
                                             onChange={handleAddCityAreaChange}
-                                            className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
-                                            style={{ paddingLeft: '12px', fontSize: '11px' }}
-                                        >
+                                              className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstErrorKey === 'district' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                      >
                                             <option value="">Select District</option>
                                             {districts.map((district) => (
                                             <option key={district.id} value={district.id}>
@@ -637,10 +725,13 @@ const handleDeleteCityArea = async (id) => {
                                         <select
                                             name="city"
                                             value={addCityAreaData.city}
+                                            ref={refFeild.city}
                                             onChange={handleAddCityAreaChange}
-                                            className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
-                                            style={{ paddingLeft: '12px', fontSize: '11px' }}
-                                        >
+                                             className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstErrorKey === 'city' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                      >
                                             <option value="">Select City</option>
                                             {cities.map((city) => (
                                             <option key={city.id} value={city.id}>
@@ -692,6 +783,7 @@ const handleDeleteCityArea = async (id) => {
                         </label>
                         <input
                             type="text"
+                            ref={refEditFeild.code}
                             name="code"
                             placeholder="Type here"
                             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
@@ -699,8 +791,8 @@ const handleDeleteCityArea = async (id) => {
                             value={editingCityArea?.code || ''}
                             onChange={handleEditCityAreaChange}
                         />
-                        {editCityAreaErrors.code && (
-                            <p className="text-red-500 text-xs mt-1">{editCityAreaErrors.code}</p>
+                        {editErrors.code && (
+                            <p className="text-red-500 text-xs mt-1">{editErrors.code}</p>
                         )}
                         </div>
 
@@ -712,14 +804,15 @@ const handleDeleteCityArea = async (id) => {
                         <input
                             type="text"
                             placeholder="Type here"
+                            ref={refEditFeild.name}
                             name="name"
                             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                             style={{paddingLeft:'12px'}}
                             value={editingCityArea?.name || ''}
                             onChange={handleEditCityAreaChange}
                         />
-                        {editCityAreaErrors.name && (
-                            <p className="text-red-500 text-xs mt-1">{editCityAreaErrors.name}</p>
+                        {editErrors.name && (
+                            <p className="text-red-500 text-xs mt-1">{editErrors.name}</p>
                         )}
                                     </div>
 
@@ -730,10 +823,13 @@ const handleDeleteCityArea = async (id) => {
                             <select
                                 name="country"
                                 value={editingCityArea.country}
+                                ref={refEditFeild.country}
                                 onChange={handleEditCityAreaChange}
-                                className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
-                                style={{ paddingLeft: '12px', fontSize: '11px' }}
-                            >
+                                className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstEditErrorKey === 'country' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                      >
                                 <option value="">Select Country</option>
                                 {countries.map((country) => (
                                 <option key={country.id} value={country.id}>
@@ -741,7 +837,7 @@ const handleDeleteCityArea = async (id) => {
                                 </option>
                                 ))}
                             </select>
-                            <p className="text-xs text-red-400">{editCityAreaErrors.country}</p>
+                            <p className="text-xs text-red-400">{editErrors.country}</p>
                             </div>
 
                             {/* State - Edit */}
@@ -751,11 +847,14 @@ const handleDeleteCityArea = async (id) => {
                             </label>
                             <select
                                 name="state"
+                                ref={refEditFeild.state}
                                 value={editingCityArea.state}
                                 onChange={handleEditCityAreaChange}
-                                className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
-                                style={{ paddingLeft: '12px', fontSize: '11px' }}
-                            >
+                               className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstEditErrorKey === 'state' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                      >
                                 <option value="">Select State</option>
                                 {states.map((state) => (
                                 <option key={state.id} value={state.id}>
@@ -763,7 +862,7 @@ const handleDeleteCityArea = async (id) => {
                                 </option>
                                 ))}
                             </select>
-                            <p className="text-xs text-red-400">{editCityAreaErrors.state}</p>
+                            <p className="text-xs text-red-400">{editErrors.state}</p>
                             </div>
 
                             <div className="w-full flex flex-col gap-2">
@@ -771,12 +870,15 @@ const handleDeleteCityArea = async (id) => {
                                 District <span className="text-xs text-red-400">*</span>
                             </label>
                             <select
-                                name="state"
+                                name="district"
                                 value={editingCityArea.district}
+                                ref={refEditFeild.district}
                                 onChange={handleEditCityAreaChange}
-                                className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
-                                style={{ paddingLeft: '12px', fontSize: '11px' }}
-                            >
+                                className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstEditErrorKey === 'district' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                      >
                                 <option value="">Select State</option>
                                 {districts.map((district) => (
                                 <option key={district.id} value={district.id}>
@@ -784,7 +886,7 @@ const handleDeleteCityArea = async (id) => {
                                 </option>
                                 ))}
                             </select>
-                            <p className="text-xs text-red-400">{editCityAreaErrors.district}</p>
+                            <p className="text-xs text-red-400">{editErrors.district}</p>
                             </div>
 
                             <div className="w-full flex flex-col gap-2">
@@ -792,12 +894,15 @@ const handleDeleteCityArea = async (id) => {
                                 City <span className="text-xs text-red-400">*</span>
                             </label>
                             <select
-                                name="state"
+                                name="city"
                                 value={editingCityArea.city}
+                                ref={refEditFeild.city}
                                 onChange={handleEditCityAreaChange}
-                                className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
-                                style={{ paddingLeft: '12px', fontSize: '11px' }}
-                            >
+                                className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstEditErrorKey === 'city' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
+                                        style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                      >
                                 <option value="">Select State</option>
                                 {cities.map((city) => (
                                 <option key={city.id} value={city.id}>
@@ -805,7 +910,7 @@ const handleDeleteCityArea = async (id) => {
                                 </option>
                                 ))}
                             </select>
-                            <p className="text-xs text-red-400">{editCityAreaErrors.city}</p>
+                            <p className="text-xs text-red-400">{editErrors.city}</p>
                             </div>
 
 

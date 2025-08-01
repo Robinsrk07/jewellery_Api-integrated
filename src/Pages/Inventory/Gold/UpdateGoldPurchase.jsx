@@ -5,6 +5,7 @@ import PurchaseModel from "../../../models/PurchaseModel";
 import { useParams } from "react-router";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
+import useFieldRefs from "../../../hooks/useFieldRef";
 const UpdateGoldPurchase = () => {
   const [data, setData] = useState({
     purchase_type: '',
@@ -21,17 +22,17 @@ const UpdateGoldPurchase = () => {
     multi_stone_rate: '',
     gross_weight: '',
     discount: '',
-    tag_line_1: '',
-    tag_line_2: '',
-    tag_line_3: '',
-    tag_line_4: '',
+    tagline_1: '',
+    tagline_2: '',
+    tagline_3: '',
+    tagline_4: '',
     tag_defenition: '',
     alias: '',
     status: '',
     description: '',
     item_type: '',
     terms_of_payment: '',
-    due_date: '',
+    purchase_date: '',
     supplier: '',
     reference_no: '',
     stock_point: '',
@@ -74,7 +75,7 @@ const UpdateGoldPurchase = () => {
   const [status, setStatus] = useState('');
   const navigate = useNavigate()
   const [purchaseData,setPurchaseData] =useState([])
-  console.log(purchaseData);
+  
   
   const FetchPurchaseData =async()=>{
    try{
@@ -88,9 +89,9 @@ const UpdateGoldPurchase = () => {
   useEffect(() => {
     FetchPurchaseData(); 
   }, [limit, page, search, status]);
-  console.log(itemId,id);
+  
   const requiredItem = purchaseData.filter((item)=>item.id == itemId )
-  console.log(requiredItem);
+  
   
 
 
@@ -98,7 +99,7 @@ const UpdateGoldPurchase = () => {
     try {
       const response = await PurchaseUtils.getPurchaseUtils();
       setUtilsData(response.data);
-      console.log("Utils Data fetched successfully:", response.data);
+      
     } catch (error) {
       console.error("Error fetching utils data:", error);
     }
@@ -135,18 +136,52 @@ const UpdateGoldPurchase = () => {
     // If value is a string (name), find the corresponding ID
     return findIdByName(key, value);
   };
+   const fieldRefs = useFieldRefs([
+    'items',
+    'making_rate',
+    'stone_rate',
+    'stone_weight',
+    'gross_weight',
+    'supplier',
+    'stock_point',
+    'document_currency',
+      'multi_stone_rate',
+    'multi_stone_weight',
+    'discount',
+  ]);
 
 const validateForm = () => {
-  const newErrors = {};
   const requiredFields = [
-
+    'document_currency',
+    'supplier',
+    'stock_point',
+    'items',
+    'making_rate',
+    'stone_rate',
+    'stone_weight',
+    'gross_weight',
+  
   ];
-  requiredFields.forEach(field => {
+
+  const newErrors = {};
+  let firstInvalidField = null;
+
+  for (const field of requiredFields) {
     if (!data[field]?.toString().trim()) {
       newErrors[field] = 'This field is required';
+      if (!firstInvalidField) firstInvalidField = field;
     }
-  });
+  }
+
   setErrors(newErrors);
+
+  if (firstInvalidField && fieldRefs[firstInvalidField]?.current) {
+    setTimeout(() => {
+      fieldRefs[firstInvalidField].current.focus();
+      fieldRefs[firstInvalidField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
+  }
+
   return Object.keys(newErrors).length === 0;
 };
  
@@ -231,14 +266,62 @@ const validateForm = () => {
     if (shouldRedirect) {
       navigate('/dashboard/purchase');
     }
-  } catch (error) {
-    console.error("Error updating purchase:", error);
-    if (error.response) {
-      toast.error(`Error: ${error.response.data?.message || 'Unable to update Purchase'}`);
-    } else {
-      toast.error("Unable to update Purchase, Please try again later.");
+  }  catch (error) {
+ 
+  let message = "Unable to Create Purchase, Please try again later.";
+  const errorData = error.response?.data;
+
+  if (errorData?.errors) {
+    const serverErrors = errorData.errors;
+    const fieldErrors = {};
+    let firstErrorField = null;
+    let firstErrorMessage = "";
+
+    if (typeof serverErrors === 'string') {
+      // 🔥 Server returned a newline-separated string
+      const errorLines = serverErrors.split('\n').filter(Boolean);
+      
+      errorLines.forEach(line => {
+        const [field, ...msgParts] = line.split(':');
+        if (field && msgParts.length) {
+          const fieldKey = field.trim();
+          const errorMsg = msgParts.join(':').trim();
+          fieldErrors[fieldKey] = errorMsg;
+
+          if (!firstErrorField) {
+            firstErrorField = fieldKey;
+            firstErrorMessage = errorMsg;
+          }
+        }
+      });
+
+      message = firstErrorMessage || errorData.errors|| "Validation error.";
+    } else if (typeof serverErrors === 'object') {
+      for (let key in serverErrors) {
+        fieldErrors[key] = Array.isArray(serverErrors[key]) ? serverErrors[key][0] : serverErrors[key];
+        if (!firstErrorField) {
+          firstErrorField = key;
+          firstErrorMessage = fieldErrors[key];
+        }
+      }     
+      message = firstErrorMessage || errorData.message || "Validation error.";
     }
+
+    setErrors(fieldErrors);
+    
+    // 🔍 Focus the first error field if ref exists
+    if (firstErrorField && fieldRefs[firstErrorField]?.current) {
+      setTimeout(() => {
+        fieldRefs[firstErrorField].current.focus();
+        fieldRefs[firstErrorField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  } else if (errorData?.message) {
+    message = errorData.message;
   }
+
+  toast.error(message);
+}
 };
  
 
@@ -253,13 +336,12 @@ const validateForm = () => {
       const requiredItem = purchaseData.find((item) => item.id == itemId);
       
       if (requiredItem) {
-        console.log('Raw API data for item:', requiredItem);
-        console.log('Available fields:', Object.keys(requiredItem));
+       
         
         // Map existing data to form fields - store IDs, not names
         setData({
           purchase_type: requiredItem.purchase_type || '',
-          items: requiredItem.items_id || requiredItem.items || '', // Use items_id if available
+          items: requiredItem.items || '', // Use items_id if available
           design: requiredItem.design_id || requiredItem.design || '',
           brand: requiredItem.brand_id || requiredItem.brand || '', // Store brand name, will be converted to ID by helper
           made_in: requiredItem.made_in_id || requiredItem.made_in || '',
@@ -276,13 +358,13 @@ const validateForm = () => {
           tagline_2: requiredItem.tagline_2 || '',
           tagline_3: requiredItem.tagline_3 || '',
           tagline_4: requiredItem.tagline_4 || '',
-          tagdefenition: requiredItem.tag_defenition || '',
+          tag_definition: requiredItem.tag_definition || '',
           alias: requiredItem.alias || '',
           status: requiredItem.status || '',
           description: requiredItem.description || '',
           item_type: requiredItem.item_type_id || requiredItem.item_type || '',
           terms_of_payment: requiredItem.terms_of_payment_id || requiredItem.terms_of_payment || '',
-          due_date: requiredItem.due_date || '',
+          purchase_date: requiredItem.purchase_date || '',
           supplier: requiredItem.supplier_id || requiredItem.supplier || '',
           reference_no: requiredItem.reference_no || '',
           stock_point: requiredItem.stock_point_id || requiredItem.stock_point || '',
@@ -343,11 +425,10 @@ const validateForm = () => {
           <select 
             name="document_currency"
             value={data.document_currency}
+            ref={fieldRefs.document_currency}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.document_currency ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Document Currency</option>
             {getUtilsData('default_currency') && (
@@ -374,9 +455,7 @@ const validateForm = () => {
             value={data.terms_of_payment}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select bg-white select-bordered select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.terms_of_payment ? 'border-red-500' : ''
-            }`}
+            className={`select bg-white select-bordered select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Terms of Payment</option>
             {getUtilsData('terms_of_payment').map(term => (
@@ -395,7 +474,7 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Date</label>
           <input
             type="date"
-            name="due_date"
+            name="purchase_date"
             value={data.purchase_date}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -413,10 +492,10 @@ const validateForm = () => {
             name="supplier"
             value={data.supplier}
             onChange={handleChange}
+                        ref={fieldRefs.supplier}
+
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.supplier ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Supplier</option>
             {getUtilsData('supplier_list').map(supplier => (
@@ -450,11 +529,10 @@ const validateForm = () => {
           <select 
             name="stock_point"
             value={data.stock_point}
+             ref={fieldRefs.stock_point}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.stock_point ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Stock Point</option>
             {getUtilsData('stock_point').map(point => (
@@ -492,25 +570,44 @@ const validateForm = () => {
           )}
         </div>
 
+        <div className="w-full">
+          <label className="text-xs font-bold text-[#344767]">Supplier Currency</label>
+          <select 
+            name="supplier_currency"
+            value={data.supplier_currency}
+            onChange={handleChange}
+                 style={{paddingLeft:'20px'}}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
+              errors.supplier_currency ? 'border-red-500' : ''
+            }`}
+          >
+            <option value="" >--Select Supplier Currency--</option>
+            {getUtilsData('buyer_currency') && (
+              <option value={getUtilsData('buyer_currency').id}>
+                {getUtilsData('buyer_currency').name} ({getUtilsData('buyer_currency').code})
+              </option>
+            )}
+          </select>
+          {errors.buyer_currency && (
+            <p className="text-red-500 text-xs mt-1">{errors.buyer_currency}</p>
+          )}
+        </div>
+
         {/* Currency Rate */}
         <div className="w-full text-gray-900">
           <label className="text-xs font-bold text-[#344767]">Currency Rate</label>
           <input
             type="number"
-            name="supplier_currency"
-            value={data.supplier_currency}
-            onChange={handleChange}
+            // name="supplier_currency"
+            // value={data.supplier_currency}
+            // onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             className={`input input-bordered bg-white input-sm w-full text-gray-900 rounded-lg 
                     focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
-                    [&::-webkit-calendar-picker-indicator]:opacity-50 ${
-                      errors.supplier_currency ? 'border-red-500' : ''
-                    }`}
-            placeholder="$1.00000@3.6725000"
+                    [&::-webkit-calendar-picker-indicator]:opacity-50 `}
+            placeholder=""
           />
-          {errors.supplier_currency && (
-            <p className="text-red-500 text-xs mt-1">{errors.supplier_currency}</p>
-          )}
+        
         </div>
       </div>
 
@@ -552,12 +649,13 @@ const validateForm = () => {
             name="items"
             value={data.items}
             onChange={handleChange}
+             ref={fieldRefs.items}
                  style={{paddingLeft:'20px'}}
             className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
               errors.items ? 'border-red-500' : ''
             }`}
           >
-            <option value="" disabled>Select an item</option>
+            <option value=""  className="text-xs text-gray-400">--Select an item--</option>
             {getUtilsData('inventory_items').map(item => (
               <option key={item.id} value={item.id} className="text-sm text-gray-500">
                 {item.code}
@@ -744,14 +842,18 @@ const validateForm = () => {
             type="number"
             name="making_rate"
             value={data.making_rate}
+            ref={fieldRefs.making_rate}
             onChange={handleChange}
-                 style={{paddingLeft:'20px'}}
+            style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Making rate"
             className="input input-bordered bg-white text-gray-400 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.making_rate && (
+            <p className="text-red-500 text-xs mt-1">{errors.making_rate}</p>
+          )}
         </div>
-
+ 
         {/* Stone Rate */}
         <div className="w-full">
           <label className="text-xs font-bold text-[#344767]">Stone Rate<span className="text-red-500 text-[14px]">*</span></label>
@@ -759,12 +861,17 @@ const validateForm = () => {
             type="number"
             name="stone_rate"
             value={data.stone_rate}
+             ref={fieldRefs.stone_rate}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
+                  
             min="0"
             placeholder="Stone rate"
             className="input input-bordered bg-white text-gray-400 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.stone_rate && (
+            <p className="text-red-500 text-xs mt-1">{errors.stone_rate}</p>
+          )}
         </div>
 
         {/* Multi Stone Rate */}
@@ -774,12 +881,16 @@ const validateForm = () => {
             type="number"
             name="multi_stone_rate"
             value={data.multi_stone_rate}
+            ref={fieldRefs.multi_stone_rate}
+
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Multi stone rate"
             className="input input-bordered input-sm w-full bg-white text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+                   <p className="text-red-500 text-xs mt-1">{errors.multi_stone_rate}</p>
+
         </div>
 
         {/* Stone Weight */}
@@ -788,6 +899,7 @@ const validateForm = () => {
           <input
             type="number"
             name="stone_weight"
+             ref={fieldRefs.stone_weight}
             value={data.stone_weight}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -795,6 +907,9 @@ const validateForm = () => {
             placeholder="Stone weight"
             className="input input-bordered input-sm bg-white text-gray-400 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.stone_weight && (
+            <p className="text-red-500 text-xs mt-1">{errors.stone_weight}</p>
+          )}
         </div>
 
         {/* Multi Stone Weight */}
@@ -803,6 +918,7 @@ const validateForm = () => {
           <input
             type="number"
             name="multi_stone_weight"
+              ref={fieldRefs.multi_stone_weight}
             value={data.multi_stone_weight}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -810,6 +926,8 @@ const validateForm = () => {
             placeholder="Multi Stone weight"
             className="input input-bordered input-sm w-full bg-white text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+                      <p className="text-red-500 text-xs mt-1">{errors.multi_stone_weight}</p>
+
         </div>
 
         {/* Gross Weight */}
@@ -819,12 +937,16 @@ const validateForm = () => {
             type="number"
             name="gross_weight"
             value={data.gross_weight}
+            ref={fieldRefs.gross_weight}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Gross Weight"
             className="input input-bordered bg-white text-gray-400 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.gross_weight && (
+            <p className="text-red-500 text-xs mt-1">{errors.gross_weight}</p>
+          )}
         </div>
 
         {/* Discount */}
@@ -834,12 +956,15 @@ const validateForm = () => {
             type="number"
             name="discount"
             value={data.discount}
+                        ref={fieldRefs.discount}
+
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Discount"
             className="input input-bordered bg-white text-gray-400 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          <p className="text-red-500 text-xs mt-1">{errors.discount}</p>
         </div>
 
         {/* Tagline 1 */}
@@ -847,7 +972,7 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 1</label>
           <input
             type="text"
-            name="tag_line_1"
+            name="tagline_1"
             value={data.tagline_1}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -861,7 +986,7 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 2</label>
           <input
             type="text"
-            name="tag_line_2"
+            name="tagline_2"
             value={data.tagline_2}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -875,7 +1000,7 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 3</label>
           <input
             type="text"
-            name="tag_line_3"
+            name="tagline_3"
             value={data.tagline_3}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -889,7 +1014,7 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 4</label>
           <input
             type="text"
-            name="tag_line_4"
+            name="tagline_4"
             value={data.tagline_4}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
@@ -903,8 +1028,8 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tag Definition</label>
           <input
             type="text"
-            name="tag_defenition"
-            value={data.tag_defenition}
+            name="tag_definition"
+            value={data.tag_definition}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tag Definition"

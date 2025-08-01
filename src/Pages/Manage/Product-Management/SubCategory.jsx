@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
 import CreateButton from '../../../components/CreateButton';
 import Pagination from '../../../components/Pagination';
 import ItemsPerPageSelector from '../../../components/ItemsPerPageSelector';
+import TableSkelton from "../../../components/tableSkelton";
 import CategoryModel from "../../../models/categoryModel";
 import SubCategoryModel from "../../../models/subcategoryModel";
 import { useSelector } from "react-redux";
@@ -13,7 +14,8 @@ import { toast } from 'react-toastify';
 const SubCategory = () => {
   // State
   const [totalPages, setTotalPages] = useState(1);
-  const [items, setItems] = useState(10);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const [modal, setModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [subcategoryData, setSubCategoryData] = useState([]);
@@ -46,11 +48,18 @@ const SubCategory = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
 
+  const nameRef = useRef(null);
+  const categoryRef = useRef(null);
+
+  const nameEditRef = useRef(null);
+  const categoryEditRef = useRef(null);
+  
+
   // Fetch categories
   useEffect(() => {
     const FetchCategory = async () => {
       try {
-        const response = await CategoryModel.getCategorys(user_id, user_types);
+        const response = await CategoryModel.getCategorys(user_id, user_types,1000,1,'','True');
         if (response.data && response.data.data) {
           setCategoryOptions(response.data.data);
         }
@@ -61,10 +70,11 @@ const SubCategory = () => {
 
     FetchCategory();
     FetchSubCategory();
-  }, []);
+  }, [limit,page,status,search]);
 
   // Fetch subcategories
   const FetchSubCategory = async () => {
+    setIsLoading(true)
     try {
       const response = await SubCategoryModel.getSubCategorys(
         user_id,
@@ -74,18 +84,22 @@ const SubCategory = () => {
         search,
         status
       );
-      if (response.data && response.data.data) {
+      
         setSubCategoryData(response.data.data);
-      }
+       setTotalPages(response.data.pagination.pages)
+      
     } catch (error) {
       console.error("Error fetching subcategory data:", error);
-    }
+    }finally {
+  setIsLoading(false);
+}
   };
 
   // Form handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
     setaddSubCategoryData(prev => ({ ...prev, [name]: value }));
+    setErrors(prev =>({...prev, [name]:''}))
   };
 
   const handleSubmit = async () => {
@@ -103,16 +117,19 @@ const SubCategory = () => {
         handleCloseModal();
         toast.success('Subcategory created successfully!');
       }
-    } catch (error) {
-      toast.error('Failed to create subcategory!');
-      handleCloseModal();
-      if (error.response?.data?.errors) {
-        setErrors(prev => ({
-          ...prev,
-          ...error.response.data.errors
-        }));
-      }
-    }
+    }catch (error) {
+              const message =
+               error?.response?.data?.errors?.name?.[0] ||
+               error?.response?.data?.message ||
+              "Failed to create Adress Type!";
+              toast.error(message);
+               if (error.response?.data?.errors) {
+                setErrors(prev => ({
+                 ...prev,
+                 ...error.response.data.errors,
+               }));
+            }
+                    }
   };
 
   const handleEditSubmit = async () => {
@@ -134,14 +151,18 @@ const SubCategory = () => {
         handleEditCloseModal();
       }
     } catch (error) {
-      toast.error('Failed to update subcategory!');
-      if (error.response?.data?.errors) {
-        setErrors(prev => ({
-          ...prev,
-          ...error.response.data.errors
-        }));
-      }
-    } finally {
+              const message =
+               error?.response?.data?.errors?.name?.[0] ||
+               error?.response?.data?.message ||
+              "Failed to create Adress Type!";
+              toast.error(message);
+               if (error.response?.data?.errors) {
+                setErrors(prev => ({
+                 ...prev,
+                 ...error.response.data.errors,
+               }));
+            }
+                    } finally {
       setIsSubmitting(false);
     }
   };
@@ -157,12 +178,21 @@ const SubCategory = () => {
     } else if (addSubCategoryData.name.length < 2) {
       newErrors.name = 'Must be at least 2 characters';
       valid = false;
-    }
+    }else if(!/^[A-Za-z\s]+$/.test(addSubCategoryData.name)) {
+     newErrors.name = 'Only alphabets and spaces allowed';
+     valid = false;
+     }
     if (!addSubCategoryData.category) {
       newErrors.category = 'Please select a category';
       valid = false;
+
+      
     }
     setErrors(newErrors);
+    if (!valid) {
+  if (newErrors.name && nameRef.current) nameRef.current.focus();
+  else if (newErrors.category && categoryRef.current) categoryRef.current.focus();
+}
     return valid;
   };
 
@@ -176,7 +206,11 @@ const SubCategory = () => {
     } else if (editingSubCategory.name.length < 2) {
       newErrors.name = 'Must be at least 2 characters';
       valid = false;
+    }else if (!/^[A-Za-z\s]+$/.test(editingSubCategory.name)) {
+      newErrors.name = 'Only alphabets and spaces allowed';
+      valid = false;
     }
+
     if (!editingSubCategory?.category) {
       newErrors.category = 'Please select a category';
       valid = false;
@@ -184,6 +218,12 @@ const SubCategory = () => {
    
    
     setErrors(newErrors);
+
+    if (!valid) {
+  if (newErrors.name && nameEditRef.current) nameEditRef.current.focus();
+  else if (newErrors.category && categoryEditRef.current) categoryEditRef.current.focus();
+}
+
     return valid;
   };
 
@@ -206,9 +246,13 @@ const SubCategory = () => {
   // Modal close handlers
   const handleCloseModal = () => {
     setaddSubCategoryData({ name: '', category: '', description: '' });
+    setErrors({})
     setModal(false);
   };
-  const handleEditCloseModal = () => setEditModal(false);
+  const handleEditCloseModal = () =>{
+     setEditModal(false);
+     setErrors({})
+  }
 
   // Render
   return (
@@ -232,7 +276,12 @@ const SubCategory = () => {
           </thead>
           <tbody>
             
-            {subcategoryData.map((subcategory, index) => (
+            {isLoading ? (
+  <TableSkelton />
+) : subcategoryData.length === 0 ? (
+  <tr><td colSpan="6" className="text-center py-4 text-gray-500">No data available</td></tr>
+) : (
+  subcategoryData.map((subcategory, index) => (
               <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                 <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '50px' }}>{index + 1}</td>
                 <td className="py-4 border-b border-gray-200 text-xs">{subcategory.name}</td>
@@ -257,11 +306,11 @@ const SubCategory = () => {
                   </div>
                 </td>
               </tr>
-            ))}
+            )))}
           </tbody>
         </table>
 
-        <Pagination />
+        <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />   
       </div>
 
       {/* Create Modal */}
@@ -276,6 +325,7 @@ const SubCategory = () => {
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
                 <input
                   type="text"
+                  ref={nameRef}
                   placeholder="Type here"
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                   style={{ paddingLeft: '12px' }}
@@ -291,6 +341,7 @@ const SubCategory = () => {
                 <select
                   name="category"
                   value={addSubCategoryData.category}
+                  ref={categoryRef}
                   onChange={handleChange}
                   className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
                   style={{ paddingLeft: '12px', color: '#374151' }}
@@ -351,6 +402,7 @@ const SubCategory = () => {
                 <input
                   type="text"
                   placeholder="Type here"
+                   ref={nameEditRef}
                   className={`input w-[100%] rounded-lg focus:outline-none border-gray-300 text-gray-500 bg-white border focus:border-b-2 focus:border-blue-500`}
                   style={{ paddingLeft: '12px' }}
                   name="name"
@@ -367,6 +419,7 @@ const SubCategory = () => {
                 <label className="font-semibold text-xs text-[#344767] w-[100%]">Category: <span className="text-xs text-red-400">*</span></label>
                 <select
                   name="category"
+                   ref={categoryEditRef}
                   value={editingSubCategory.category || ''}
                   onChange={e => {
                     setEditingSubCategory({ ...editingSubCategory, category: e.target.value });

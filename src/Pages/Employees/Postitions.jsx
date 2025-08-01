@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import employeePositionModel from "../../models/employeePositionModel";
@@ -38,6 +38,8 @@ const Positions = () => {
   const auth = useSelector((state) => state.auth || {});
   const user_id = auth.login_id || 1;
   const user_types = auth.can_manage_user_types ? Object.keys(auth.can_manage_user_types).join(',') : 'Admin,Head Office';
+ const nameRef = useRef(null)
+ const EditNameRef = useRef(null)
 
   const fetchPositions = async () => {
     try {
@@ -63,11 +65,25 @@ const Positions = () => {
     fetchPositions();
   }, [limit, page, search, status]);
 
-  const validatePosition = () => {
-    const newErrors = {};
-    if (!addPositionData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+const validatePosition = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addPositionData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+
+  // Focus the first invalid field
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleAddPositionChange = (e) => {
     const { name, value } = e.target;
@@ -76,11 +92,7 @@ const Positions = () => {
   };
 
   const handleSubmitPosition = async () => {
-    const validationErrors = validatePosition();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+     if (!validatePosition()) return;
     const payload = {
       name: addPositionData.name,
     };
@@ -92,28 +104,49 @@ const Positions = () => {
         toast.success('Position created successfully!');
       }
     } catch (error) {
-      console.error("Create position error:", error);
-      toast.error('Failed to create position!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Position!";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+            ...error.response.data.errors,
+               }));
+              }
+         } 
   };
 
-  const validateEditPosition = () => {
-    const newErrors = { name: '', status: '' };
-    let valid = true;
-    if (!editingPosition?.name?.trim()) {
-      newErrors.name = 'Position name is required';
-      valid = false;
+ const validateEditPosition = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!editingPosition?.name?.trim()) {
+    newErrors.name = 'Position name is required';
+    firstInvalidRef = EditNameRef;
+  }
+
+  if (editingPosition?.status === undefined || editingPosition.status === '') {
+    newErrors.status = 'Status is required';
+    if (!firstInvalidRef) {
+      const statusInput = document.querySelector('select[name="status"]');
+      if (statusInput) {
+        firstInvalidRef = { current: statusInput };
+      }
     }
-    if (editingPosition?.status === undefined || editingPosition.status === '') {
-      newErrors.status = 'Status is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  }
+
+  setErrors(newErrors);
+
+  // Focus the first invalid field
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickPosition = (posObj) => {
     if (!posObj || typeof posObj !== 'object' || !posObj.id) {
@@ -139,6 +172,7 @@ const Positions = () => {
       return;
     }
     if (!validateEditPosition()) return;
+
     setIsSubmitting(true);
     try {
       const response = await employeePositionModel.updatePosition(
@@ -154,12 +188,18 @@ const Positions = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update position error:", error);
-      toast.error('Failed to update position!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Position!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               }  finally {
       setIsSubmitting(false);
     }
   };
@@ -248,9 +288,9 @@ const Positions = () => {
           <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[320px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
             <h3 className="font-bold text-[22px] text-[#344767]">Create Position</h3>
             <hr className=" border-gray-300"/>
-            <div className="flex flex-col flex-grow gap-4">
+            <div className="flex flex-col flex-grow gap-2">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:<span className="text-xs text-red-400">*</span></label>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addPositionData.name} onChange={handleAddPositionChange} name="name" />
+              <input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addPositionData.name} onChange={handleAddPositionChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
             </div>
             <div className="flex flex-col sm:flex-row justify-end items-end gap-4">
@@ -265,12 +305,11 @@ const Positions = () => {
           <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[320px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
             <h3 className="font-bold text-[22px] text-[#344767]">Edit Position</h3>
             <hr className=" border-gray-300"/>
-            <div className="flex flex-col flex-grow gap-4">
+            <div className="flex flex-col flex-grow gap-2">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-xs text-red-400">*</span></label>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingPosition?.name || ''} onChange={handleEditPositionChange} name="name" />
+              <input type="text" placeholder="Type here" ref={EditNameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingPosition?.name || ''} onChange={handleEditPositionChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>
-             
               <select
                 className="select w-[100%] h-[35px] bg-white border-gray-300 focus:outline-none text-gray-500 rounded-lg focus:border-b-2 focus:border-blue-500"
                 style={{paddingLeft:'12px'}}

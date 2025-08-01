@@ -19,7 +19,7 @@ const CityModel ={
     CreateCity:(data)=>{
           return axiosInstance.post('manage-cities/',data)
     },
-    EditCity:(data,id)=>{
+    EditCity:(id,data)=>{
         return axiosInstance.put(`manage-cities/${id}/`,data)
     },
     DeleteCity:(id)=>{

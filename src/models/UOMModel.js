@@ -31,8 +31,8 @@ const UOMModel = {
   },
 
 
-  getBranches: (user_id) => {
-    const params = new URLSearchParams({ user_id });
+  getBranches: (user_id, user_types, limit = 10, page = 1, search = "", status = "") => {
+    const params = new URLSearchParams({user_id, user_types, limit , page, search , status});
     return axiosInstance.get(`/manage-branch/?${params.toString()}`);
   },
 };

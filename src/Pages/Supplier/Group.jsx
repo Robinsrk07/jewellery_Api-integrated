@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import supplierGroupModel from "../../models/supplierGroupModel";
@@ -42,6 +42,9 @@ const Group = () => {
   const user_id = login_id;
   const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
+  const nameRef = useRef(null)
+  const EditNameRef = useRef(null)
+
   const fetchSupplierGroups = async () => {
     try {
       setIsLoading(true);
@@ -67,10 +70,22 @@ const Group = () => {
   }, [limit, page, search, status]);
 
   const validateSupplierGroup = () => {
-    const newErrors = {};
-    if (!addSupplierGroupData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addSupplierGroupData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleAddSupplierGroupChange = (e) => {
     const { name, value } = e.target;
@@ -79,11 +94,8 @@ const Group = () => {
   };
 
   const handleSubmitSupplierGroup = async () => {
-    const validationErrors = validateSupplierGroup();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+    if (!validateSupplierGroup()) return;
+
     const payload = {
       name: addSupplierGroupData.name,
       description: addSupplierGroupData.description,
@@ -98,24 +110,37 @@ const Group = () => {
         toast.success('Supplier group created successfully!');
       }
     } catch (error) {
-      console.error("Create supplier group error:", error);
-      toast.error('Failed to create supplier group!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+        const message =
+        error?.response?.data?.errors?.name?.[0] ||
+        error?.response?.data?.message ||
+        "Failed to create Supplier Group!";
+        toast.error(message);
+        if (error.response?.data?.errors) {
+        setErrors(prev => ({
+        ...prev,
+        ...error.response.data.errors,
+                 }));
+              }
+        }
   };
 
   const validateEditSupplierGroup = () => {
-    const newErrors = { name: '', description: '', status: '' };
-    let valid = true;
-    if (!editingSupplierGroup?.name?.trim()) {
-      newErrors.name = 'Supplier group name is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!editingSupplierGroup?.name?.trim()) {
+    newErrors.name = 'Supplier group name is required';
+    firstInvalidRef = EditNameRef;
+  }
+
+  setErrors(newErrors);
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickSupplierGroup = (groupObj) => {
     if (!groupObj || typeof groupObj !== 'object' || !groupObj.id) {
@@ -157,12 +182,18 @@ const Group = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update supplier group error:", error);
-      toast.error('Failed to update supplier group!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+         const message =
+         error?.response?.data?.errors?.name?.[0] ||
+         error?.response?.data?.message ||
+         "Failed to create Supplier Gropup!";
+         toast.error(message);
+         if (error.response?.data?.errors) {
+         setErrors(prev => ({
+         ...prev,
+         ...error.response.data.errors,
+         }));
+            }
+          } finally {
       setIsSubmitting(false);
     }
   };
@@ -260,7 +291,7 @@ const Group = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addSupplierGroupData.name} onChange={handleAddSupplierGroupChange} name="name" />
+                <input type="text" placeholder="Type here" ref={nameRef}className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addSupplierGroupData.name} onChange={handleAddSupplierGroupChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
@@ -292,7 +323,7 @@ const Group = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingSupplierGroup?.name || ''} onChange={handleEditSupplierGroupChange} name="name" />
+                <input type="text" placeholder="Type here" ref={EditNameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingSupplierGroup?.name || ''} onChange={handleEditSupplierGroupChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>

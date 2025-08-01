@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Search, Plus, Edit, Trash2, Save, X, Upload, Eye, Calculator, ArrowLeft } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -30,10 +30,13 @@ const [positions, setPositions] = useState([]);
 const [departments, setDepartments] = useState([]);
 const [employees, setEmployees] = useState([]);
 
+const payperiodRef = useRef(null);
+const paymentDateRef = useRef(null)
+const paymentModeRef = useRef(null)
 const payslip = location.state?.payslip;
 
-console.log(payslip)
-console.log(selectedPayslip)
+// console.log(payslip)
+// console.log(selectedPayslip)
  const [formData, setFormData] = useState({
   employee:'' ,
   department:  '',
@@ -125,6 +128,16 @@ const validateForm = () => {
   }
 
   setFormErrors(errors);
+  if (errors.salary_month && payperiodRef.current) {
+  payperiodRef.current.focus();
+  payperiodRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+} else if (errors.payment_date && paymentDateRef.current) {
+  paymentDateRef.current.focus();
+  paymentDateRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+} else if (errors.payment_mode && paymentModeRef.current) {
+  paymentModeRef.current.focus();
+  paymentModeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+}
 
   return Object.keys(errors).length === 0;
 };
@@ -140,7 +153,7 @@ const handleSubmit = async() => {
 const formDataToSend = convertToFormData(formData);
   try{
     const res = await PayslipModel.updatePayslip(formDataToSend,selectedPayslip.id)
-    navigate(`/dashboard/paysliplist/${formData.employee}`)
+    navigate(-1)
     if(res) toast.success("Payslip created Succesfully")
   }catch(error){
     toast.error(" Please try again ,payslip creation failed ")
@@ -322,7 +335,7 @@ useEffect(() => {
 
 useEffect(() => {
   if (payslip) {
-    console.log('called payslip selected')
+    // console.log('called payslip selected')
     setSelectedPayslip(payslip);
   } else {
     // Fallback: fetch all payslips and find by ID
@@ -513,13 +526,13 @@ useEffect(() => {
               
                     <div className="flex  flex-col gap-2 " style={{ padding: '20px' }}>
                         <div className="flex items-center gap-8 " >
-                           <Link to={`/dashboard/paysliplist/${formData.employee}`}> <button
-                               
+                           <button 
+                               onClick={()=>navigate(-1)}
                                 className="flex items-center gap-4 text-[16px] font-semibold text-gray-500 rounded-md hover:bg-gray-300"
                             >
                                 <ArrowLeft className="w-4 h-4" />
                                 Back to Employee PayslipList
-                            </button></Link>
+                            </button>
                         </div>
 
                         <div className="bg-white rounded-lg shadow-sm border text-gray-500 text-[12px] border-gray-100" style={{ padding: '20px', marginBottom: '10px' }}>
@@ -541,6 +554,8 @@ useEffect(() => {
                                     <label className="block text-[11px] font-medium text-gray-500 mb-1">
                                     Pay Period <span className="text-red-500">*</span>
                                     </label>
+                                    <div  ref={payperiodRef}>
+                                     
                                     <DatePicker
                                     selected={formData.salary_month ? new Date(formData.salary_month) : null}
                                     onChange={(date) =>
@@ -556,6 +571,7 @@ useEffect(() => {
                                     style={{ padding: '5px', width: '100%' }}
                                     required
                                     />
+                                    </div>
                                     {formErrors.salary_month && (
                                     <p className="text-[10px] text-red-500 mt-1">{formErrors.salary_month}</p>
                                     )}
@@ -568,6 +584,7 @@ useEffect(() => {
                                 </label>
                                 <input
                                     type="date"
+                                     ref={paymentDateRef}
                                     value={formData.payment_date || ''} // must be 'YYYY-MM-DD'
                                     onChange={(e) => handleChange('payment_date', e.target.value)} // gives 'YYYY-MM-DD'
                                     className={`w-full bg-white input input-xs border rounded-sm text-xs ${
@@ -713,6 +730,7 @@ useEffect(() => {
                                     <select
                                     className="border h-[33px] text-xs rounded-sm border-gray-300 w-full focus:border-blue-300 outline-none"
                                     value={formData.payment_mode || ''}
+                                      ref={paymentModeRef}
                                     onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
                                     >
                                     <option className="text-xs " value="">--select mode--</option>

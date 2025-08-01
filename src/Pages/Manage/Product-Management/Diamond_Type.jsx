@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import diamondTypeModel from "../../../models/diamondTypeModel";         
@@ -46,22 +46,25 @@ const Diamond_Type = ()=>{
                   status: '',
                 });
 
-              const fetchDiamondTypes = async () => {
-                try {
-                  setIsLoading(true);
-                  const response = await diamondTypeModel.getDiamondTypes(
-                    user_id,
-                    user_types,
-                    limit,
-                    page,
-                    search,
-                    status
-                  );
+                const nameRef = useRef(null);
+                const editNameRef = useRef(null);
 
-                  console.log("Response from API:", response);
+                const fetchDiamondTypes = async () => {
+                  try {
+                    setIsLoading(true);
+                    const response = await diamondTypeModel.getDiamondTypes(
+                      user_id,
+                      user_types,
+                      limit,
+                      page,
+                      search,
+                      status
+                    );
+
+             
 
                   if (response.data && response.data.data) {
-                    console.log("Diamond Types Received:", response.data.data);
+                  
                     setDiamondTypes(response.data.data);
                     if (response.data.pagination) {
                       setTotalPages(response.data.pagination.pages);
@@ -83,11 +86,18 @@ const Diamond_Type = ()=>{
 
 
                 
-                  const validateDiamondType = () => {
-                    const newErrors = {};
-                    if (!addDiamondTypeData.name.trim()) newErrors.name = 'Please enter name';
-                    return newErrors;
-                  };
+                  const validateForm = (data, refs) => {
+  const errors = {};
+  let focusRef = null;
+
+  if (!data.name.trim()) {
+    errors.name = 'Please enter name';
+    focusRef = refs.nameRef;
+  }
+
+  return { errors, focusRef };
+};
+
 
 
                   const handleAddDiamondTypeChange = (e) => {
@@ -103,78 +113,73 @@ const Diamond_Type = ()=>{
                   };
 
         
-                  useEffect(() => {
-                    console.log("Updated Diamond Type form state:", addDiamondTypeData);
-                  }, [addDiamondTypeData]);
 
                   
-                  const handleSubmitDiamondType = async () => {
-                    const validationErrors = validateDiamondType();
-                    if (Object.keys(validationErrors).length > 0) {
-                      setErrors(validationErrors);
-                      return;
-                    }
+                const handleSubmitDiamondType = async () => {
+                const { errors: validationErrors, focusRef } = validateForm(addDiamondTypeData, { nameRef });
 
-                    const payload = {
-                      name: addDiamondTypeData.name,
-                      description: addDiamondTypeData.description,
-                      status: addDiamondTypeData.status === 'true',
-                      created_by: user_id,
-                      created_by_type: user_types,
-                    };
+                if (Object.keys(validationErrors).length > 0) {
+                  setErrors(validationErrors);
+                  focusRef?.current?.focus();
+                  return;
+                }
 
-                    console.log("Diamond Type Payload being sent:", payload);
+                const payload = {
+                  name: addDiamondTypeData.name,
+                  description: addDiamondTypeData.description,
+                  // status can be added here if needed
+                };
 
-                    try {
-                      const response = await diamondTypeModel.createDiamondType(payload);
-                      console.log("Create Diamond Type response:", response);
+                try {
+                  const response = await diamondTypeModel.createDiamondType(payload);
+                  if (response.status === 200 || response.status === 201) {
+                    fetchDiamondTypes();
+                    handleCloseModal();
+                    toast.success('Diamond type created successfully!');
+                  }
+                }  catch (error) {
+                  const message =
+                      error?.response?.data?.errors?.name?.[0] ||
+                      error?.response?.data?.message ||
+                    "Failed to create Jewellery Type!";
+                    toast.error(message);
+                    if (error.response?.data?.errors) {
+                    setErrors(prev => ({
+                    ...prev,
+                    ...error.response.data.errors,
+                                    }));
+                                  }
+                            } 
+              };
 
-                      if (response.status === 201 || response.status === 200) {
-                        fetchDiamondTypes();          
-                        handleCloseModal();           
-                        toast.success('Diamond type created successfully!');
-                      }
-                    } catch (error) {
-                      console.error("Create diamond type error:", error);
-                      toast.error('Failed to create diamond type!');
-                      handleCloseModal();
-
-                      if (error.response?.data?.errors) {
-                        setErrors((prev) => ({
-                          ...prev,
-                          ...error.response.data.errors,
-                        }));
-                      }
-                    }
-                  };
 
                   
                                             
-                          const validateEditDiamondType = () => {
-                            let valid = true;
-                            const newErrors = { name: '', description: '', status: '' };
+                          // const validateEditDiamondType = () => {
+                          //   let valid = true;
+                          //   const newErrors = { name: '', description: '', status: '' };
 
-                            if (!editingDiamondType?.name?.trim()) {
-                              newErrors.name = 'Diamond type name is required';
-                              valid = false;
-                            }
+                          //   if (!editingDiamondType?.name?.trim()) {
+                          //     newErrors.name = 'Diamond type name is required';
+                          //     valid = false;
+                          //   }
 
 
-                            setErrors(newErrors);
-                            return valid;
-                          };
+                          //   setErrors(newErrors);
+                          //   return valid;
+                          // };
 
-                          const handleEditClickDiamondType = (typeObj) => {
-                            if (!typeObj || typeof typeObj !== 'object' || !typeObj.id) {
-                              console.warn("Invalid object passed to handleEditClickDiamondType:", typeObj);
-                              toast.error("Invalid diamond type selected.");
-                              return;
-                            }
+                          // const handleEditClickDiamondType = (typeObj) => {
+                          //   if (!typeObj || typeof typeObj !== 'object' || !typeObj.id) {
+                          //     console.warn("Invalid object passed to handleEditClickDiamondType:", typeObj);
+                          //     toast.error("Invalid diamond type selected.");
+                          //     return;
+                          //   }
 
-                            console.log("Selected for Edit:", typeObj);
-                            setEditingDiamondType({ ...typeObj });
-                            setEditModal(true);
-                          };
+                          //   console.log("Selected for Edit:", typeObj);
+                          //   setEditingDiamondType({ ...typeObj });
+                          //   setEditModal(true);
+                          // };
 
                           const handleEditDiamondTypeChange= (e) => {
                           const { name, value } = e.target;
@@ -188,48 +193,51 @@ const Diamond_Type = ()=>{
                             }
                             };
 
-                          const handleEditSubmitDiamondType = async () => {
-                            console.log("Editing Diamond Type:", editingDiamondType);
-
-                            if (!editingDiamondType?.id) {
-                              toast.error("Invalid diamond type selected for editing.");
-                              return;
-                            }
-
-                            if (!validateEditDiamondType()) return;
-
-                            setIsSubmitting(true);
-
-                            try {
-                              const response = await diamondTypeModel.updateDiamondType(
-                                editingDiamondType.id,
-                                {
-                                  name: editingDiamondType.name,
-                                  description: editingDiamondType.description,
-                                  status:
-                                    editingDiamondType.status === true ||
-                                    editingDiamondType.status === 'true',
+                              const handleEditSubmitDiamondType = async () => {
+                                if (!editingDiamondType?.id) {
+                                  toast.error("Invalid diamond type selected for editing.");
+                                  return;
                                 }
-                              );
 
-                              if (response.status === 200) {
-                                fetchDiamondTypes(); // Reload table
-                                toast.success('Diamond type updated successfully!');
-                                setEditModal(false);
-                              }
-                            } catch (error) {
-                              console.error("Update error:", error);
-                              toast.error('Failed to update diamond type!');
-                              if (error.response?.data?.errors) {
-                                setErrors((prev) => ({
-                                  ...prev,
-                                  ...error.response.data.errors,
-                                }));
-                              }
-                            } finally {
-                              setIsSubmitting(false);
-                            }
-                          };
+                                const { errors: validationErrors, focusRef } = validateForm(editingDiamondType, { nameRef: editNameRef });
+
+                                if (Object.keys(validationErrors).length > 0) {
+                                  setErrors(validationErrors);
+                                  focusRef?.current?.focus();
+                                  return;
+                                }
+
+                                setIsSubmitting(true);
+                                try {
+                                  const response = await diamondTypeModel.updateDiamondType(editingDiamondType.id, {
+                                    name: editingDiamondType.name,
+                                    description: editingDiamondType.description,
+                                    status:
+                                      editingDiamondType.status === true || editingDiamondType.status === 'true',
+                                  });
+
+                                  if (response.status === 200) {
+                                    fetchDiamondTypes();
+                                    toast.success('Diamond type updated successfully!');
+                                    setEditModal(false);
+                                  }
+                                }  catch (error) {
+                                    const message =
+                                        error?.response?.data?.errors?.name?.[0] ||
+                                        error?.response?.data?.message ||
+                                      "Failed to create Jewellery Type!";
+                                      toast.error(message);
+                                      if (error.response?.data?.errors) {
+                                      setErrors(prev => ({
+                                      ...prev,
+                                      ...error.response.data.errors,
+                                                      }));
+                                                    }
+                                              }  finally {
+                                  setIsSubmitting(false);
+                                }
+                              };
+
 
 
                           
@@ -382,6 +390,7 @@ const Diamond_Type = ()=>{
                                         </label>
                                         <input type="text" 
                                           placeholder="Type here" 
+                                           ref={nameRef}
                                           className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                           style={{paddingLeft:'12px'}}
                                           value={addDiamondTypeData.name}
@@ -479,6 +488,7 @@ const Diamond_Type = ()=>{
                                                         </label>
                                                         <input type="text" 
                                                           placeholder="Type here" 
+                                                            ref={editNameRef}
                                                           className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                                           style={{paddingLeft:'12px'}}
                                                           value={editingDiamondType.name}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -43,6 +43,28 @@ const City =()=>{
     name: '',
     country: '',
   });
+
+const codeRef = useRef(null)
+const nameRef = useRef(null)
+const countryRef = useRef(null)
+
+const refFeilds = {
+  code: codeRef,
+  name: nameRef,
+  country: countryRef,
+};
+
+const codeEditRef = useRef(null)
+const nameEditRef = useRef(null)
+const countryEditRef = useRef(null)
+
+const refEditFeilds = {
+  code: codeEditRef,
+  name: nameEditRef,
+  country: countryEditRef,
+};
+
+
 
   const auth = useSelector((state) => state.auth);
   const { login_id, can_manage_user_types } = auth;
@@ -111,6 +133,11 @@ const handleAddCityChange = (e) => {
     ...prev,
     [name]: value,
   }));
+
+  setErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 const validateCity = () => {
@@ -136,6 +163,12 @@ const handleSubmitCity = async () => {
   const validationErrors = validateCity();
   if (Object.keys(validationErrors).length > 0) {
     setErrors(validationErrors);
+     const firstErrorKey = Object.keys(validationErrors)[0];
+if (refFeilds[firstErrorKey]?.current) {
+  refFeilds[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+  refFeilds[firstErrorKey].current.focus();
+}
+
     return;
   }
 
@@ -146,11 +179,11 @@ const handleSubmitCity = async () => {
 };
 
 
-  console.log("City Payload being sent:", payload);
+ 
 
   try {
     const response = await CityModel.CreateCity(payload);
-    console.log("Create City response:", response);
+ 
 
     if (response.status === 201 || response.status === 200) {
       toast.success("City created successfully!");
@@ -166,67 +199,64 @@ const handleSubmitCity = async () => {
       setErrors({});
     }
   } catch (error) {
-    console.error("Create City error:", error);
-    console.log("Error response:", error.response?.data);
-    console.log("Field errors:", error.response?.data?.errors);
-    toast.error("Failed to create city!");
-    handleCloseModal();
+    console.log(error)
+  const message =
+    error?.response?.data?.errors?.code?.[0] ||
+    error?.response?.data?.errors?.name?.[0] ||
+    error?.response?.data?.errors ||
+    "Failed to create city!";
 
-    if (error.response?.data?.errors) {
-      setErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  }
+  toast.error(message);
+}
 };
 
 
 const [editCityErrors, setEditCityErrors] = useState({});
 
+
 const validateEditCity = () => {
-  let valid = true;
   const errors = {};
 
   if (!editingCity?.code?.trim()) {
     errors.code = 'City code is required';
-    valid = false;
+  } else if (!/^[A-Za-z0-9]{2,5}$/.test(editingCity.code.trim())) {
+    errors.code = 'Code must be 2–5 letters or numbers';
   }
 
   if (!editingCity?.name?.trim()) {
     errors.name = 'City name is required';
-    valid = false;
+  } else if (editingCity.name.trim().length < 2) {
+    errors.name = 'Name must be at least 2 characters';
   }
 
   if (!editingCity?.country) {
-    errors.country = 'State selection is required';
-    valid = false;
+    errors.country = 'Country selection is required';
   }
 
-  setEditCityErrors(errors);
-  return valid;
+  return errors; 
 };
 
 
-const handleEditClickCity = (cityObj) => {
-  if (!cityObj || typeof cityObj !== 'object' || !cityObj.id) {
-    console.warn("Invalid city object passed:", cityObj);
-    toast.error("Invalid city selected.");
-    return;
-  }
 
-  console.log("Editing City:", cityObj);
+// const handleEditClickCity = (cityObj) => {
+//   if (!cityObj || typeof cityObj !== 'object' || !cityObj.id) {
+//     console.warn("Invalid city object passed:", cityObj);
+//     toast.error("Invalid city selected.");
+//     return;
+//   }
 
-  setEditingCity({
-    id: cityObj.id,
-    code: cityObj.code,
-    name: cityObj.name,
-    country: cityObj.country,
-    status: cityObj.status?.toString(),
-  });
+//   console.log("Editing City:", cityObj);
 
-  setEditModal(true);
-};
+//   setEditingCity({
+//     id: cityObj.id,
+//     code: cityObj.code,
+//     name: cityObj.name,
+//     country: cityObj.country,
+//     status: cityObj.status?.toString(),
+//   });
+
+//   setEditModal(true);
+// };
 
 
 const handleEditCityChange = (e) => {
@@ -236,7 +266,13 @@ const handleEditCityChange = (e) => {
     ...prev,
     [name]: name === 'status' ? (value === 'true') : value,
   }));
+
+  setEditCityErrors((prev) => ({
+    ...prev,
+    [name]: ''
+  }));
 };
+
 
 
 const handleEditSubmitCity = async () => {
@@ -244,8 +280,17 @@ const handleEditSubmitCity = async () => {
     toast.error("Invalid city selected for editing.");
     return;
   }
+  const validationErrors = validateEditCity()
+  if (Object.keys(validationErrors).length > 0) {
+    setEditCityErrors(validationErrors);
+     const firstErrorKey = Object.keys(validationErrors)[0];
+ if (refEditFeilds[firstErrorKey]?.current) {
+  refEditFeilds[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+  refEditFeilds[firstErrorKey].current.focus();
+ }
 
-  if (!validateEditCity()) return;
+    return;
+  }
 
   setIsSubmitting(true);
 
@@ -265,15 +310,16 @@ const handleEditSubmitCity = async () => {
       setEditModal(false);
     }
   } catch (error) {
-    console.error("Update city error:", error);
-    toast.error('Failed to update city!');
-    if (error.response?.data?.errors) {
-      setEditCityErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  } finally {
+    console.log(error)
+  const message =
+    error?.response?.data?.errors?.code?.[0] ||
+    error?.response?.data?.errors?.name?.[0] ||
+    error?.response?.data?.errors ||
+    "Failed to Update city!";
+
+  toast.error(message);
+}
+ finally {
     setIsSubmitting(false);
   }
 };
@@ -314,22 +360,32 @@ const handleDeleteCity = async (id) => {
 
 
     const handleCloseModal = () => {
-    setErrors({
-        code: '',
-        name: '',
-        country:'',
-        status: ''
-    });
-    setModal(false);
-    setEditModal(false);
-    };
+  setErrors({
+    code: '',
+    name: '',
+    country: '',
+    status: ''
+  });
+
+  setAddCityData({
+    code: '',
+    name: '',
+    country: ''
+  });
+
+  setModal(false);
+  setEditModal(false);
+};
+
 
     useEffect(() => {
   fetchCityData();
   fetchCountries();
 
 }, [limit, page, search, status]);
-              
+
+ const firstErrorKey = Object.keys(errors)[0];
+ const firstEditErrorkey = Object.keys(editCityErrors)[0]             
                     return (
                       
                   <>
@@ -438,6 +494,7 @@ const handleDeleteCity = async (id) => {
                                       <input
                                         type="text"
                                         placeholder="Type here"
+                                         ref={codeRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
                                         name="code"
@@ -459,6 +516,7 @@ const handleDeleteCity = async (id) => {
                                       </label>
                                      <input
                                       type="text"
+                                      ref={nameRef}
                                       placeholder="Type here"
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
@@ -480,10 +538,13 @@ const handleDeleteCity = async (id) => {
                                     <select
                                         name="country"
                                         value={addCityData.country}
+                                         ref={countryRef}
                                         onChange={handleAddCityChange}
-                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                      className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstErrorKey === 'country' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
                                         style={{ paddingLeft: '12px', fontSize: '11px' }}
-                                    >
+                                      >
                                         <option value="">Select Country</option>
                                         {countries.map((country) => (
                                         <option key={country.id} value={country.id}>
@@ -535,6 +596,7 @@ const handleDeleteCity = async (id) => {
           </label>
           <input
             type="text"
+              ref={codeEditRef}
             name="code"
             placeholder="Type here"
             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
@@ -554,6 +616,7 @@ const handleDeleteCity = async (id) => {
           </label>
           <input
             type="text"
+            ref={nameEditRef}
             placeholder="Type here"
             name="name"
             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
@@ -573,10 +636,13 @@ const handleDeleteCity = async (id) => {
                                     <select
                                         name="country"
                                         value={editingCity.country}
+                                        ref={countryEditRef}
                                         onChange={handleEditCityChange}
-                                        className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                       className={`select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none ${
+                                          firstEditErrorkey === 'country' ? 'border-blue-500' : 'border-gray-300'
+                                        }`}
                                         style={{ paddingLeft: '12px', fontSize: '11px' }}
-                                    >
+                                      >
                                         <option value="">Select Country</option>
                                         {countries.map((country) => (
                                         <option key={country.id} value={country.id}>

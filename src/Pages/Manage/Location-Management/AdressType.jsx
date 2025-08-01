@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -19,10 +19,8 @@ const Adress_Type = () => {
   const user_id = login_id;
   const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
-  console.log(user_id);
-  console.log(user_types)
 
-  const [items, setItems] = useState(10);
+
   const [data, setData] = useState({
     name: '',
     description: '',
@@ -34,10 +32,8 @@ const Adress_Type = () => {
   const [addressTypes, setAddressTypes] = useState([]);
   const [editingAddressType, setEditingAddresss] = useState(null);
   const [limit, setLimit] = useState(10);
-  console.log(limit)
-      const [deletingId, setDeletingId] = useState(null);
-    const [itemToDelete, setItemToDelete] = useState(null);
-  
+  const [deletingId, setDeletingId] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,9 +41,9 @@ const Adress_Type = () => {
   const [status, setStatus] = useState('');
   const [modal, setModal] = useState(false)
   const [editModal, setEditModal] = useState(false)
-  console.log(addressTypes);
-  console.log("test",editingAddressType)
+ 
   const fetchAddressTypes = async () => {
+      setIsLoading(true);
     try {
       const response = await addressTypeModel.getAddressTypes(
         user_id,
@@ -61,7 +57,7 @@ const Adress_Type = () => {
        if(!response){
         toast.error("unable to fetch Address")
        }
-        setAddressTypes(response?.data?.data)
+         setAddressTypes(response?.data?.data)
          setTotalPages(response.data.pagination.pages);
     } catch (err) {
       toast.error("Failed to load address types");
@@ -70,7 +66,8 @@ const Adress_Type = () => {
   }
   };
 
-
+  const nameRef = useRef(null)
+  const nameEditRef = useRef(null)
  
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -83,14 +80,23 @@ const Adress_Type = () => {
     const newErrors = {};
     if (!data.name.trim()) newErrors.name = 'Please enter name';
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return newErrors
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async () => {    
 
-    console.log(data);
+    const validationErrors = validateForm();
+
+   if (Object.keys(validationErrors).length > 0) {
+    setErrors(validationErrors);
     
-    if (!validateForm()) return;
+    if (validationErrors.name && nameRef.current) {
+      nameRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      nameRef.current.focus();
+    }
+
+    return;
+  }
 
     const formData = new FormData();
     formData.append('name', data.name);
@@ -100,10 +106,10 @@ const Adress_Type = () => {
     try {
       const response = await axiosInstance.post('/manage-address-type/', formData);
 
-      console.log("Created Address Type:", response);
+    
 
       if (response.data.status === 201) {
-        console.log("test")
+       
         fetchAddressTypes();
         handleCloseModal();
         toast.success('Address type created successfully!');
@@ -113,16 +119,18 @@ const Adress_Type = () => {
               }
 
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to create address type!');
-      handleCloseModal();
-      if (error.response?.data?.errors) {
-        setErrors(prev => ({
-          ...prev,
-          ...error.response.data.errors
-        }));
-      }
-    }
+           const message =
+             error?.response?.data?.errors?.name?.[0] ||
+             error?.response?.data?.message ||
+            "Failed to create Adress Type!";
+             toast.error(message);
+              if (error.response?.data?.errors) {
+                    setErrors(prev => ({
+                      ...prev,
+                      ...error.response.data.errors,
+                    }));
+                  }
+                    }
   };
 
 
@@ -142,6 +150,7 @@ const Adress_Type = () => {
           
 
             const handleEditCloseModal = () => {
+              setErrors({})
               setEditModal(false);
               setEditingAddresss(null); 
             };
@@ -150,21 +159,30 @@ const Adress_Type = () => {
 
             const handleEditClick = (addressObj) => {
                 setEditingAddresss({ ...addressObj }); 
-                console.log("Editing ID:", addressObj.id, "Name:", addressObj.name);  
+              
                 setEditModal(true);
               };
 
 
 
                 const handleEditSubmit = async () => {
-                                   
-
+                  
+                  
                 if (!editingAddressType?.id) {
                   toast.error("Invalid address type selected for editing.");
                   return;
-  }
-                if (!validateEditForm()) return;
-
+                          }
+                           
+                  const validationErrors = validateEditForm();
+                  if (Object.keys(validationErrors).length > 0) {
+                    setErrors(validationErrors);                   
+                    if (validationErrors.name && nameEditRef.current) {
+                      nameEditRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+                      nameEditRef.current.focus();
+                    }
+                    return;
+                  }
+ 
                 setIsSubmitting(true);
                 try {
                   const response = await addressTypeModel.updateAddressTypes(
@@ -175,7 +193,7 @@ const Adress_Type = () => {
                       status: editingAddressType.status,
                     }
                   );
-                  console.log("Editing Address Type:", editingAddressType);
+              
 
 
                   if (response.status === 200) {
@@ -199,27 +217,23 @@ const Adress_Type = () => {
 
 
               const validateEditForm = () => {
-                let valid = true;
-                const newErrors = { name: '', description: '', status: '' };
+                const newErrors = {};
 
                 if (!editingAddressType?.name?.trim()) {
                   newErrors.name = 'Address type name is required';
-                  valid = false;
+                
                 } else if (editingAddressType.name.length < 2) {
                   newErrors.name = 'Must be at least 2 characters';
-                  valid = false;
+                
                 }
 
-                
-
-
-            setErrors(newErrors);
-            return valid;
+              return newErrors
+           
            };
 
            
           const handleDeleteAddressType = async (id) => {
-          console.log(id)
+      
           if (!id) toast.error("Please Try Again , Failed to Delete Adress Type")
 
           try {
@@ -237,7 +251,7 @@ const Adress_Type = () => {
 
   useEffect(() => {
     fetchAddressTypes()
-  }, [])
+  }, [limit,page])
 
   return (
     <>
@@ -337,6 +351,7 @@ const Adress_Type = () => {
               <div>
               <input type="text"
                 placeholder="Type here"
+                ref={nameRef}
                 value={data.name}
                 className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                 style={{ paddingLeft: '12px' }}
@@ -417,6 +432,7 @@ const Adress_Type = () => {
                 className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                 style={{ paddingLeft: '12px' }}
                 name="name"
+                ref={nameEditRef}
                 value={editingAddressType?.name || ''}
                 onChange={(e) => {
                 setEditingAddresss({...editingAddressType, name: e.target.value});

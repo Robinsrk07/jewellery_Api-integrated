@@ -1,3 +1,4 @@
+ import { X } from 'lucide-react';
  
      import { useEffect, useRef, useState } from "react";
      import CustomScrollbar from "../../components/CustomScrollbar";
@@ -48,7 +49,7 @@ import React from "react";
                   const [status, setStatus] = useState('');
                   const [search, setSearch] = useState('');
                   const [formErrors, setFormErrors] = useState([]);
- 
+                   
                   const auth = useSelector((state) => state.auth || {});
                   const { login_id ,can_manage_user_types,} = auth;    
                   const user_id = login_id 
@@ -99,19 +100,27 @@ import React from "react";
                   const allFields = Object.keys(employeeForm);
 
                   const fieldRefs = useRef(
-                    allFields.reduce((acc, field) => {
-                      acc[field] = React.createRef();
-                      return acc;
-                    }, {})
+                     allFields.reduce((acc, field) => {
+                       acc[field] = React.createRef();
+                       return acc;
+                     }, {})
                   );
+
                  
 
                   const handleInputChange = (e) => {
                     const { name, value, type, files } = e.target;
-                    setEmployeeForm((prev) => ({
+                      setEmployeeForm((prev) => ({
                       ...prev,
                       [name]: type === "file" ? files[0] : value,
-                    }));
+                      }));
+
+                      setFormErrors((prevErrors) => {
+                      const newErrors = { ...prevErrors };
+                      delete newErrors[name];
+                      return newErrors;
+                      });
+
                   };
                   
                   const handleEditInputChange = (e) => {
@@ -123,13 +132,7 @@ import React from "react";
                   };
 
 
-                  console.log(employees)
-                  console.log(employeeForm)
-                  console.log(gender)
-                  console.log(departments)
-                  console.log(positions)
-                  console.log('edit',editEmployee)
-                  console.log('formerrors',formErrors)
+                 
 
                 const buildFormData = (formObj) => {
                     const formData = new FormData();
@@ -171,15 +174,16 @@ import React from "react";
                        const handleSubmit = async (e) => {
                           e.preventDefault();
                            const validationErrors = validateForm(employeeForm);
-                    if (Object.keys(validationErrors).length > 0) {
-                      setFormErrors(validationErrors);
-
-                      const firstInvalidField = Object.keys(validationErrors)[0];
-                      const ref = fieldRefs.current[firstInvalidField];
-                      if (ref?.current) {
-                        ref.current.focus();
-                        ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }
+                          if (Object.keys(validationErrors).length > 0) {
+                           setFormErrors(validationErrors);
+                              
+                           const firstInvalidField = Object.keys(validationErrors)[0];
+                        
+                           const ref = fieldRefs.current[firstInvalidField];
+                            if (ref?.current) {
+                              ref.current.focus();
+                              ref.current.scrollIntoView({ behavior: "smooth", block: "center" });
+                            }
 
                       return;
                     }
@@ -189,10 +193,10 @@ import React from "react";
                             const formData = buildFormData(employeeForm);
 
                             const response = await employeeModel.createEmployee(formData);
-
+                              
                             if (response?.status === 201 || response?.status === 200) {
                               toast.success("Employee created successfully!");
-
+                                fetchEmployees()
                               // Optional: Reset form or close modal
                               setEmployeeForm({
                                   name: "",
@@ -240,15 +244,28 @@ import React from "react";
                               toast.error("Unexpected response from server.");
                             }
 
-                          } catch (error) {
+                          }catch (error) {
                             console.error("Failed to create employee:", error);
 
-                            toast.error(
-                             
-                                "Something went wrong while submitting."
-                              
-                            );
+                            if (
+                              error.response &&
+                              error.response.status === 400 &&
+                              typeof error.response.data === "object"
+                            ) {
+                              const backendErrors = error.response.data;
+
+                              // Show each error as a toast
+                              Object.entries(backendErrors).forEach(([field, messages]) => {
+                                const msgArray = Array.isArray(messages) ? messages : [messages];
+                                msgArray.forEach((msg) => {
+                                  toast.error(`${field.replaceAll("_", " ")}: ${msg}`);
+                                });
+                              });
+                            } else {
+                              toast.error("Something went wrong while submitting.");
+                            }
                           }
+
                         };
 
                         const handleEditSubmit = async (e)=>{
@@ -326,7 +343,7 @@ import React from "react";
                     }
 
                      const handleEdit = (emp) => {
-                      console.log(emp)
+                      // console.log(emp)
                       setEditModal(true)
                       setEditEmployee({
                       name: emp.name || "",
@@ -371,62 +388,71 @@ import React from "react";
                     });
 
                      }
-             const validateForm = (form) => {
-                  const errors = {};
 
-                  // Required fields
-                  const requiredFields = [
-                    "name",
-                    "gender",
-                    "email",
-                    "phone_number",
-                    "country",
-                    "state",
-                    "department",
-                    "position",
-                    "is_branch",
-                    "group_id"
-                  ];
 
-                  requiredFields.forEach((field) => {
-                    if (!form[field] || form[field].toString().trim() === "") {
-                      errors[field] = `${field.replaceAll("_", " ")} is required`;
-                    }
-                  });
+   const validateForm = (form) => {
+    const errors = {};
 
-                  // Format validations
-                  if (form.pincode && !/^\d{6}$/.test(form.pincode)) {
-                    errors.pincode = "Pincode must be 6 digits";
-                  }
+  // Required fields
+  const requiredFields = [
+    "name",
+    "gender",
+    "email",
+    "phone_number",
+    "country",
+    "state",
+    "department",
+    "position",
+    "is_branch",
+    "group_id"
+  ];
 
-                  if (form.pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(form.pan_number)) {
-                    errors.pan_number = "PAN number format is invalid";
-                  }
+  requiredFields.forEach((field) => {
+    if (!form[field] || form[field].toString().trim() === "") {
+      errors[field] = `${field.replaceAll("_", " ")} is required`;
+    }
+  });
 
-                  if (form.aadhaar_number && !/^\d{12}$/.test(form.aadhaar_number)) {
-                    errors.aadhaar_number = "Aadhaar number must be 12 digits";
-                  }
+  // Format validations only if fields are filled
+  if (form.name && !/^[a-zA-Z\s]{2,50}$/.test(form.name)) {
+    errors.name = "Name should be 2–50 letters only";
+  }
 
-                  if (form.bank_account && !/^\d{9,18}$/.test(form.bank_account)) {
-                    errors.bank_account = "Bank account must be 9–18 digits";
-                  }
+  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+    errors.email = "Email is invalid";
+  }
 
-                  if (
-                    form.email &&
-                    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
-                  ) {
-                    errors.email = "Email is invalid";
-                  }
+  if (form.phone_number && !/^\d{10}$/.test(form.phone_number)) {
+    errors.phone_number = "Phone number must be 10 digits";
+  }
 
-                  if (
-                    form.phone_number &&
-                    !/^\d{10}$/.test(form.phone_number)
-                  ) {
-                    errors.phone_number = "Phone number must be 10 digits";
-                  }
+  if (form.pincode && !/^\d{6}$/.test(form.pincode)) {
+    errors.pincode = "Pincode must be 6 digits";
+  }
 
-                  return errors;
-                };
+  if (form.bank_account && !/^\d{9,18}$/.test(form.bank_account)) {
+    errors.bank_account = "Bank account must be 9–18 digits";
+  }
+
+  if (form.pan_number && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/i.test(form.pan_number)) {
+    errors.pan_number = "PAN number format is invalid";
+  }
+
+  if (form.aadhaar_number && !/^\d{12}$/.test(form.aadhaar_number)) {
+    errors.aadhaar_number = "Aadhaar number must be 12 digits";
+  }
+
+  if (form.emergency_contact_name && !/^[a-zA-Z\s]{2,50}$/.test(form.emergency_contact_name)) {
+    errors.emergency_contact_name = "Emergency contact name must be letters only";
+  }
+
+  if (form.emergency_contact_number && !/^\d{10}$/.test(form.emergency_contact_number)) {
+    errors.emergency_contact_number = "Emergency contact number must be 10 digits";
+  }
+
+  return errors;
+};
+
 
 
 
@@ -556,13 +582,13 @@ import React from "react";
                     }, []);
 
      
-                    useEffect(() => {
-                      console.log("Updated Countries:", countries);
-                    }, [countries]);
+                    // useEffect(() => {
+                    //   console.log("Updated Countries:", countries);
+                    // }, [countries]);
 
-                    useEffect(() => {
-                      console.log("Updated States:", states);
-                    }, [states]);
+                    // useEffect(() => {
+                    //   console.log("Updated States:", states);
+                    // }, [states]);
 
 
                  
@@ -641,7 +667,7 @@ import React from "react";
                                 <td className="px-6 py-5 border-b border-gray-200 text-xs">
                                   <span
                                     className={`font-bold text-[10px] px-2 py-0.5 rounded ${
-                                      emp.status ? 'bg-green-300 text-green-700' : 'bg-red-200 text-red-700'
+                                      emp.status ? 'bg-green-300 text-green-700' : 'bg-gray-200 text-gray-400'
                                     }`}
                                   >
                                     {emp.status ? 'ACTIVE' : 'INACTIVE'}
@@ -673,7 +699,14 @@ import React from "react";
                       {modal && (
                         <div className="fixed text-gray-400 inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
                           <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[700px] h-[95vh] max-h-[90vh] flex flex-col overflow-y-auto gap-3 p-6" style={{ padding: '20px' }}>
-                            <h3 className="font-bold text-[22px] text-[#344767]">Create Employee</h3>
+                           
+                            <div className='flex justify-between'>
+                                  <h3 className="font-bold text-[22px] text-[#344767]">Create Employee</h3> 
+                                 <button onClick={handleCloseModal}>
+                                <X className="w-6 h-6 text-[#344767] cursor-pointer" />
+                                  </button>
+                            
+                                </div>
                             <hr className="my-4 border-gray-300" />
                             {/* BASIC INFO */}
                             <div className="mb-4">
@@ -683,6 +716,7 @@ import React from "react";
                                   <label className="text-xs text-gray-600" > Name:<span className="text-red-500 text-[14px]">*</span></label>
                                   <input type="text" 
                                   style={{ paddingLeft: '12px' }}
+                                   ref={fieldRefs.current.name}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
                                   name="name"
                                   value={employeeForm.name}
@@ -695,6 +729,7 @@ import React from "react";
                                   <select style={{ paddingLeft: '12px' }}
                                    className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
                                    name="gender"
+                                    ref={fieldRefs.current.gender}
                                    value={employeeForm.gender}
                                    onChange={handleInputChange}
                                    > 
@@ -752,6 +787,7 @@ import React from "react";
                                 <input
                                   type="email"
                                   name="email"
+                                   ref={fieldRefs.current.email}
                                   placeholder="Email"
                                   value={employeeForm.email}
                                   onChange={handleInputChange}
@@ -769,6 +805,7 @@ import React from "react";
                                       type="text"
                                       name="phone_number"
                                       placeholder="Phone Number"
+                                        ref={fieldRefs.current.phone_number}
                                       value={employeeForm.phone_number}
                                       onChange={handleInputChange}
                                       style={{ paddingLeft: '12px' }}
@@ -785,6 +822,7 @@ import React from "react";
                                           name="country"
                                           value={employeeForm.country}
                                           onChange={handleInputChange}
+                                            ref={fieldRefs.current.country}
                                           style={{ paddingLeft: '12px' }}
                                           className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
                                         >
@@ -806,6 +844,7 @@ import React from "react";
                                       name="state"
                                       value={employeeForm.state}
                                       onChange={handleInputChange}
+                                        ref={fieldRefs.current.state}
                                       style={{ paddingLeft: '12px' }}
                                       className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
                                     >
@@ -887,6 +926,7 @@ import React from "react";
                                         type="text"
                                         name="pincode"
                                         placeholder="Pincode"
+                                          ref={fieldRefs.current.pincode}
                                         value={employeeForm.pincode}
                                         onChange={handleInputChange}
                                         style={{ paddingLeft: '12px' }}
@@ -924,6 +964,7 @@ import React from "react";
                                   name="department"
                                   value={employeeForm.department}
                                   onChange={handleInputChange}
+                                    ref={fieldRefs.current.department}
                                   style={{ paddingLeft: '12px' }}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
                                 >
@@ -946,6 +987,7 @@ import React from "react";
                                   value={employeeForm.position}
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
+                                    ref={fieldRefs.current.position}
                                   className="select w-full text-xs bg-white border-gray-200 focus:outline-none text-gray-400 focus:border-b-2 focus:border-blue-500"
                                 >
                                   <option value="">Select Position</option>
@@ -1056,6 +1098,7 @@ import React from "react";
                                   name="bank_account"
                                   placeholder="Bank Account"
                                   value={employeeForm.bank_account}
+                                    ref={fieldRefs.current.bank_account}
                                   onChange={handleInputChange}
                                   style={{ paddingLeft: '12px' }}
                                   className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
@@ -1069,6 +1112,7 @@ import React from "react";
                                     type="text"
                                     name="pan_number"
                                     placeholder="PAN Number"
+                                      ref={fieldRefs.current.pan_number}
                                     value={employeeForm.pan_number}
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
@@ -1085,6 +1129,7 @@ import React from "react";
                                     name="aadhaar_number"
                                     placeholder="Aadhaar Number"
                                     value={employeeForm.aadhaar_number}
+                                     ref={fieldRefs.current.aadhaar_number}
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
@@ -1143,10 +1188,12 @@ import React from "react";
                                     name="emergency_contact_name"
                                     placeholder="Contact Name"
                                     value={employeeForm.emergency_contact_name}
+                                      ref={fieldRefs.current.emergency_contact_name}
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
                                   />
+                                  <p className="text-xs text-red-400">{formErrors.emergency_contact_name}</p> 
                                 </div>
 
                                 <div>
@@ -1157,11 +1204,15 @@ import React from "react";
                                     type="text"
                                     name="emergency_contact_number"
                                     placeholder="Contact Number"
+                                      ref={fieldRefs.current.emergency_contact_name}
+
                                     value={employeeForm.emergency_contact_number}
                                     onChange={handleInputChange}
                                     style={{ paddingLeft: '12px' }}
                                     className="input w-full text-xs rounded-lg bg-white border-gray-200 focus:outline-none focus:border-b-2 focus:border-blue-500"
                                   />
+                              <p className="text-xs text-red-400">{formErrors.emergency_contact_number}</p> 
+
                                 </div>
 
                                 <div>

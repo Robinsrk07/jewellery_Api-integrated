@@ -33,7 +33,7 @@ if (!userCredentials.email) newErrors.email = "Email is required.";
     if (Object.keys(newErrors).length > 0) return;
     try {
       const response = await AuthModel.login(userCredentials.email,userCredentials.password,userCredentials.ip_address);
-      console.log(response.data);
+      
       
        const { access, refresh ,data} = response.data
        setToken({ access, refresh });

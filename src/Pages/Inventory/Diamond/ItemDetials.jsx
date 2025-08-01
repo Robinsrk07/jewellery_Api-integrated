@@ -1,26 +1,34 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState,useRef  } from "react"
 import Default from "../../../assets/images/stock-CfGxyh0i.jpg"
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import UtilsGetModel from "../../../models/Utils_getModel";
 import DiamondModel from "../../../models/DiamondModel";
 import { toast } from "react-toastify";
-import { useParams } from "react-router";
+import BranchModel from "../../../models/branchModel";
+import { useNavigate, useParams } from "react-router";
+import { useSelector } from "react-redux";
 const ItemDetails = () => {
-   
+  
           const [preview, setPreview] = useState(null);
           const [purchaseUtils,setPurchaseUtils] =useState([])
           const [goldUtils,setGoldUtils] =useState([])
           const [DiamondUtils,setDiamondUtils] = useState([])
           const [items, setItems] = useState([{}]);
-          console.log(items)
+          const [branch,setBranch] = useState([])
+         
           const newArray = [items]
           const{id}  = useParams()
-          console.log(newArray)
+         
+          const auth = useSelector((state) => state.auth);
+          const { login_id, can_manage_user_types } = auth
+          const user_id = login_id;
+          const user_types = Object.keys(can_manage_user_types).join(','); 
+          const navigate = useNavigate()
           const [data, setData] = useState({
             uom: '',
             jewellery_type: '',
             brand: '',
-            item_type:14,
+            item_type:'',
             size: '',
             metal_color: '',
             made_in: '',
@@ -41,7 +49,7 @@ const ItemDetails = () => {
             emerald_weight:'',
             sapphire_weight:'',
             other_stone_weight:'',
-            status:'True',
+            status:'',
             cost_price:'',
             additional_charge:"",
             mark_up:'',
@@ -57,19 +65,32 @@ const ItemDetails = () => {
 
 
           });
-          console.log(data)
+         
+
+          const supplierRef = useRef(null);
+          const itemTypeRef = useRef(null);
+          const costPriceRef = useRef(null);
+          const additionalChargeRef = useRef(null);
+          const profitMarginRef = useRef(null);
+         
+
+          const fieldRefs = useRef({});
+
+
+
           const [count,setCount] = useState(1)
           const [rows, setRows] = useState([{ id: 1, type: 'Main' }]);
           const [totalCarat, setTotalCarat] = useState(0);
           const [totalPieces, setTotalPieces] = useState(0);
-          console.log(totalCarat)
-          console.log(totalPieces)
+          const [errors, setErrors] = useState({});
+
+       
+
+
+         
           
           const [allUtils,setAllUtils]=useState([])
-          console.log(data)
-          console.log(purchaseUtils)
-          console.log(goldUtils)
-          console.log(DiamondUtils)
+        
           const uomArray = goldUtils.find(item => item.uom)?.uom || [];
           
           const JewelleryType = goldUtils.find(item => item.jewelley_type)?.jewelley_type || [];
@@ -111,7 +132,14 @@ const ItemDetails = () => {
               ...prev,
               [name]: value
             }));
+              setErrors(prevErrors => {
+                const newErrors = { ...prevErrors };
+                delete newErrors[name];
+                return newErrors;
+              });
           };
+
+
 
 
           const fetchPurchaseUtils = async()=>{
@@ -137,7 +165,7 @@ const ItemDetails = () => {
           const fetchDiamondUtils =async () =>{
               try{
                    const response = await DiamondModel.GetDiamondUtils()
-                   console.log(response?.data?.data)
+                  
                    setDiamondUtils(response?.data?.data)
                    }catch(error){
                      console.log(error)
@@ -198,34 +226,120 @@ const ItemDetails = () => {
     };
 
     const objectToFormData = (obj) => {
-  const formData = new FormData();
-  for (const key in obj) {
-    formData.append(key, obj[key]);
-  }
-  return formData;
-};
+      const formData = new FormData();
+      for (const key in obj) {
+        formData.append(key, obj[key]);
+      }
+      return formData;
+    };
 
- const handleSubmit = async () => {
-  const cleaned = cleanData(data);        // remove empty/null fields
-   if(items.length>0) cleaned.items =items 
-   if (totalCarat > 0) {
-    cleaned.total = totalCarat;
+//  const handleSubmit = async () => {
+//   const cleaned = cleanData(data);        
+//    if(items.length>0) cleaned.items =items 
+//    if (totalCarat > 0) {
+//     cleaned.total = totalCarat;
+//   }
+//    if (totalPieces > 0) {
+//     cleaned.total_pieces = totalPieces;
+//   }
+//   console.log(cleaned)
+//   const formData = objectToFormData(cleaned); 
+
+//   try {
+//     const response = await DiamondModel.CreateDiamond(formData);
+//     if (response) {
+//       toast.success("Diamond Created Successfully");
+//     }
+//   } catch (error) {
+//     toast.error("Please try again, failed to create Diamond");
+//   }
+// };
+const handleSubmit = async () => {
+  const cleaned = cleanData(data);
+
+  if (items.length > 0) cleaned.items = items;
+  if (totalCarat > 0) cleaned.total = totalCarat;
+  if (totalPieces > 0) cleaned.total_pieces = totalPieces;
+
+  const requiredFields = [
+    { key: 'supplier', ref: supplierRef },
+    { key: 'consider_profit_margin', ref: profitMarginRef },
+    { key: 'item_type', ref: itemTypeRef },
+    { key: 'cost_price', ref: costPriceRef },
+    { key: 'additional_charge', ref: additionalChargeRef },
+  ];
+
+  const newErrors = {};
+
+  for (let field of requiredFields) {
+    const value = cleaned[field.key];
+    if (value === undefined || value === null || value.toString().trim() === '') {
+      newErrors[field.key] = 'This field is required';
+    }
   }
-   if (totalPieces > 0) {
-    cleaned.total_pieces = totalPieces;
+
+  setErrors(newErrors);
+
+  if (Object.keys(newErrors).length > 0) {
+    const firstInvalid = requiredFields.find(f => newErrors[f.key]);
+    if (firstInvalid?.ref?.current) {
+      firstInvalid.ref.current.focus();
+    }
+    toast.error("Please fill all required fields");
+    return;
   }
-  console.log(cleaned)
-  const formData = objectToFormData(cleaned); // convert to FormData
+
+  const formData = objectToFormData(cleaned);
 
   try {
     const response = await DiamondModel.CreateDiamond(formData);
     if (response) {
       toast.success("Diamond Created Successfully");
+      navigate(-1)
     }
-  } catch (error) {
-    toast.error("Please try again, failed to create Diamond");
+  }catch (error) {
+  const response = error?.response;
+  const backendErrors = response?.data?.errors;
+  const fallbackMessage = response?.data?.message || "Something went wrong";
+
+  const formatField = (field) =>
+    field.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
+  if (backendErrors && typeof backendErrors === 'object') {
+    const newErrors = {};
+    let firstErrorField = null;
+
+    Object.entries(backendErrors).forEach(([field, messages]) => {
+      const message = Array.isArray(messages) ? messages[0] : messages;
+      toast.error(`${formatField(field)}: ${message}`);
+      newErrors[field] = message;
+
+      if (!firstErrorField && fieldRefs.current[field]) {
+        firstErrorField = field;
+      }
+    });
+
+    setErrors(prev => ({
+      ...prev,
+      ...newErrors,
+    }));
+
+    if (firstErrorField) {
+      setTimeout(() => {
+        const ref = fieldRefs.current[firstErrorField];
+        ref?.focus();
+        ref?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  } else {
+    toast.error(fallbackMessage);
   }
+}
+
+
+
 };
+
 
 
    const addRow = () => {
@@ -292,7 +406,17 @@ const ItemDetails = () => {
             setTotalCarat(caratSum.toFixed(2));
             setTotalPieces(piecesSum);
           }, [items]);
-
+useEffect(()=>{
+const fetchBranch = async()=>{
+  try{
+  const res = await BranchModel.getBranches(user_id,user_types,1000,1,"","True")
+  setBranch(res?.data?.data)
+  }catch(error){
+   console.error(error)
+  }
+}
+fetchBranch()
+},[])
 
     return (
         <div className="w-full h-[84%] bg-white rounded-lg overflow-y-auto rounded-lg flex flex-col gap-4" style={{padding:'20px'}}>
@@ -309,6 +433,8 @@ const ItemDetails = () => {
                         name="supplier"
                         onChange={handleChange}
                         value={data.supplier}
+                        ref={supplierRef}
+
                         className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                       >
                         <option value="">- Select Jewellery Type -</option>
@@ -318,6 +444,7 @@ const ItemDetails = () => {
                           </option>
                         ))}
                       </select>
+                      {errors.supplier && <p className="text-red-500 text-xs">{errors.supplier}</p>}
                 </div>
                 <div className="flex flex-col gap-2">
                     <label className="text-gray-400 font-semibold text-[11px]">
@@ -337,7 +464,8 @@ const ItemDetails = () => {
                     </label>
                     <select
                         onChange={handleChange}
-                        value={data.consider_profit_margin}
+                        value={data.consider_profit_margin}       
+                         ref={profitMarginRef}
                          className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
                         name="consider_profit_margin"
                     >
@@ -345,6 +473,8 @@ const ItemDetails = () => {
                         <option value="True">Yes</option>
                         <option value="False">No</option>
                     </select>
+                      {errors.consider_profit_margin && <p className="text-red-500 text-xs">{errors.consider_profit_margin}</p>}
+
                 </div>
 
                 <div className="w-[100px] h-[120px] mx-auto border border-dashed border-gray-200 rounded-md flex flex-col items-center justify-center overflow-hidden">
@@ -415,14 +545,17 @@ const ItemDetails = () => {
                         <input 
                             type="number" 
                             value={data.gold_weight}
+                             ref={el => (fieldRefs.current['gold_weight'] = el)}
                             onChange={handleChange}
                             step='.1'
                             min='0'
-                           name="gold_weight"
-
+                            name="gold_weight"
+                            placeholder="0.00"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] rounded-sm bg-white text-xs text-gray-400 border-gray-300 border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                                                {errors.gold_weight && <p className="text-red-500 text-xs">{errors.gold_weight}</p>}
+
                         <label className="text-gray-400 font-semibold text-[11px] mb-1">
                           saphire weight</label>
                          <input 
@@ -432,9 +565,12 @@ const ItemDetails = () => {
                             step='.1'
                             min='0'
                             name="sapphire_weight"
+                            placeholder="0.00"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] rounded-sm bg-white text-gray-400 text-xs border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                                                {errors.sapphire_weight && <p className="text-red-500 text-xs">{errors.sapphire_weight}</p>}
+
                          <label className="text-gray-400 font-semibold text-[11px] mb-1">
                             Design:
                         </label>
@@ -504,10 +640,12 @@ const ItemDetails = () => {
                             step='.1'
                             min='0'
                              name="pearl_weight"
+                            ref={el => (fieldRefs.current['pearl_weight'] = el)}
                             placeholder="0"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-xs text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                        {errors.pearl_weight && <p className="text-red-500 text-xs">{errors.pearl_weight}</p>}
                          <label className="text-gray-400 font-semibold text-[11px] mb-1">
                             Other Store Weight:
                         </label>
@@ -520,8 +658,10 @@ const ItemDetails = () => {
                             min='0'
                             name="other_stone_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-gray-500 text-xs rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                                                {errors.other_stone_weight && <p className="text-red-500 text-xs">{errors.other_stone_weight}</p>}
+
                     </div>
                     
                      <div className="flex flex-col gap-2">
@@ -586,8 +726,10 @@ const ItemDetails = () => {
 
                             name="ruby_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-xs text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+
+                        {errors.ruby_weight && <p className="text-red-500 text-xs">{errors.ruby_weight}</p>}
  <label className="text-gray-400 font-semibold text-[11px] mb-1">
       Size:
     </label>
@@ -631,6 +773,8 @@ const ItemDetails = () => {
 </label>
 <select
   name="item_type"
+  ref={itemTypeRef}
+   
   onChange={handleChange}
   value={data.item_type}
   className="border text-xs w-[200px] text-gray-500 h-[30px] rounded-sm bg-white border-gray-200 px-3 focus:outline-none focus:border-blue-500"
@@ -640,6 +784,8 @@ const ItemDetails = () => {
                 {item_type.name}
               </option>
 </select>
+  {errors.item_type && <p className="text-red-500 text-xs">{errors.item_type}</p>}
+
                          
    <label className="text-gray-400 font-semibold text-[11px] mb-1">
   Gender:
@@ -685,8 +831,9 @@ const ItemDetails = () => {
                             placeholder="0"
                             name="emerald_weight"
                             style={{paddingLeft:'12px'}}
-                            className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
+                            className="border w-[200px] h-[30px] text-xs text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                        {errors.emerald_weight && <p className="text-red-500 text-xs">{errors.emerald_weight}</p>}
                          
                     </div>
                     <div className="flex flex-col gap-3 ">
@@ -704,6 +851,8 @@ const ItemDetails = () => {
                         <option value="True">Yes</option>
                         <option value="False">No</option>
                     </select>
+                      {errors.is_gift_item && <p className="text-red-500 text-xs">{errors.is_gift_item}</p>}
+
                 </div>
              {/* <div className="flex flex-col gap-2">
                     <label className="text-gray-400 font-semibold text-[11px] mb-1">
@@ -739,6 +888,7 @@ const ItemDetails = () => {
                           <input 
                             type="number" 
                             value={data.mark_up}
+                            ref={el => (fieldRefs.current['mark_up'] = el)}
                             onChange={handleChange}
                             min='0'
                             step='.1'
@@ -746,6 +896,7 @@ const ItemDetails = () => {
                             style={{paddingLeft:'12px'}}
                             className="border w-[200px] h-[30px] text-gray-500 rounded-sm bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
                         />
+                         {errors.mark_up && <p className="text-red-500 text-xs">{errors.mark_up}</p>}
                 </div>
 
                     </div>
@@ -836,7 +987,9 @@ const ItemDetails = () => {
 
           value={items[rowIndex]?.diamond_purchase || ''}
           onChange={(e) => handleCellChange(rowIndex, 'diamond_purchase', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
+          className="w-full px-2 py-1 border-none text-gray-500 focus:outline-none"
+          placeholder="purchase"
+          
         />
       </td>
       <td className="rounded-sm border border-gray-200">
@@ -874,14 +1027,20 @@ const ItemDetails = () => {
       </td>
 
       <td className="rounded-sm border border-gray-200">
-        <input
-          type="text"
-                     style={{paddingLeft:'12px'}}
-
-          value={items[rowIndex]?.branch || ''}
-          onChange={(e) => handleCellChange(rowIndex, 'branch', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
-        />
+       
+        <select
+    value={items[rowIndex]?.branch || ''}
+    onChange={(e) => handleCellChange(rowIndex, 'branch', e.target.value)}
+    style={{paddingLeft:'12px'}}
+    className="w-full py-1 pl-[12px] border-none focus:outline-none text-xs text-gray-500 bg-white"
+  >
+    <option value="">--Select Branch--</option>
+    {branch.map((option) => (
+      <option key={option.id} value={option.name}>
+        {option.name}
+      </option>
+    ))}
+  </select>
       </td>
       <td className="rounded-sm border border-gray-200">
   <select
@@ -906,7 +1065,8 @@ const ItemDetails = () => {
 
           value={items[rowIndex]?.cert_no || ''}
           onChange={(e) => handleCellChange(rowIndex, 'cert_no', e.target.value)}
-          className="w-full px-2 py-1 border-none focus:outline-none"
+          className="w-full px-2 py-1 border-none text-gray-500 focus:outline-none"
+          placeholder="cert number"
         />
       </td>
       
@@ -966,18 +1126,22 @@ const ItemDetails = () => {
       type="number" 
       name="cost_price"
       value={data.cost_price}
+      ref={costPriceRef}
       min='0'
       onChange={handleChange}
      placeholder="0.00"
      style={{paddingLeft:'12px'}}
       className="border w-full h-[30px] text-xs text-gray-500  rounded-sm  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
+      {errors.cost_price && <p className="text-red-500 text-xs">{errors.cost_price}</p>}
+
     <label className="text-gray-400 font-semibold text-[12px] mb-1">
       Additional Charge :<span className="text-red-500 text-[14px]">*</span>
     </label>
      <input 
       type="number" 
       name="additional_charge"
+        ref={additionalChargeRef}
       value={data.additional_charge}
       min='0'
       onChange={handleChange}
@@ -985,6 +1149,8 @@ const ItemDetails = () => {
      style={{paddingLeft:'12px'}}
       className="border w-full h-[30px] text-xs  rounded-sm text-gray-500  bg-white border-gray-200 px-3 py-2 focus:outline-none focus:border-blue-500"
     />
+      {errors.additional_charge && <p className="text-red-500 text-xs">{errors.additional_charge}</p>}
+
   </div>
 
   {/* Column 2 */}
@@ -994,7 +1160,7 @@ const ItemDetails = () => {
     </label>
      <input 
       type="number" 
-      name="mark_up"
+      name="discount"
       value={data.discount}
       min='0'
       onChange={handleChange}

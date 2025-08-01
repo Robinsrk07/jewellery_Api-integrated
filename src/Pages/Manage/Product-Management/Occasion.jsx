@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import occasionModel from "../../../models/occasionModel";         
@@ -42,6 +42,9 @@ const Occasion = () => {
   const user_id = login_id;
   const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
+  const nameRef = useRef(null)
+  const EditNameRef = useRef(null)
+
   const fetchOccasions = async () => {
     try {
       setIsLoading(true);
@@ -66,13 +69,24 @@ const Occasion = () => {
     fetchOccasions();
   }, [limit, page, search, status]);
 
-  const validateOccasion = () => {
-    const newErrors = {};
-    if (!addOccasionData.name.trim()) newErrors.name = 'Please enter name';
-    if (!addOccasionData.description.trim()) newErrors.description = 'Please enter description';
-    if (addOccasionData.status === '') newErrors.status = 'Please select status';
-    return newErrors;
-  };
+ const validateOccasion = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addOccasionData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleAddOccasionChange = (e) => {
     const { name, value } = e.target;
@@ -81,11 +95,7 @@ const Occasion = () => {
   };
 
   const handleSubmitOccasion = async () => {
-    const validationErrors = validateOccasion();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+ if (!validateOccasion()) return;
     const payload = {
       name: addOccasionData.name,
       description: addOccasionData.description,      
@@ -98,32 +108,38 @@ const Occasion = () => {
         toast.success('Occasion created successfully!');
       }
     } catch (error) {
-      console.error("Create occasion error:", error);
-      toast.error('Failed to create occasion!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Occasion!";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+           ...error.response.data.errors,
+                          }));
+              }
+                                }
   };
 
-  const validateEditOccasion = () => {
-    const newErrors = { name: '', description: '', status: '' };
-    let valid = true;
-    if (!editingOccasion?.name?.trim()) {
-      newErrors.name = 'Occasion name is required';
-      valid = false;
-    }
-    if (!editingOccasion?.description?.trim()) {
-      newErrors.description = 'Description is required';
-      valid = false;
-    }
-    if (editingOccasion?.status === undefined || editingOccasion.status === '') {
-      newErrors.status = 'Status is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+ const validateEditOccasion = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!editingOccasion?.name?.trim()) {
+    newErrors.name = 'Occasion name is required';
+    firstInvalidRef = EditNameRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickOccasion = (occasionObj) => {
     if (!occasionObj || typeof occasionObj !== 'object' || !occasionObj.id) {
@@ -165,12 +181,18 @@ const Occasion = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update occasion error:", error);
-      toast.error('Failed to update occasion!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Occasion!";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+           ...error.response.data.errors,
+                          }));
+              }
+                                } finally {
       setIsSubmitting(false);
     }
   };
@@ -268,7 +290,7 @@ const Occasion = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addOccasionData.name} onChange={handleAddOccasionChange} name="name" />
+                <input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addOccasionData.name} onChange={handleAddOccasionChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
@@ -300,7 +322,7 @@ const Occasion = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingOccasion?.name || ''} onChange={handleEditOccasionChange} name="name" />
+                <input type="text" placeholder="Type here" ref={EditNameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingOccasion?.name || ''} onChange={handleEditOccasionChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>

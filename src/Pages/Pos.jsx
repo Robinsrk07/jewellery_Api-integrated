@@ -28,8 +28,7 @@ import CurrencyModel from "../models/CurrencyModel";
   })
   
 
-  console.log(discount)
-  console.log(cart)
+  
   const navigate = useNavigate()
   const [customerDetails, setCustomerDetails] = useState({
       name: '',
@@ -132,7 +131,7 @@ const CreateCart = (cart) => {
 
     const handleCheckout = async () => {
     const payload = CreateCart(cart); 
-    console.log(payload)
+    
     const formData = new FormData();
     formData.append("customer", 1);  
     payload.forEach((item) => {
@@ -155,7 +154,7 @@ const CreateCart = (cart) => {
           });
         }, 1000);
 
-        console.log("Cart created successfully", response.data);
+       
       } catch (error) {
         console.log(error)
         toast.error("Please Try Again");

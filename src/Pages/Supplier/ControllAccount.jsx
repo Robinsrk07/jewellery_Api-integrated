@@ -1,7 +1,5 @@
 
-
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import controlAccountModel from "../../models/controlAccountModel";
@@ -44,6 +42,9 @@ const ControllAccount = () => {
   const user_id = login_id;
   const user_types = Object.keys(can_manage_user_types || {}).join(',');
 
+  const nameRef = useRef(null)
+  const EditnameRef = useRef(null)
+  
   const fetchControlAccounts = async () => {
     try {
       setIsLoading(true);
@@ -68,11 +69,21 @@ const ControllAccount = () => {
     fetchControlAccounts();
   }, [limit, page, search, status]);
 
-  const validateControlAccount = () => {
-    const newErrors = {};
-    if (!addControlAccountData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+ const validateControlAccount = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addControlAccountData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+  if (firstInvalidRef?.current) firstInvalidRef.current.focus();
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleAddControlAccountChange = (e) => {
     const { name, value } = e.target;
@@ -81,11 +92,8 @@ const ControllAccount = () => {
   };
 
   const handleSubmitControlAccount = async () => {
-    const validationErrors = validateControlAccount();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+   if (!validateControlAccount()) return;
+
     const payload = {
       name: addControlAccountData.name,
       description: addControlAccountData.description,
@@ -97,25 +105,36 @@ const ControllAccount = () => {
         handleCloseModal();
         toast.success('Control account created successfully!');
       }
-    } catch (error) {
-      console.error("Create control account error:", error);
-      toast.error('Failed to create control account!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+    }catch (error) {
+                        const message =
+                        error?.response?.data?.errors?.name?.[0] ||
+                        error?.response?.data?.message ||
+                        "Failed to create Control Account!";
+                        toast.error(message);
+                        if (error.response?.data?.errors) {
+                          setErrors(prev => ({
+                          ...prev,
+                          ...error.response.data.errors,
+                        }));
+                      }
+                              }
   };
 
-  const validateEditControlAccount = () => {
-    const newErrors = { name: '', description: '', status: '' };
-    let valid = true;
-    if (!editingControlAccount?.name?.trim()) {
-      newErrors.name = 'Control account name is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+ const validateEditControlAccount = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!editingControlAccount?.name?.trim()) {
+    newErrors.name = 'Control account name is required';
+    firstInvalidRef = EditnameRef;
+  }
+
+  setErrors(newErrors);
+  if (firstInvalidRef?.current) firstInvalidRef.current.focus();
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickControlAccount = (accountObj) => {
     if (!accountObj || typeof accountObj !== 'object' || !accountObj.id) {
@@ -141,7 +160,7 @@ const ControllAccount = () => {
       return;
     }
     if (!validateEditControlAccount()) return;
-    setIsSubmitting(true);
+         setIsSubmitting(true);
     try {
       const response = await controlAccountModel.updateControlAccount(
         editingControlAccount.id,
@@ -157,12 +176,18 @@ const ControllAccount = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update control account error:", error);
-      toast.error('Failed to update control account!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Control Account!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               } finally {
       setIsSubmitting(false);
     }
   };
@@ -260,7 +285,7 @@ const ControllAccount = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addControlAccountData.name} onChange={handleAddControlAccountChange} name="name" />
+                <input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addControlAccountData.name} onChange={handleAddControlAccountChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
@@ -293,7 +318,7 @@ const ControllAccount = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingControlAccount?.name || ''} onChange={handleEditControlAccountChange} name="name" />
+                <input type="text" placeholder="Type here" ref ={EditnameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingControlAccount?.name || ''} onChange={handleEditControlAccountChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>

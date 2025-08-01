@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import '@fontsource/open-sans'; // Default weight 400
@@ -37,7 +37,12 @@ import TableSkelton from "../../../components/tableSkelton";
                     const [status, setStatus] = useState(''); // "true" | "false" | ""
                     const [isSubmitting, setIsSubmitting] = useState(false);
 
-                    
+                     const nameRef = useRef(null);
+                      const codeRef = useRef(null);
+
+                      const nameEditRef = useRef(null);
+                      const codeEditRef = useRef(null);
+
                     const [addBrandData, setAddBrandData] = useState({
                       name: '',
                       code: '',
@@ -56,6 +61,7 @@ import TableSkelton from "../../../components/tableSkelton";
 
 
                     const fetchBrands = async () => {
+                      setIsLoading(true)
                       try {
                         const response = await BrandModel.getBrands(
                           user_id,
@@ -66,7 +72,7 @@ import TableSkelton from "../../../components/tableSkelton";
                           status
                         );
 
-                        console.log("Response from API:", response);
+                    
 
                         if (response.data && response.data.data) {
                          
@@ -93,8 +99,6 @@ import TableSkelton from "../../../components/tableSkelton";
                   const newErrors = {};
                   if (!addBrandData.name.trim()) newErrors.name = 'Please enter name';
                   if (!addBrandData.code.trim()) newErrors.code = 'Please enter code';
-                  if (!addBrandData.description.trim()) newErrors.description = 'Please Enter the Description';
-                  if (addBrandData.status === '') newErrors.status = 'Please select status';
                   return newErrors;
                 };
 
@@ -104,32 +108,43 @@ import TableSkelton from "../../../components/tableSkelton";
                       ...prev,
                       [name]: value,
                     }));
+                    setErrors((prev)=>({
+                      ...prev,
+                      [name]:''
+                    }))
                   };
 
-                  useEffect(() => {
-                    console.log("Updated Brand form state:", addBrandData);
-                  }, [addBrandData]);
+                  
 
 
                   const handleSubmitBrand = async () => {
                     const validationErrors = validateBrand();
                     if (Object.keys(validationErrors).length > 0) {
-                      setErrors(validationErrors);
-                      return;
-                    }
+                    setErrors(validationErrors);
+                   
+                  // Focus logic
+                  if (validationErrors.name && nameRef.current) {
+                    nameRef.current.focus();
+                  } else if (validationErrors.code && codeRef.current) {
+                    codeRef.current.focus();
+                  }
+
+                  return;
+                }
+
 
                     const payload = {
                       name: addBrandData.name,
                       code: addBrandData.code,
                       description: addBrandData.description,
-                      status: addBrandData.status === 'true '
+                
                     };
 
 
 
                     try {
                       const response = await BrandModel.createBrand(payload);
-                      console.log("Create Brand response:", response);
+                    
 
                       if (response.status === 201 || response.status === 200) {
                         fetchBrands();
@@ -137,17 +152,18 @@ import TableSkelton from "../../../components/tableSkelton";
                         toast.success('Brand created successfully!');
                       }
                     } catch (error) {
-                      console.error("Create brand error:", error);
-                      toast.error('Failed to create brand!');
-                      handleCloseModal();
-
-                      if (error.response?.data?.errors) {
-                        setErrors((prev) => ({
+                        const message =
+                        error?.response?.data?.errors?.name?.[0] ||
+                        error?.response?.data?.message ||
+                        "Failed to create Adress Type!";
+                        toast.error(message);
+                        if (error.response?.data?.errors) {
+                          setErrors(prev => ({
                           ...prev,
                           ...error.response.data.errors,
                         }));
                       }
-                    }
+                              }
                   };
 
                     const [editErrors, setEditErrors] = useState({
@@ -160,7 +176,7 @@ import TableSkelton from "../../../components/tableSkelton";
 
                                       
                     const handleEditClick = (brandObj) => {
-                      console.log("Selected for Edit:", brandObj);
+                     
                       setEditingBrand({ ...brandObj });
                       setEditModal(true);
                     };
@@ -171,6 +187,10 @@ import TableSkelton from "../../../components/tableSkelton";
                         ...prev,
                         [name]: name === 'status' ? value === 'true' : value,
                       }));
+                      setEditErrors((prev)=>({
+                      ...prev,
+                      [name]:''
+                    }))
                     };
 
                     const validateEditBrand = () => {
@@ -196,14 +216,20 @@ import TableSkelton from "../../../components/tableSkelton";
                     };
 
                     const handleEditSubmitBrand = async () => {
-                      console.log("Editing Brand:", editingBrand);
-
+                    
                       if (!editingBrand?.id) {
                         toast.error("Invalid brand selected for editing.");
                         return;
                       }
 
-                      if (!validateEditBrand()) return;
+                   if (!validateEditBrand()) {
+                      if (editErrors.name && nameEditRef.current) {
+                        nameEditRef.current.focus();
+                      } else if (editErrors.code && codeEditRef.current) {
+                        codeEditRef.current.focus();
+                      }
+                      return;
+                    }
 
                       setIsSubmitting(true);
                       try {
@@ -223,15 +249,18 @@ import TableSkelton from "../../../components/tableSkelton";
                           setEditModal(false);
                         }
                       } catch (error) {
-                        console.error("Update error:", error);
-                        toast.error('Failed to update brand!');
-                        if (error.response?.data?.errors) {
-                          setEditErrors(prev => ({
+                          const message =
+                          error?.response?.data?.errors?.name?.[0] ||
+                          error?.response?.data?.message ||
+                          "Failed to create Adress Type!";
+                          toast.error(message);
+                          if (error.response?.data?.errors) {
+                            setErrors(prev => ({
                             ...prev,
                             ...error.response.data.errors,
                           }));
                         }
-                      } finally {
+                                } finally {
                         setIsSubmitting(false);
                       }
                     };
@@ -394,6 +423,7 @@ import TableSkelton from "../../../components/tableSkelton";
                                       </label>
                                       <div>
                                       <input type="text" 
+                                        ref={nameRef}
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
@@ -411,6 +441,7 @@ import TableSkelton from "../../../components/tableSkelton";
                                       <div>
                                      <input type="text" 
                                         placeholder="Type here" 
+                                         ref={codeRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={addBrandData.code}
@@ -497,6 +528,7 @@ import TableSkelton from "../../../components/tableSkelton";
                                       </label>
                                       <div>
                                       <input type="text" 
+                                       ref={nameEditRef}
                                         placeholder="Type here" 
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
@@ -515,6 +547,7 @@ import TableSkelton from "../../../components/tableSkelton";
                                       <div>
                                     <input type="text" 
                                         placeholder="Type here" 
+                                         ref={codeEditRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingBrand.code}

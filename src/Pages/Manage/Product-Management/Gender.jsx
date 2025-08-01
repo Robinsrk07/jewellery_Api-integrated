@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import productGenderModel from "../../../models/productGenderModel";
@@ -16,6 +16,8 @@ const Gender = () => {
 
   const user_id = login_id;
   const user_types = Object.keys(can_manage_user_types || {}).join(',');
+  const nameRef = useRef(null);
+  const nameEditRef = useRef(null);
 
   const [modal, setModal] = useState(false);   
   const [editModal, setEditModal] = useState(false);
@@ -61,10 +63,10 @@ const Gender = () => {
         status
       );
 
-      console.log("Response from API:", response);
+     
 
       if (response.data && response.data.data) {
-        console.log("Data Received:", response.data.data);
+      
         setProductGenderData(response.data.data);
         setTotalPages(response.data.pagination.pages);
       } else {
@@ -88,20 +90,32 @@ const Gender = () => {
     return newErrors;
   };
 
-  const handleAddProductGenderChange = (e) => {
-    const { name, value } = e.target;
-    setAddProductGenderData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+ const handleAddProductGenderChange = (e) => {
+  const { name, value } = e.target;
+
+  setAddProductGenderData((prev) => ({
+    ...prev,
+    [name]: value,
+  }));
+
+  setErrors((prev) => ({
+    ...prev,
+    [name]: '',
+  }));
+};
+
 
   const handleSubmitProductGender = async () => {
     const validationErrors = validateProductGender();
     if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
+    setErrors(validationErrors);
+
+    if (validationErrors.name && nameRef.current) {
+      nameRef.current.focus();
     }
+
+    return;
+  }
 
     const payload = {
       name: addProductGenderData.name,
@@ -113,7 +127,7 @@ const Gender = () => {
 
     try {
       const response = await productGenderModel.createProductGender(payload);
-      console.log("Create Product Gender response:", response);
+    
 
       if (response.status === 201 || response.status === 200) {
         fetchProductGenders();
@@ -121,21 +135,22 @@ const Gender = () => {
         toast.success('Product gender created successfully!');
       }
     } catch (error) {
-      console.error("Create product gender error:", error);
-      toast.error('Failed to create product gender!');
-      handleCloseModal();
-
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({
-          ...prev,
-          ...error.response.data.errors,
-        }));
-      }
-    }
+                            const message =
+                            error?.response?.data?.errors?.name?.[0] ||
+                            error?.response?.data?.message ||
+                            "Failed to create Adress Type!";
+                            toast.error(message);
+                            if (error.response?.data?.errors) {
+                              setErrors(prev => ({
+                              ...prev,
+                              ...error.response.data.errors,
+                            }));
+                          }
+                    }
   }; 
 
   const handleEditClick = (genderObj) => {
-    console.log("Selected for Edit:", genderObj);
+   
     setEditingProductGender({ ...genderObj });
     setEditModal(true);
   };
@@ -149,27 +164,32 @@ const Gender = () => {
   };
 
   const validateEditProductGender = () => {
-    let valid = true;
-    const newErrors = { name: '', description: '', status: '' };
+  const newErrors = {};
+  if (!editingProductGender?.name?.trim()) {
+    newErrors.name = 'Product gender name is required';
+  }
 
-    if (!editingProductGender?.name?.trim()) {
-      newErrors.name = 'Product gender name is required';
-      valid = false;
-    }
+  setEditErrors(newErrors);
+  return newErrors;
+};
 
-    setEditErrors(newErrors);
-    return valid;
-  };
 
   const handleEditSubmitProductGender = async () => {
-    console.log("Editing Product Gender:", editingProductGender);
+   
 
     if (!editingProductGender?.id) {
       toast.error("Invalid product gender selected for editing.");
       return;
     }
 
-    if (!validateEditProductGender()) return;
+   const validationErrors = validateEditProductGender();
+if (Object.keys(validationErrors).length > 0) {
+  if (validationErrors.name && nameEditRef.current) {
+    nameEditRef.current.focus();
+  }
+  return;
+}
+
 
     setIsSubmitting(true);
     try {
@@ -188,15 +208,18 @@ const Gender = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update error:", error);
-      toast.error('Failed to update product gender!');
-      if (error.response?.data?.errors) {
-        setEditErrors(prev => ({
-          ...prev,
-          ...error.response.data.errors,
-        }));
-      }
-    } finally {
+                            const message =
+                            error?.response?.data?.errors?.name?.[0] ||
+                            error?.response?.data?.message ||
+                            "Failed to create Adress Type!";
+                            toast.error(message);
+                            if (error.response?.data?.errors) {
+                              setErrors(prev => ({
+                              ...prev,
+                              ...error.response.data.errors,
+                            }));
+                          }
+                    } finally {
       setIsSubmitting(false);
     }
   };
@@ -333,6 +356,7 @@ const Gender = () => {
                 </label>
                 <input type="text" 
                   placeholder="Type here" 
+                    ref={nameRef}
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                   style={{paddingLeft:'12px'}}
                   value={addProductGenderData.name}
@@ -413,6 +437,7 @@ const Gender = () => {
                 </label>
                 <input type="text" 
                   placeholder="Type here" 
+                    ref={nameEditRef}
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                   style={{paddingLeft:'12px'}}
                   value={editingProductGender?.name || ''}

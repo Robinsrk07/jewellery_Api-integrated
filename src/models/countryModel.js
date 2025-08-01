@@ -1,7 +1,7 @@
 import axiosInstance from "../Data/server/axiosinstance";
 
 const CountryModel = {
-  getCountries: (user_id, user_types, limit = 10, page = 1, search = "", status = "") => {
+  getCountries: (user_id, user_types, limit = 10, page = 1, search = "", status = "True") => {
     const params = new URLSearchParams({
       user_id,
       user_types,

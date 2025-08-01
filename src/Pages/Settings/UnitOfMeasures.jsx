@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import UOMModel from "../../models/UOMModel";
@@ -13,7 +13,6 @@ import TableSkelton from "../../components/tableSkelton";
 const  UnitOfMeasures = () => {
      
           
-                        const [isHovered, setIsHovered] = useState(false);
                         const [modal, setModal] = useState(false);
                         const [editModal, setEditModal] = useState(false);
                         const [totalPages, setTotalPages] = useState(1);
@@ -43,7 +42,7 @@ const  UnitOfMeasures = () => {
                           conversion_factor: '',
                           usd_price: '',
                           branch: '',
-                          is_default: false,
+                          is_default: '',
                           status: '',
                         });
 
@@ -54,12 +53,30 @@ const  UnitOfMeasures = () => {
                           usd_price: '',
                           branch: '',
                           status: '',
+                          is_default:''
                         });
 
                         const auth = useSelector((state) => state.auth);
                         const { login_id, can_manage_user_types } = auth;
                         const user_id = login_id;
                         const user_types = Object.keys(can_manage_user_types || {}).join(',');
+
+                        const codeRef = useRef(null);
+                        const nameRef = useRef(null);
+                        const convRef = useRef(null);
+                        const priceRef = useRef(null);
+                        const branchRef = useRef(null);
+                        const isDefaultRef = useRef(null);
+
+                        const codeEditRef = useRef(null);
+                        const nameEditRef = useRef(null);
+                        const convEditRef = useRef(null);
+                        const priceEditRef = useRef(null);
+                        const branchEditRef = useRef(null);
+                        const isEditDefaultRef = useRef(null);
+
+
+
 
                         const fetchUOMs = async () => {
                           setIsLoading(true);
@@ -86,6 +103,24 @@ const  UnitOfMeasures = () => {
                         };
 
 
+                        const focusFirstAddError = (errors) => {
+                          if (errors.code) codeRef.current?.focus();
+                          else if (errors.name) nameRef.current?.focus();
+                          else if (errors.conversion_factor) convRef.current?.focus();
+                          else if (errors.usd_price) priceRef.current?.focus();
+                          else if (errors.branch) branchRef.current?.focus();
+                          else if (errors.is_default) isDefaultRef.current?.focus();
+                        };
+                        const focusFirstEditAddError = (errors) => {
+                          if (errors.code) codeEditRef.current?.focus();
+                          else if (errors.name) nameEditRef.current?.focus();
+                          else if (errors.conversion_factor) convEditRef.current?.focus();
+                          else if (errors.usd_price) priceEditRef.current?.focus();
+                          else if (errors.branch) branchEditRef.current?.focus();
+                          else if (errors.is_default) isEditDefaultRef.current?.focus();
+                        };
+
+
                         useEffect(() => {
                           fetchUOMs();
                         }, [limit, page, search, status]);
@@ -104,7 +139,7 @@ const  UnitOfMeasures = () => {
 
                       const fetchBranches = async () => {
                         try {
-                          const response = await UOMModel.getBranches(user_id);
+                          const response = await UOMModel.getBranches(user_id,user_types,1000,1,'','True');
                           if (response?.data?.data) {
                             setBranches(response.data.data);
                           } else {
@@ -157,14 +192,19 @@ const handleAddUOMChange = (e) => {
     ...prev,
     [name]: name === 'status' ? value === 'true' : value,
   }));
+  setErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 
 const handleSubmitUOM = async () => {
   const validationErrors = validateUOM();
 
-  if (Object.keys(validationErrors).length > 0) {
+   if (Object.keys(validationErrors).length > 0) {
     setErrors(validationErrors);
+    focusFirstAddError(validationErrors); // 🔥 Add this line
     return;
   }
 
@@ -174,76 +214,64 @@ const handleSubmitUOM = async () => {
     conversion_factor: parseFloat(addUOMData.conversion_factor),
     usd_price: parseFloat(addUOMData.usd_price),
     branch: parseInt(addUOMData.branch),
+    is_default:addUOMData.is_default === 'True'
   
   };
 
-  console.log("UOM Payload being sent:", payload);
 
   try {
     const response = await UOMModel.createUOM(payload);
-    console.log("Create UOM response:", response);
+   
 
     if (response.status === 201 || response.status === 200) {
       fetchUOMs();
       handleCloseModal();
       toast.success('UOM created successfully!');
     }
-  } catch (error) {
-    console.error("Create UOM error:", error);
-    toast.error('Failed to create UOM!');
-    handleCloseModal();
-
-    if (error.response?.data?.errors) {
-      setErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  }
+  }  catch (error) {
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.errors?.code?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Currency !";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+            ...error.response.data.errors,
+             }));
+                 }
+                        }
 };
 
 
-const [editUOMErrors, setEditUOMErrors] = useState({});
 
 const validateEditUOM = () => {
-  let valid = true;
-  const newErrors = {
-    code: '',
-    name: '',
-    conversion_factor: '',
-    usd_price: '',
-    branch: '',
-    status: ''
-  };
+  const newErrors = {}
 
   if (!editingUOM?.code?.trim()) {
     newErrors.code = 'Code is required';
-    valid = false;
   }
 
   if (!editingUOM?.name?.trim()) {
     newErrors.name = 'Name is required';
-    valid = false;
   }
 
   if (!editingUOM?.conversion_factor || isNaN(editingUOM.conversion_factor)) {
     newErrors.conversion_factor = 'Valid conversion factor is required';
-    valid = false;
   }
 
   if (!editingUOM?.usd_price || isNaN(editingUOM.usd_price)) {
     newErrors.usd_price = 'Valid USD price is required';
-    valid = false;
   }
 
   if (!editingUOM?.branch) {
     newErrors.branch = 'Branch is required';
-    valid = false;
   }
 
 
   setEditErrors(newErrors);
-  return valid;
+  return newErrors
 };
 
 
@@ -256,7 +284,7 @@ const handleEditClickUOM = (uomObj) => {
     return;
   }
 
-  console.log("Selected UOM for Edit:", uomObj);
+ 
 
   setEditingUOM({
     id: uomObj.id,
@@ -264,8 +292,10 @@ const handleEditClickUOM = (uomObj) => {
     name: uomObj.name,
     conversion_factor: uomObj.conversion_factor,
     usd_price: uomObj.usd_price,
+    is_default: uomObj.is_default,
     branch: uomObj.branch?.toString(),
     status: uomObj.status?.toString(),
+
   });
 
   setEditModal(true);
@@ -278,9 +308,16 @@ const handleEditUOMChange = (e) => {
 
   setEditingUOM((prev) => ({
     ...prev,
-    [name]: name === 'status' ? value === 'true' : value,
+    [name]: name === 'status' ? value === 'true' : 
+           name === 'is_default' ? value === 'True' : 
+           value,
   }));
+  setEditErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
+
 
 
 
@@ -289,8 +326,13 @@ const handleEditSubmitUOM = async () => {
     toast.error("Invalid UOM selected for editing.");
     return;
   }
+   const validationEditErrors = validateEditUOM();
+if (Object.keys(validationEditErrors).length > 0) {
+  setEditErrors(validationEditErrors);
+  focusFirstEditAddError(validationEditErrors); // ✅ Correct function
+  return;
+}
 
-  if (!validateEditUOM()) return;
 
   setIsSubmitting(true);
 
@@ -301,6 +343,7 @@ const handleEditSubmitUOM = async () => {
     usd_price: parseFloat(editingUOM.usd_price),
     branch: parseInt(editingUOM.branch),
     status: editingUOM.status === true || editingUOM.status === 'true',
+    is_default: editingUOM.is_default === true || editingUOM.is_default === 'True' // ✅ Fixed (was editModal.is_default)
   };
 
   try {
@@ -311,16 +354,20 @@ const handleEditSubmitUOM = async () => {
       toast.success('UOM updated successfully!');
       setEditModal(false);
     }
-  } catch (error) {
-    console.error("Update UOM error:", error);
-    toast.error('Failed to update UOM!');
-    if (error.response?.data?.errors) {
-      setEditErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  } finally {
+  }  catch (error) {
+            const message =
+            error?.response?.data?.errors?.name?.[0] ||
+            error?.response?.data?.errors?.code?.[0] ||
+            error?.response?.data?.message ||
+            "Failed to create Currency !";
+            toast.error(message);
+            if (error.response?.data?.errors) {
+            setErrors(prev => ({
+            ...prev,
+            ...error.response.data.errors,
+             }));
+                 }
+                        } finally {
     setIsSubmitting(false);
   }
 };
@@ -328,7 +375,7 @@ const handleEditSubmitUOM = async () => {
                                                   const handleEditCloseModal = () => {
                                                       setEditModal(false);
                                                       setEditingUOM(null);
-                                                      setEditUOMErrors({
+                                                      setEditErrors({
                                                         code: '',
                                                         name: '',
                                                         conversion_factor: '',
@@ -371,7 +418,17 @@ const handleDeleteUOM = async (id) => {
                       conversion_factor: '',
                       usd_price: '',
                       branch: '',
-                      status: ''
+                      status: '',
+                      is_default:''
+                     })
+                     setAddUOMData({
+                       code: '',
+                      name: '',
+                      conversion_factor: '',
+                      usd_price: '',
+                      branch: '',
+                      status: '',
+                      is_default:''
                      })
                      setModal(false);
                      setEditModal(false)
@@ -394,26 +451,12 @@ const handleDeleteUOM = async (id) => {
                     mx-auto overflow-auto  custom-scrollbar"
                  style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                    >
-                                  <div
-                              style={{
-                              position: 'sticky',
-                              left: 0,
-                              top: 0,
-                              zIndex: 10,
-                              backgroundColor: 'white',
-                              padding: '1.5rem',
-                              boxSizing: 'border-box',
-                              display: 'flex',
-                              justifyContent: 'flex-end',
-                              width: 'fit-content', // Changed from 100%
-                              minWidth: '100%' // Ensures it matches table width
-                              }}
-                          >
+                          
                               <CreateButton
                                 buttoncontent="+ New UOM"
                                 onClick={() => setModal(true)}  
                               />  
-                          </div>
+                        
                           <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
 
@@ -508,6 +551,7 @@ const handleDeleteUOM = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={codeRef}
                                         className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         value={addUOMData.code}
@@ -526,6 +570,7 @@ const handleDeleteUOM = async (id) => {
                                        Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
+                                      ref={nameRef}
                                         placeholder="Type here" 
                                         className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
@@ -545,6 +590,7 @@ const handleDeleteUOM = async (id) => {
                                             <input 
                                               type="number" 
                                               name="conversion_factor"  
+                                              ref={convRef}
                                               placeholder="Type here" 
                                               className="input w-[100%] text-xs bg-white border-gray-300 rounded-lg border border-gray-300 text-gray-500 focus:outline-none focus:border-b-2 focus:border-blue-500"
                                               style={{ paddingLeft: '12px' }}
@@ -569,6 +615,7 @@ const handleDeleteUOM = async (id) => {
                                                 type="number" 
                                                 name="usd_price"  // Must match your formData key
                                                 placeholder="Type here" 
+                                                ref={priceRef}
                                                 className="input w-[100%] text-xs rounded-lg border bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                                 style={{ paddingLeft:'12px' }}
                                                 value={addUOMData.usd_price}
@@ -585,6 +632,7 @@ const handleDeleteUOM = async (id) => {
                                                   </label>
                                                   <select
                                                     name="branch"
+                                                    ref={branchRef}
                                                     value={addUOMData.branch}
                                                     onChange={handleAddUOMChange}
                                                     className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
@@ -601,6 +649,32 @@ const handleDeleteUOM = async (id) => {
                                                     <span className="text-red-500 text-xs mt-1">{errors.branch}</span>
                                                   )}
                                                 </div>
+                                                <div className="w-full flex flex-col gap-2">
+                                                  <label className="text-xs font-bold text-[#344767]">
+                                                    Is Default
+                                                  </label>
+                                                  <select
+                                                    name="is_default"
+                                                    value={addUOMData.is_default}
+                                                    ref={isDefaultRef}
+                                                    onChange={handleAddUOMChange}
+                                                    className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                                    style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                                  >
+                                                    <option value="">Select Is Default</option>
+                                                    <option value="True">Active</option>
+                                                    <option value="False">Inactive</option>
+                                                   
+                                                  </select>
+                                                  {errors.is_default && (
+                                                    <span className="text-red-500 text-xs mt-1">{errors.branch}</span>
+                                                  )}
+                                                </div>
+
+
+
+
+
                                             </div> 
                                             {/* Button container positioned 10px above bottom */}
                                             <div className="flex flex-col sm:flex-row justify-end items-end gap-4  " 
@@ -648,6 +722,7 @@ const handleDeleteUOM = async (id) => {
                                       </label>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={codeEditRef}
                                         className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
                                         value={editingUOM.code}
@@ -666,6 +741,7 @@ const handleDeleteUOM = async (id) => {
                                        Name: <span className="text-xs text-red-400">*</span>
                                       </label>
                                       <input type="text" 
+                                      ref={nameEditRef}
                                         placeholder="Type here" 
                                         className="input w-[100%] text-xs rounded-lg bg-white border-gray-300 text-gray-500 focus:outline-none  focus:border-b-2 focus:border-blue-500"
                                         style={{paddingLeft:'12px'}}
@@ -688,6 +764,7 @@ const handleDeleteUOM = async (id) => {
 
                                             <input 
                                                 type="number" 
+                                                ref={convEditRef}
                                                 name="conversion_factor"  // Must match your formData key
                                                 placeholder="Type here" 
                                                 className="input w-[100%] text-xs bg-white border-gray-300 text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
@@ -707,6 +784,7 @@ const handleDeleteUOM = async (id) => {
   <input 
     type="number" 
     name="usd_price" // <-- FIXED
+    ref={priceEditRef}
     placeholder="Type here" 
     className="input w-[100%] text-xs rounded-lg border bg-white border-gray-300 text-gray-500 focus:outline-none focus:border-b-2 focus:border-blue-500"
     style={{ paddingLeft:'12px' }}
@@ -726,6 +804,7 @@ const handleDeleteUOM = async (id) => {
                                                   </label>
                                                   <select
                                                     name="branch"
+                                                    ref={branchEditRef}
                                                     value={editingUOM?.branch || ''}
                                                     onChange={handleEditUOMChange}
                                                     className="select select-bordered bg-white text-gray-500 text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
@@ -742,6 +821,24 @@ const handleDeleteUOM = async (id) => {
                                                     <span className="text-red-500 text-xs mt-1">{editErrors.branch}</span>
                                                   )}
                                                 </div>
+                                                <div className="w-full flex flex-col gap-2">
+                                                  <label className="text-xs font-bold text-[#344767]">Is Default</label>
+                                                  <select
+                                                    name="is_default"
+                                                     value={editingUOM?.is_default === true ? "True" : editingUOM?.is_default === false ? "False" : ""} // ✅ Fixed
+                                                    onChange={handleEditUOMChange}
+                                                    className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
+                                                    style={{ paddingLeft: '12px', fontSize: '11px' }}
+                                                  >
+                                                    <option value="">Select Is Default</option>
+                                                    <option value="True">Active</option>
+                                                    <option value="False">Inactive</option>
+                                                  </select>
+                                                  {errors.is_default && (
+                                                    <span className="text-red-500 text-xs mt-1">{errors.is_default}</span>
+                                                  )}
+                                                </div>
+
 
                                            
                                             <label 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import employeeDepartmentModel from "../../models/employeeDepartmentModel";
@@ -40,6 +40,8 @@ const Departments = () => {
   const { login_id ,can_manage_user_types,} = auth;    
   const user_id = login_id 
   const user_types = Object.keys(can_manage_user_types).join(',');
+  const nameRef = useRef(null)
+  const EditNameRef = useRef(null)
 
   const fetchDepartments = async () => {
     try {
@@ -65,11 +67,24 @@ const Departments = () => {
     fetchDepartments();
   }, [limit, page, search, status]);
 
-  const validateDepartment = () => {
-    const newErrors = {};
-    if (!addDepartmentData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+ const validateDepartment = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addDepartmentData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    firstInvalidRef = nameRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleAddDepartmentChange = (e) => {
     const { name, value } = e.target;
@@ -78,11 +93,7 @@ const Departments = () => {
   };
 
   const handleSubmitDepartment = async () => {
-    const validationErrors = validateDepartment();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+    if (!validateDepartment()) return;
     const payload = {
       name: addDepartmentData.name,
     };
@@ -94,28 +105,43 @@ const Departments = () => {
         toast.success('Department created successfully!');
       }
     } catch (error) {
-      console.error("Create department error:", error);
-      toast.error('Failed to create department!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create DepartMent!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               }
   };
 
   const validateEditDepartment = () => {
-    const newErrors = { name: '', status: '' };
-    let valid = true;
-    if (!editingDepartment?.name?.trim()) {
-      newErrors.name = 'Department name is required';
-      valid = false;
-    }
-    if (editingDepartment?.status === undefined || editingDepartment.status === '') {
-      newErrors.status = 'Status is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!editingDepartment?.name?.trim()) {
+    newErrors.name = 'Department name is required';
+    firstInvalidRef = EditNameRef;
+  }
+
+  if (editingDepartment?.status === undefined || editingDepartment.status === '') {
+    newErrors.status = 'Status is required';
+    if (!firstInvalidRef) firstInvalidRef = { current: document.querySelector('select[name="status"]') };
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickDepartment = (deptObj) => {
     if (!deptObj || typeof deptObj !== 'object' || !deptObj.id) {
@@ -156,12 +182,18 @@ const Departments = () => {
         setEditModal(false);
       }
     } catch (error) {
-      console.error("Update department error:", error);
-      toast.error('Failed to update department!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+                    const message =
+                    error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create DepartMent!";
+                     toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                     ...prev,
+                    ...error.response.data.errors,
+                        }));
+                   }
+               } finally {
       setIsSubmitting(false);
     }
   };
@@ -260,7 +292,7 @@ const Departments = () => {
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
               <div>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addDepartmentData.name} onChange={handleAddDepartmentChange} name="name" />
+              <input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={addDepartmentData.name} onChange={handleAddDepartmentChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
             </div>
@@ -273,12 +305,12 @@ const Departments = () => {
       )}
       {editModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-auto">
-          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[320px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
+          <div className="bg-white rounded-xl shadow-md w-[90vw] max-w-[500px] h-[95vh] max-h-[350px] flex flex-col gap-4 overflow-y-auto" style={{padding:'20px'}}>
             <h3 className="font-bold text-[22px] text-[#344767]">Edit Department</h3>
             <hr className=" border-gray-300"/>
             <div className="flex flex-col flex-grow gap-4">
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Name:</label>
-              <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingDepartment?.name || ''} onChange={handleEditDepartmentChange} name="name" />
+              <input type="text" placeholder="Type here" ref={EditNameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{paddingLeft:'12px'}} value={editingDepartment?.name || ''} onChange={handleEditDepartmentChange} name="name" />
               {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               <label className="font-semibold text-xs text-[#344767] w-[80%]">Status:</label>
                 <select

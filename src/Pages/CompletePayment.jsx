@@ -46,8 +46,7 @@ const CompletePayment = () => {
   const auth = useSelector((state) => state.auth);
   const user_id = auth?.login_id;
   const user_types = Object.keys(auth?.can_manage_user_types || {}).join(',');
-console.log(payments)
-console.log(utils)
+
   const totalAmount = Number(cartData?.data?.net_amount || 0);
   const totalTax = Number(cartData?.data?.tax || 0);
 
@@ -98,7 +97,7 @@ console.log(utils)
 
   const handleSubmit = async () => {
     const cartMasterId = cartData?.data?.uuid
-   console.log(payments);
+   
    
     try {
           
@@ -114,10 +113,7 @@ console.log(utils)
         });
       });
 
-      console.log("FormData:");
-      for (let pair of formData.entries()) {
-        console.log(`${pair[0]}: ${pair[1]}`);
-      }
+    
 
        const response = await POSModel.CreatePayment(formData);
       navigate("/dashboard/paymentSucces");

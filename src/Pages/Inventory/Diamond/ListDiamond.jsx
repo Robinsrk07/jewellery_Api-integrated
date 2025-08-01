@@ -34,8 +34,7 @@ const commonDiamondItemId =
     : null;
 
 
-console.log("check",diamondList);
-console.log("check",goldUtils);
+
 
  const fetchDiamond = async () => {
         try {

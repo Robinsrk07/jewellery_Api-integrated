@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useRef, useEffect, useState } from "react";
 import PurchaseFixModel from "../../../models/PurchaseFixModel";
 import { toast } from "react-toastify";
+import BackButton from "../../../components/BackButton";
 
 const PurchaseFix = () => {
+
+  const supplierRef = useRef(null);
+  const paymentTypeRef = useRef(null);
+  const sellingUnitRef = useRef(null);
+  const termsRef = useRef(null);
+  const settlementWeightRef = useRef(null);
 
  const [utils, setUtils] = useState({
   uom: [],
@@ -20,46 +27,95 @@ const [data,setData]=useState({
   notes:'',
   settlement_weight:''
 })
+const [errors, setErrors] = useState({});
 
 const [balance_weight, setBalanceWeight] = useState('');
 
+const validateForm = () => {
+  const newErrors = {};
+  let firstInvalidField = null;
+
+  if (!data.supplier) {
+    newErrors.supplier = "Supplier is required";
+    firstInvalidField = firstInvalidField || "supplier";
+  }
+  if (!data.payment_type) {
+    newErrors.payment_type = "Payment type is required";
+    firstInvalidField = firstInvalidField || "payment_type";
+  }
+  if (!data.selling_unit) {
+    newErrors.selling_unit = "Selling unit is required";
+    firstInvalidField = firstInvalidField || "selling_unit";
+  }
+  if (!data.terms_of_payment) {
+    newErrors.terms_of_payment = "Terms of payment is required";
+    firstInvalidField = firstInvalidField || "terms_of_payment";
+  }
+  if (!data.settlement_weight) {
+    newErrors.settlement_weight = "Settlement weight is required";
+    firstInvalidField = firstInvalidField || "settlement_weight";
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidField) {
+    setTimeout(() => {
+      const refs = {
+        supplier: supplierRef,
+        payment_type: paymentTypeRef,
+        selling_unit: sellingUnitRef,
+        terms_of_payment: termsRef,
+        settlement_weight: settlementWeightRef,
+      };
+      refs[firstInvalidField]?.current?.focus();
+      refs[firstInvalidField]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+    return false;
+  }
+
+  return true;
+};
 
 
 
 const findIdByName = (key, name) => {
   const data = utils[key] || [];
   const item = data.find(item => item.name === name);
-  console.log(`Finding ID for ${key}: "${name}" in:`, data);
-  console.log(`Found item:`, item);
+ 
   return item ? item.id : null;
 };
 
 const getDisplayValue = (key, value) => {
   if (!value) return '';
   if (!isNaN(value)) {
-    console.log(`${key}: Value "${value}" is already an ID, using directly`);
+  
     return value;
   }
   const id = findIdByName(key, value);
-  console.log(`${key}: Converting name "${value}" to ID "${id}"`);
+ 
   return id;
 };
 
 const handleChange = (e) => {
   const { name, value } = e.target;
-  console.log(`Field "${name}" changed to: "${value}"`);
+ 
   
   setData(prev => ({
     ...prev,
     [name]: value
   }));
-  
-  if (name === 'supplier') {
-    console.log('Supplier changed, will trigger balance weight fetch');
-  }
+  setErrors(prevErrors => {
+    const newErrors = { ...prevErrors };
+    if (newErrors[name]) {
+      delete newErrors[name];
+    }
+    return newErrors;
+  });
+ 
 };
 
 const handleSubmit = async () => {
+  if (!validateForm()) return;
   
   const submitData = {
     ...data,
@@ -74,8 +130,17 @@ const handleSubmit = async () => {
     toast.success('Purchase fix created successfully!');
     } 
   catch (error) {
-    toast.error('Failed to create purchase fix');
+  console.log(error);
+
+  let message = "Failed to create purchase fix";
+
+  if (error.response?.data?.message) {
+    message = error.response.data.message;
   }
+
+  toast.error(message);
+}
+
 };
 
 const fetchPurchaseUtils = async () => {
@@ -116,7 +181,7 @@ const fetchPurchaseBalanceWeight = async() => {
       return;
     }
     const response = await PurchaseFixModel.getBalancedGoldWeight(data.supplier);
-    console.log(response)
+   
     if (response.data && response.data.data.balance_weight) {
       setBalanceWeight(response.data.data.balance_weight);
     } else {
@@ -151,25 +216,28 @@ useEffect(() => {
       style={{ fontFamily: 'Open Sans' }}
     >
 
-      
+      <div style={{paddingTop:'20px',paddingRight:'20px'}}><BackButton to='/dashboard/purchase'/></div>
      
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7" style={{padding:"20px"}} >
           {/* code */}
          
           <div className="w-full ">
-          <label className="text-xs font-bold  text-[#344767]"> Supplier</label>
+          <label className="text-xs font-bold  text-[#344767]"> Supplier <span className="text-xs text-red-400">*</span></label>
           <select 
             name="supplier" 
             value={getDisplayValue('supplier', data.supplier)}
             onChange={handleChange}
+            ref={supplierRef}
             style={{paddingLeft:'12px'}}
             className="select bg-white select-bordered select-sm w-full  text-gray-400  rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-               <option value="" disabled>select supplier</option>
+               <option value="" >--select supplier--</option>
                {utils.supplier.map((supplier) => (
                 <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                ))}
            </select>
+           {errors.supplier && <span className="text-red-500 text-xs">{errors.supplier}</span>}
+
           </div>
           <div className="w-full">
           <label className="text-xs font-bold text-[#344767]">Balance Gold Weight</label>
@@ -189,39 +257,44 @@ useEffect(() => {
       
         <div className="w-full">
           {/* name */}
-        <label className="text-xs font-bold  text-[#344767]">Payment Type</label>
+        <label className="text-xs font-bold  text-[#344767]">Payment Type <span className="text-xs text-red-400">*</span></label>
         <select 
           name="payment_type"
           value={data.payment_type}
+          ref={paymentTypeRef}
           onChange={handleChange}
           style={{paddingLeft:"12px"}}
           className="select bg-white  select-bordered select-sm w-full  text-gray-400  rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
         >
-               <option value="" disabled>Select Payment Type</option>
+               <option value="" disabled>--Select Payment Type--</option>
                <option value="Cash">Cash</option>
                <option value="Bank">Bank</option>
            </select>
+           {errors.payment_type && <span className="text-red-500 text-xs">{errors.payment_type}</span>}
+
         </div>
         {/* item type */}
         <div className="w-full">
-        <label className="text-xs font-bold  text-[#344767]">Selling Unit</label>
+        <label className="text-xs font-bold  text-[#344767]">Selling Unit <span className="text-xs text-red-400">*</span></label>
         <select 
           name="selling_unit"
           value={getDisplayValue('uom', data.selling_unit)}
           onChange={handleChange}
+           ref={sellingUnitRef}
           style={{paddingLeft:"12px"}}
 
           className="select bg-white select-bordered select-sm w-full  text-gray-400  rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
         >
-          <option value="" disabled>Select Selling Unit</option>
+          <option value=""  className="text-xs text-gray-400">--Select Selling Unit---</option>
           {utils.uom.map((unit) => (
             <option key={unit.id} value={unit.id}>{unit.name}</option>
           ))}
         </select>
+          {errors.selling_unit && <span className="text-red-500 text-xs">{errors.selling_unit}</span>}
         </div>
         {/* uom */}
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Supplier Currency</label>
+          <label className="text-xs font-bold text-[#344767]">Supplier Currency <span className="text-xs text-red-400">*</span></label>
           <input
               type="text"
               className="input input-bordered bg-gray-200 input-sm w-full text-gray-500 rounded-lg 
@@ -229,16 +302,17 @@ useEffect(() => {
                       [&::-webkit-calendar-picker-indicator]:opacity-50"
               placeholder=" "
           />
+          
           </div>
 
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Terms of Payment</label>
+          <label className="text-xs font-bold text-[#344767]">Terms of Payment <span className="text-xs text-red-400">*</span></label>
           <select
             name="terms_of_payment"
             value={getDisplayValue('terms_of_payment', data.terms_of_payment)}
             onChange={handleChange}
             style={{paddingLeft:"12px"}}
-
+               ref={termsRef}
             className="select bg-white select-bordered select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Terms of Payment</option>
@@ -246,13 +320,17 @@ useEffect(() => {
               <option key={term.id} value={term.id}>{term.name}</option>
             ))}
           </select>
+           {errors.terms_of_payment && <span className="text-red-500 text-xs">{errors.terms_of_payment}</span>}
         </div>
         <div className="w-full">
-          <label className="text-xs font-bold text-[#344767]">Settelment Weight</label>
+          <label className="text-xs font-bold text-[#344767]">Settelment Weight <span className="text-xs text-red-400">*</span></label>
           <input
               type="text"
               name="settlement_weight"
               value={data.settlement_weight}
+                             ref={              settlementWeightRef
+}
+
               onChange={handleChange}
               className="input input-bordered  bg-white  input-sm w-full text-gray-500 rounded-lg 
                       focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
@@ -260,6 +338,7 @@ useEffect(() => {
               placeholder="Settelment Weight "
               style={{paddingLeft:'12px'}}
           />
+          {errors.settlement_weight && <span className="text-red-500 text-xs">{errors.settlement_weight}</span>}
           </div>
           <div className="w-full">
       <label className="text-xs font-bold  text-[#344767]">Notes</label>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import productSizeModel from "../../../models/productSizeModel";
@@ -49,6 +49,10 @@ const Product_Size = () => {
     status: ''
   });
 
+  const nameRef = useRef(null)
+  const nameEditRef = useRef(null)
+
+
   const fetchProductSizes = async () => {
     try {
       setIsLoading(true);
@@ -61,10 +65,10 @@ const Product_Size = () => {
         status
       );
 
-      console.log("Response from API:", response);
+      
 
       if (response.data && response.data.data) {
-        console.log("Data Received:", response.data.data);
+       
         setSizeData(response.data.data);
         setTotalPages(response.data.pagination.pages);
       } else {
@@ -82,11 +86,21 @@ const Product_Size = () => {
     fetchProductSizes();
   }, [limit, page, search, status]);
 
-  const validateProductSize = () => {
-    const newErrors = {};
-    if (!addProductSizeData.name.trim()) newErrors.name = 'Please enter name';
-    return newErrors;
-  };
+
+
+ const validateProductSize = () => {
+  const newErrors = {};
+  const namePattern = /^[A-Za-z][A-Za-z\s]{1,49}$/;
+
+  if (!addProductSizeData.name.trim()) {
+    newErrors.name = 'Please enter name';
+  } else if (!namePattern.test(addProductSizeData.name.trim())) {
+    newErrors.name = 'Name must contain only letters and spaces (2–50 characters)';
+  }
+
+  return newErrors;
+};
+
 
   const handleAddProductSizeChange = (e) => {
     const { name, value } = e.target;
@@ -94,46 +108,54 @@ const Product_Size = () => {
       ...prev,
       [name]: value,
     }));
+    setErrors((prev)=>({
+      ...prev,
+      [name]:''
+    }))
   };
 
   const handleSubmitProductSize = async () => {
-    const validationErrors = validateProductSize();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+     const validationErrors = validateProductSize();
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
+
+        if (validationErrors.name && nameRef.current) {
+          nameRef.current.focus();
+        }
+
+        return;
+      }
 
     const payload = {
       name: addProductSizeData.name,
       description: addProductSizeData.description,
-      status: addProductSizeData.status === 'true',
-      created_by: user_id,
-      created_by_type: user_types,
+     
     };
 
-    console.log("Payload being sent:", payload);
+    
 
     try {
       const response = await productSizeModel.createProductSize(payload);
-      console.log("Create Product Size response:", response);
+     
 
       if (response.status === 201 || response.status === 200) {
         fetchProductSizes();     
         handleCloseModal();     
         toast.success('Product size created successfully!');
       }
-    } catch (error) {
-      console.error("Create product size error:", error);
-      toast.error('Failed to create product size!');
-      handleCloseModal();
-
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({
-          ...prev,
-          ...error.response.data.errors,
-        }));
-      }
-    }
+    }catch (error) {
+                 const message =
+                 error?.response?.data?.errors?.name?.[0] ||
+                 error?.response?.data?.message ||
+                 "Failed to create Adress Type!";
+                toast.error(message);
+                 if (error.response?.data?.errors) {
+                setErrors(prev => ({
+                ...prev,
+                ...error.response.data.errors,
+                      }));
+                   }
+               }
   };
 
   const handleEditClickProductSize = (sizeObj) => {
@@ -143,7 +165,7 @@ const Product_Size = () => {
       return;
     }
 
-    console.log("Selected for Edit:", sizeObj);
+   
     setEditingProductSize({ ...sizeObj });
     setEditModal(true);
   };
@@ -154,30 +176,46 @@ const Product_Size = () => {
       ...prev,
       [name]: name === 'status' ? value === 'true' : value,
     }));
+
+    setEditErrors((prev)=>({
+      ...prev,
+      [name]:''
+    }))
   };
 
-  const validateEditProductSize = () => {
-    let valid = true;
-    const newErrors = { name: '', description: '', status: '' };
+ const validateEditProductSize = () => {
+  let valid = true;
+  const newErrors = { name: '', description: '', status: '' };
+  const namePattern = /^[A-Za-z][A-Za-z\s]{1,49}$/;
 
-    if (!editingProductSize?.name?.trim()) {
-      newErrors.name = 'Product size name is required';
-      valid = false;
-    }
+  if (!editingProductSize?.name?.trim()) {
+    newErrors.name = 'Product size name is required';
+    valid = false;
+  } else if (!namePattern.test(editingProductSize.name.trim())) {
+    newErrors.name = 'Name must contain only letters and spaces (2–50 characters)';
+    valid = false;
+  }
 
-    setEditErrors(newErrors);
-    return valid;
-  };
+  setEditErrors(newErrors);
+  return valid;
+};
+
 
   const handleEditSubmitProductSize = async () => {
-    console.log("Editing Product Size:", editingProductSize);
+   
 
     if (!editingProductSize?.id) {
       toast.error("Invalid product size selected for editing.");
       return;
     }
 
-    if (!validateEditProductSize()) return;
+    const isValid = validateEditProductSize();
+      if (!isValid) {
+        if (!editingProductSize?.name?.trim() && nameEditRef.current) {
+          nameEditRef.current.focus();
+        }
+        return;
+      }
 
     setIsSubmitting(true);
     try {
@@ -338,6 +376,7 @@ const Product_Size = () => {
                   Name: <span className="text-red-500 text-[14px]">*</span>
                 </label>
                 <input type="text" 
+                  ref={nameRef}
                   placeholder="Type here" 
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                   style={{paddingLeft:'12px'}}
@@ -419,6 +458,7 @@ const Product_Size = () => {
                 </label>
                 <input type="text" 
                   placeholder="Type here" 
+                  ref={nameEditRef}
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                   style={{paddingLeft:'12px'}}
                   value={editingProductSize?.name || ''}

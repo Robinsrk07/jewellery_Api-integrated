@@ -1,21 +1,19 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback,useRef, useEffect } from "react";
 import { Search, Plus, Edit, Trash2, Save, X, Upload, Eye, Calculator, ArrowLeft } from 'lucide-react';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import CustomScrollbar from "../../components/CustomScrollbar";
-import TableSkelton from "../../components/tableSkelton";
-import Pagination from '../../components/Pagination';
-import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
+
 import { Link, useNavigate } from "react-router";
 import { useLocation } from 'react-router-dom';
 import { toast } from "react-toastify";
 import PayslipModel from "../../models/PayslipModel";
 import PaymentMethodes from "./PaymentMethodes";
-import employeePositionModel from "../../models/employeePositionModel";
 import { useSelector } from "react-redux";
 import employeePaymentMethodModel from "../../models/employeePaymentMethodModel";
 const CreatePayslip = () => {
-
+const payperiodRef = useRef(null);
+const paymentDateRef = useRef(null)
+const paymentModeRef = useRef(null)
  const navigate = useNavigate()   
 const auth = useSelector((state) => state.auth || {});
   const user_id = auth.login_id || 1;
@@ -116,6 +114,16 @@ const validateForm = () => {
 
   setFormErrors(errors);
 
+if (errors.salary_month && payperiodRef.current) {
+  payperiodRef.current.focus();
+  payperiodRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+} else if (errors.payment_date && paymentDateRef.current) {
+  paymentDateRef.current.focus();
+  paymentDateRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+} else if (errors.payment_mode && paymentModeRef.current) {
+  paymentModeRef.current.focus();
+  paymentModeRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+}
   return Object.keys(errors).length === 0;
 };
 
@@ -130,14 +138,14 @@ const handleSubmit = async() => {
 const formDataToSend = convertToFormData(formData);
   try{
     const res = await PayslipModel.createPayslip(formDataToSend)
-    navigate(`/dashboard/paysliplist/${formData.employee}`)
+    navigate(-1)
     if(res) toast.success("Payslip created Succesfully")
   }catch(error){
   toast.error(" Please try again ,payslip creation failed ")
   }
 
   // proceed to submit
-  console.log('Submit formData:', formData);
+  // console.log('Submit formData:', formData);
 };
 const handleClear = ()=>{
     setFormErrors({})
@@ -200,6 +208,11 @@ const handleChange = (field, value) => {
     ...prev,
     [field]: value,
   }));
+  setFormErrors((prevErrors) => {
+    if (!(field in prevErrors)) return prevErrors; // no change needed
+    const { [field]: _removed, ...rest } = prevErrors;
+    return rest;
+  });
 };
 const convertToFormData = (data) => {
   const formDataObj = new FormData();
@@ -318,7 +331,7 @@ useEffect(() => {
   return () => {
     isMounted = false;
   };
-}, [user_id]); // ✅ Add dependency if `user_id` might change
+}, [user_id]);
 
 
     return (
@@ -402,6 +415,7 @@ useEffect(() => {
                                     <label className="block text-[11px] font-medium text-gray-500 mb-1">
                                     Pay Period <span className="text-red-500">*</span>
                                     </label>
+                                    <div   ref={payperiodRef}>
                                     <DatePicker
                                     selected={formData.salary_month ? new Date(formData.salary_month) : null}
                                     onChange={(date) =>
@@ -412,11 +426,12 @@ useEffect(() => {
                                     }
                                     dateFormat="MMMM yyyy"
                                     showMonthYearPicker
+                                  
                                     className={`w-full bg-white input input-xs border rounded-sm text-xs border-gray-300
                                      focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                     style={{ padding: '5px', width: '100%' }}
                                     required
-                                    />
+                                    /></div>
                                     {formErrors.salary_month && (
                                     <p className="text-[10px] text-red-500 mt-1">{formErrors.salary_month}</p>
                                     )}
@@ -429,11 +444,10 @@ useEffect(() => {
                                 </label>
                                 <input
                                     type="date"
+                                     ref={paymentDateRef}
                                     value={formData.payment_date || ''} // must be 'YYYY-MM-DD'
                                     onChange={(e) => handleChange('payment_date', e.target.value)} // gives 'YYYY-MM-DD'
-                                    className={`w-full bg-white input input-xs border rounded-sm text-xs ${
-                                    formErrors.payment_date ? 'border-red-500' : 'border-gray-300'
-                                    } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                                    className={`w-full bg-white input input-xs border rounded-sm text-xs border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500`}
                                     required
                                 />
                                 {formErrors.payment_date && (
@@ -574,6 +588,7 @@ useEffect(() => {
                                     <select
                                     className="border h-[33px] text-xs rounded-sm border-gray-300 w-full focus:border-blue-300 outline-none"
                                     value={formData.payment_mode || ''}
+                                    ref={paymentModeRef}
                                     onChange={(e) => setFormData({ ...formData, payment_mode: e.target.value })}
                                     >
                                     <option className="text-xs " value="">--select mode--</option>
@@ -585,6 +600,9 @@ useEffect(() => {
                                         </option>
                                     ))}
                                     </select>
+                                    {formErrors.salary_month && (
+                                    <p className="text-[10px] text-red-500 mt-1">{formErrors.payment_mode}</p>
+                                    )}
                                     <div>
                                             <label className="text-xs font-medium text-gray-600">Bank Account</label>
                                             <input

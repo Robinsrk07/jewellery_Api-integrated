@@ -82,7 +82,7 @@ import 'react-toastify/dist/ReactToastify.css';
 function App() {
   return (
     <div className="w-full h-full m-0 p-0">
-      <ToastContainer position="top-right" autoClose={3000} />
+      <ToastContainer position="top-right" autoClose={5000} />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<AuthRedirect />} />
@@ -146,18 +146,18 @@ function App() {
                 <Route path='item' element={<Item/>} />
                 <Route path='purchase' element={<Purchase/>} />
                 <Route path='list_purchase_fix' element={<ListPurchase/>} />
-                <Route path='ListPurchase' element={<PurchaseFix/>} />
-                <Route path='creategoldpurchase' element={<CreateGoldPurchase/>} />
+                <Route path='create_list_purchase' element={<PurchaseFix/>} />
+                <Route path='create_gold_purchase' element={<CreateGoldPurchase/>} />
                 <Route path='createnewpurchase/:id' element={<CreateNewPurchase/>} />
                 <Route path='unfix gold sale' element={<UnfixPurchase/>} />
                 <Route path='viewpurchase/:id' element={<ViewPurchase/>} />
                 <Route path='updatepurchase/:itemId/:id' element={<UpdateGoldPurchase/>} />
-                <Route path='updateitem/:id' element={<UpdateItem/>} />
+                <Route path='update_item/:id' element={<UpdateItem/>} />
 
 ''                <Route path='diamond-items' element={<DiamondPurchhase/>} />
-                <Route path='createDiamondPurchase' element={<CreateDiamondPurchase/>} />
+                <Route path='create_diamond_purchase' element={<CreateDiamondPurchase/>} />
                 <Route path='itemDetials/:id' element={<ItemDetials/>} />
-                <Route path='editDiamondItems' element={<EditDiamondItem/>} />
+                <Route path='edit_diamond_items/:uuid' element={<EditDiamondItem/>} />
                 <Route path='list_diamond/:uuid/:id' element={<ListDiamond/>}/>
                 <Route path='createDiamond' element={<CreateDiamond/>}/>
                 <Route path='editDiamond/:uuid' element={<Tagging/>}/>
@@ -205,7 +205,7 @@ function App() {
               <Route path='branch_wise_employee/:id' element={<BranchWiseEmployee/>} />
             </Route>
             <Route path='inventory'>
-              <Route path='createItem' element={<CreateItem/>} />
+              <Route path='create_gold_item' element={<CreateItem/>} />
               <Route path='stock-transfer' element={<Stock_Transfer/>} />
               <Route path='gold'>
               

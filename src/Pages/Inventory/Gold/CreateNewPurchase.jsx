@@ -3,8 +3,11 @@
 import { useEffect, useState } from "react";
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import { toast } from "react-toastify";
+import useFieldRefs from "../../../hooks/useFieldRef";
 import PurchaseModel from "../../../models/PurchaseModel";
 import { useNavigate, useParams } from "react-router";
+import { useSelector } from "react-redux";
+import CountryModel from "../../../models/countryModel";
 const CreateNewPurchase = () => {
   const navigate = useNavigate()
   const [data, setData] = useState({
@@ -48,16 +51,30 @@ const CreateNewPurchase = () => {
     master_id:''
     
   });
-
+const [country,setCountry]= useState([])
   const [errors, setErrors] = useState({});
   const [UtilsData, setUtilsData] = useState([]);
   const {id} =useParams()
-  
+  const fieldRefs = useFieldRefs([
+  'items',
+  'making_rate',
+  'stone_rate',
+  'stone_weight',
+  'gross_weight',
+  'supplier',
+  'stock_point',
+  'document_currency',
+]);
+
+ const auth= useSelector((state) => state.auth);
+    const { login_id ,can_manage_user_types,} = auth;  
+    const user_id = login_id;
+    const user_types = Object.keys(can_manage_user_types).join(','); 
   const FetUtilsdata = async() => {
     try {
       const response = await PurchaseUtils.getPurchaseUtils();
       setUtilsData(response.data);
-      console.log("Utils Data fetched successfully:", response.data);
+     
     } catch (error) {
       console.error("Error fetching utils data:", error);
     }
@@ -72,29 +89,49 @@ const CreateNewPurchase = () => {
     return item ? item[key] : [];
   };
 const validateForm = () => {
-  const newErrors = {};
   const requiredFields = [
-    'items', 
+    'document_currency',
+    'supplier',
+    'stock_point',
+    'items',
     'making_rate',
-    'stone_rate', 
+    'stone_rate',
     'stone_weight',
-    'gross_weight', 
-    'supplier', 
-    'stock_point', 
-    'document_currency'
+    'gross_weight',
   ];
-  requiredFields.forEach(field => {
+
+  const newErrors = {};
+  let firstInvalidField = null;
+
+  for (const field of requiredFields) {
     if (!data[field]?.toString().trim()) {
       newErrors[field] = 'This field is required';
+      if (!firstInvalidField) firstInvalidField = field;
     }
-  });
+  }
+
   setErrors(newErrors);
+
+  if (firstInvalidField && fieldRefs[firstInvalidField]?.current) {
+    setTimeout(() => {
+      fieldRefs[firstInvalidField].current.focus();
+      fieldRefs[firstInvalidField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
+  }
+
   return Object.keys(newErrors).length === 0;
 };
  
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
+    if (errors[name]) {
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      delete newErrors[name];
+      return newErrors;
+    });
+  }
     if (type === 'file') {
       setData({
         ...data,
@@ -109,6 +146,11 @@ const validateForm = () => {
   };
   const handleSubmit = async (shouldRedirect) => {
   // Filter out empty string, null, and undefined values
+
+   if(!validateForm()){
+      toast.error('Please fill all required fields');
+      return;
+    }
   const cleanedData = Object.fromEntries(
     Object.entries(data).filter(
       ([_, value]) => value !== '' && value !== null && value !== undefined
@@ -168,9 +210,33 @@ const validateForm = () => {
       }
     }
   } catch (error) {
-    console.log(error)
-    toast.error(error.errors || 'Unable to create ,Please Try Again with Valid Data');
+  console.log(error);
+
+  let message = "Unable to Create Purchase, Please try again later.";
+
+  const errorData = error.response?.data;
+
+  if (errorData?.errors) {
+    const errors = errorData.errors;
+
+    if (typeof errors === 'string') {
+      // If it's just a plain string, use it directly
+      message = errors;
+    } else if (typeof errors === 'object') {
+      // If it's an object, format the messages
+      message = Object.entries(errors)
+        .map(([field, msg]) => {
+          const text = Array.isArray(msg) ? msg.join(', ') : msg;
+          return `${field}: ${text}`;
+        })
+        .join('\n');
+    }
+  } else if (errorData?.message) {
+    message = errorData.message;
   }
+
+  toast.error(message);
+}
 };
 
  
@@ -185,6 +251,17 @@ const validateForm = () => {
     master_id: id
                 }));
   },[])
+  useEffect(()=>{
+ const fetchCounty = async()=>{
+  try{
+  const res = await CountryModel.getCountries(user_id,user_types,1000)
+  setCountry(res?.data?.data)
+  }catch(error){
+  console.error(error)
+  }
+ }
+ fetchCounty()
+},[])
 
   return (
     <div 
@@ -208,9 +285,7 @@ const validateForm = () => {
             value={data.item_type}
             onChange={handleChange}
             style={{paddingLeft:'20px'}}
-            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.item_type ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Item Type</option>
             {getUtilsData('item_type') && (
@@ -229,12 +304,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Document Currency<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="document_currency"
+            ref={fieldRefs.document_currency}
+
             value={data.document_currency}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.document_currency ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Document Currency</option>
             {getUtilsData('default_currency') && (
@@ -261,9 +336,7 @@ const validateForm = () => {
             value={data.terms_of_payment}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select bg-white select-bordered select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.terms_of_payment ? 'border-red-500' : ''
-            }`}
+            className={`select bg-white select-bordered select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Terms of Payment</option>
             {getUtilsData('terms_of_payment').map(term => (
@@ -299,11 +372,10 @@ const validateForm = () => {
           <select 
             name="supplier"
             value={data.supplier}
+            ref={fieldRefs.supplier}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.supplier ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Supplier</option>
             {getUtilsData('supplier_list').map(supplier => (
@@ -336,12 +408,11 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Stock Point<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="stock_point"
+            ref={fieldRefs.stock_point}
             value={data.stock_point}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.stock_point ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Stock Point</option>
             {getUtilsData('stock_point').map(point => (
@@ -379,25 +450,44 @@ const validateForm = () => {
           )}
         </div>
 
+       <div className="w-full">
+          <label className="text-xs font-bold text-[#344767]">Supplier Currency</label>
+          <select 
+            name="supplier_currency"
+            value={data.supplier_currency}
+            onChange={handleChange}
+                 style={{paddingLeft:'20px'}}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
+              errors.supplier_currency ? 'border-red-500' : ''
+            }`}
+          >
+            <option value="" >--Select Supplier Currency--</option>
+            {getUtilsData('buyer_currency') && (
+              <option value={getUtilsData('buyer_currency').id}>
+                {getUtilsData('buyer_currency').name} ({getUtilsData('buyer_currency').code})
+              </option>
+            )}
+          </select>
+          {errors.buyer_currency && (
+            <p className="text-red-500 text-xs mt-1">{errors.buyer_currency}</p>
+          )}
+        </div>
+
         {/* Currency Rate */}
         <div className="w-full text-gray-900">
           <label className="text-xs font-bold text-[#344767]">Currency Rate</label>
           <input
             type="number"
-            name="supplier_currency"
-            value={data.supplier_currency}
-            onChange={handleChange}
+            // name="supplier_currency"
+            // value={data.supplier_currency}
+            // onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             className={`input input-bordered bg-white input-sm w-full text-gray-900 rounded-lg 
                     focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
-                    [&::-webkit-calendar-picker-indicator]:opacity-50 ${
-                      errors.supplier_currency ? 'border-red-500' : ''
-                    }`}
-            placeholder="$1.00000@3.6725000"
+                    [&::-webkit-calendar-picker-indicator]:opacity-50 `}
+            placeholder=""
           />
-          {errors.supplier_currency && (
-            <p className="text-red-500 text-xs mt-1">{errors.supplier_currency}</p>
-          )}
+        
         </div>
       </div>
 
@@ -416,7 +506,7 @@ const validateForm = () => {
             value={data.purchase_type}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
               errors.purchase_type ? 'border-red-500' : ''
             }`}
           >
@@ -438,11 +528,10 @@ const validateForm = () => {
           <select 
             name="items"
             value={data.items}
+            ref={fieldRefs.items}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.items ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select an item</option>
             {getUtilsData('inventory_items').map(item => (
@@ -464,7 +553,7 @@ const validateForm = () => {
             value={data.design}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Design</option>
             {getUtilsData('product_design').map(design => (
@@ -483,7 +572,7 @@ const validateForm = () => {
             value={data.brand}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered select-sm w-full bg-white text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered select-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Brand</option>
             {getUtilsData('product_brand').map(brand => (
@@ -502,11 +591,13 @@ const validateForm = () => {
             value={data.made_in}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option value="" disabled>Select Country</option>
-             <option className="text-sm text-gray-500" value="17">Bolivia</option>
-              <option className="text-sm text-gray-500" value="18">Brazil</option>
+             <option className="text-sm text-gray-500" value=''>-- Select a Country --</option>
+
+              {country.map((c)=>
+               <option className="text-sm text-gray-500" value={c.id}>{c.name}</option>
+              )}
           </select>
         </div>
 
@@ -518,7 +609,7 @@ const validateForm = () => {
             value={data.size}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Size</option>
             {getUtilsData('product_size').map(size => (
@@ -537,7 +628,7 @@ const validateForm = () => {
             value={data.style}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Style</option>
             {getUtilsData('product_style').map(style => (
@@ -556,7 +647,7 @@ const validateForm = () => {
             value={data.occasion}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Occasion</option>
             {getUtilsData('occasion').map(occasion => (
@@ -575,7 +666,7 @@ const validateForm = () => {
             value={data.metal_color}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Metal Color</option>
             {getUtilsData('product_color').map(color => (
@@ -594,7 +685,7 @@ const validateForm = () => {
             value={data.gender}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Gender</option>
             {getUtilsData('product_gender').map(gender => (
@@ -613,7 +704,7 @@ const validateForm = () => {
             value={data.stone_type}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Stone Type</option>
             {getUtilsData('stone_type').map(stone => (
@@ -629,14 +720,18 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Making Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
+             ref={fieldRefs.making_rate}
             name="making_rate"
             value={data.making_rate}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Making rate"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.making_rate && (
+            <p className="text-red-500 text-xs mt-1">{errors.making_rate}</p>
+          )}
         </div>
 
         {/* Stone Rate */}
@@ -644,14 +739,18 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Stone Rate<span className="text-red-500 text-[14px]">*</span></label>
           <input
             type="number"
+            ref={fieldRefs.stone_rate}
             name="stone_rate"
             value={data.stone_rate}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Stone rate"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.stone_rate && (
+            <p className="text-red-500 text-xs mt-1">{errors.stone_rate}</p>
+          )}
         </div>
 
         {/* Multi Stone Rate */}
@@ -665,7 +764,7 @@ const validateForm = () => {
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Multi stone rate"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -676,12 +775,18 @@ const validateForm = () => {
             type="number"
             name="stone_weight"
             value={data.stone_weight}
+            ref={fieldRefs.stone_weight}
+            min='0'
+            step='.1'
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            min="0"
+           
             placeholder="Stone weight"
-            className="input input-bordered input-sm bg-white text-gray-300 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm bg-white text-gray-500 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.stone_weight && (
+            <p className="text-red-500 text-xs mt-1">{errors.stone_weight}</p>
+          )}
         </div>
 
         {/* Multi Stone Weight */}
@@ -692,10 +797,12 @@ const validateForm = () => {
             name="multi_stone_weight"
             value={data.multi_stone_weight}
             onChange={handleChange}
-                 style={{paddingLeft:'20px'}}
+             style={{paddingLeft:'20px'}}
+              min='0'
+            step='.1'
             min="0"
             placeholder="Multi Stone weight"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -705,13 +812,19 @@ const validateForm = () => {
           <input
             type="number"
             name="gross_weight"
+            ref={fieldRefs.gross_weight}
             value={data.gross_weight}
+             min='0'
+            step='.1'
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Gross Weight"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.gross_weight && (
+            <p className="text-red-500 text-xs mt-1">{errors.gross_weight}</p>
+          )}
         </div>
 
         {/* Discount */}
@@ -725,7 +838,7 @@ const validateForm = () => {
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Discount"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -734,12 +847,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 1</label>
           <input
             type="text"
-            name="tag_line_1"
-            value={data.tag_line_1}
+            name="tagline_1"
+            value={data.tagline_1}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 1"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -748,12 +861,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 2</label>
           <input
             type="text"
-            name="tag_line_2"
-            value={data.tag_line_2}
+            name="tagline_2"
+            value={data.tagline_2}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 2"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -762,12 +875,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 3</label>
           <input
             type="text"
-            name="tag_line_3"
-            value={data.tag_line_3}
+            name="tagline_3"
+            value={data.tagline_3}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 3"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -776,12 +889,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 4</label>
           <input
             type="text"
-            name="tag_line_4"
-            value={data.tag_line_4}
+            name="tagline_4"
+            value={data.tagline_4}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 4"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -790,12 +903,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tag Definition</label>
           <input
             type="text"
-            name="tag_defenition"
-            value={data.tag_defenition}
+            name="tag_definition"
+            value={data.tag_definition}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tag Definition"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -809,7 +922,7 @@ const validateForm = () => {
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Alias"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -821,7 +934,7 @@ const validateForm = () => {
             value={data.status}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered select-sm w-full bg-white text-gray-300 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered select-sm w-full bg-white text-gray-500 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="True">Active</option>
             <option value="False">Inactive</option>
@@ -833,10 +946,10 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Description</label>
           <textarea 
             name="description"
-            value={data.address}
+            value={data.description}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="textarea textarea-gray rounded-lg bg-white text-gray-300 border-gray-300" 
+            className="textarea textarea-gray rounded-lg bg-white text-gray-500 border-gray-300" 
             placeholder="Address"
           />
         </div>

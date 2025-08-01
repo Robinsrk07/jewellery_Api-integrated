@@ -43,37 +43,34 @@ import TableSkelton from "../../../components/tableSkelton";
                     supplier:''
                    })
                     const supplier_id = data.supplier
-                   console.log(data);
+                  
                    
                    
                   const findIdByName = (key, name) => {
                       const data = utils[key] || [];
                       const item = data.find(item => item.name === name);
-                      console.log(`Finding ID for ${key}: "${name}" in:`, data);
-                      console.log(`Found item:`, item);
+                  
                       return item ? item.id : null;
                     };
                     const handleChange = (e) => {
                         const { name, value } = e.target;
-                        console.log(`Field "${name}" changed to: "${value}"`);
+                      
                         
                         setData(prev => ({
                           ...prev,
                           [name]: value
                         }));
                         
-                        if (name === 'supplier') {
-                          console.log('Supplier changed, will trigger balance weight fetch');
-                        }
+                        
                       };
                   const getDisplayValue = (key, value) => {
                     if (!value) return '';
                     if (!isNaN(value)) {
-                      console.log(`${key}: Value "${value}" is already an ID, using directly`);
+                     
                       return value;
                     }
                     const id = findIdByName(key, value);
-                    console.log(`${key}: Converting name "${value}" to ID "${id}"`);
+                    
                     return id;
                   };
                   
@@ -115,7 +112,7 @@ import TableSkelton from "../../../components/tableSkelton";
                     if(!supplier_id) toast.error("supplier id not recived")
                      
                       const response = await PurchaseFixModel.getListPurchseFix(login_id,login_type,limit,page,search,status,supplier_id)
-                      console.log(response);
+                     
                       
                       if(response.data.data){
                         setPurchaseData(response.data.data)
@@ -156,6 +153,7 @@ import TableSkelton from "../../../components/tableSkelton";
                         mx-auto overflow-auto  custom-scrollbar"
                     style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                       >
+                        
                     <div className="flex flex-row justify-between items-center" style={{padding: '20px'}}>
   
                   <div className="flex flex-row gap-4"> {/* Changed from justify-between to gap */}
@@ -166,7 +164,7 @@ import TableSkelton from "../../../components/tableSkelton";
             style={{paddingLeft:'12px'}}
             className="select bg-white select-bordered select-sm w-full  text-gray-400  rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-               <option value="" disabled>select supplier</option>
+               <option value="">--select supplier--</option>
                {utils.supplier.map((supplier) => (
                 <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                ))}
@@ -212,7 +210,12 @@ import TableSkelton from "../../../components/tableSkelton";
                          </thead>
                        <tbody>
                             {isLoading ? (
-                        <TableSkelton />
+                              <tr>
+                            <td colSpan={7} className="text-center py-4 text-gray-500 text-sm">
+                              Please Select Supplier
+                            </td>
+                          </tr>
+                        
                       ) : purchaseData.length === 0 ? (
                         <tr>
                           <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">

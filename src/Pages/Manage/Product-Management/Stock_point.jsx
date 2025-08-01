@@ -1,6 +1,9 @@
-import { useEffect, useState } from "react";
+
+//internal imports
+import { useEffect, useState,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
+//internal imports
 import stockPointModel from "../../../models/stockPointModel"; 
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
@@ -15,16 +18,20 @@ import TableSkelton from "../../../components/tableSkelton";
 
 const StockPoint = () => {
 
-
+               //Global states 
               const auth = useSelector((state) => state.auth);
               const { login_id, can_manage_user_types } = auth;
               const user_id = login_id;
               const user_types = Object.keys(can_manage_user_types || {}).join(',')
+
+              const nameRef = useRef(null)
+              const nameEditRef = useRef(null)
+
               const [modal, setModal] = useState(false);
               const [editModal, setEditModal] = useState(false);
               const [stockPointData, setStockPointData] = useState([]);
               const [editingStockPoint, setEditingStockPoint] = useState(null);
-             const[limit,setLimit]=useState(10); 
+              const[limit,setLimit]=useState(10); 
             
               const [totalPages, setTotalPages] = useState(1);
               const [page, setPage] = useState(1);
@@ -32,8 +39,8 @@ const StockPoint = () => {
               const [status, setStatus] = useState('');
               const [isSubmitting, setIsSubmitting] = useState(false);
               const [isLoading, setIsLoading] = useState(true);
-               const [deletingId, setDeletingId] = useState(null);
-               const [itemToDelete, setItemToDelete] = useState(null);
+              const [deletingId, setDeletingId] = useState(null);
+              const [itemToDelete, setItemToDelete] = useState(null);
               const [addStockPointData, setAddStockPointData] = useState({
                 name: '',
                 description: '',
@@ -48,8 +55,24 @@ const StockPoint = () => {
                 name: '',
                 description: '',
                 status: '',
-              });             
-              const fetchStockPoints = async () => {
+              });           
+              //fetchStock points
+               useEffect(() => {
+                fetchStockPoints();
+              }, [limit, page, search, status]);
+
+
+               useEffect(() => {
+              }, [addStockPointData]);
+
+              
+                useEffect(() => {
+                  fetchStockPoints(); 
+                }, [limit,page]);
+              
+
+           const fetchStockPoints = async () => {
+                setIsLoading(true)
                 try {
                   const response = await stockPointModel.getStockPoints(
                     user_id,
@@ -72,16 +95,30 @@ const StockPoint = () => {
                       setIsLoading(false); // stop loading
                     }
               };
-              useEffect(() => {
-                fetchStockPoints();
-              }, [limit, page, search, status]);
+             
 
+const validate = () => {
+  const newErrors = {};
+  const name = addStockPointData.name.trim();
 
-              const validate = () => {
-                const newErrors = {};
-                if (!addStockPointData.name.trim()) newErrors.name = 'Please enter name';
-                return newErrors;
-              };
+  if (!name) {
+    newErrors.name = 'Please enter name';
+  } else {
+    // Only letters and spaces
+    const nameRegex = /^[A-Za-z\s]+$/;
+
+    if (!nameRegex.test(name)) {
+      newErrors.name = 'Name should contain only letters and spaces';
+    } else if (name.length < 2) {
+      newErrors.name = 'Name must be at least 2 characters';
+    } else if (name.length > 50) {
+      newErrors.name = 'Name must not exceed 50 characters';
+    }
+  }
+
+  return newErrors;
+};
+
 
              //  Update form data on input change
               const handleAddStockPointChange = (e) => {
@@ -90,30 +127,40 @@ const StockPoint = () => {
                   ...prev,
                   [name]: value,
                 }));
+
+                setErrors((prev)=>({
+                  ...prev,
+                  [name]:''
+                }))
               };
 
 
 
-              useEffect(() => {
-              }, [addStockPointData]);
+             
 
 
-              const handleSubmitStockPoint = async () => {
+        const handleSubmitStockPoint = async () => {
                 const validationErrors = validate();
-                if (Object.keys(validationErrors).length > 0) {
-                  setErrors(validationErrors);
-                  return;
+               if (Object.keys(validationErrors).length > 0) {
+                setErrors(validationErrors);
+
+                
+                if (validationErrors.name && nameRef.current) {
+                  nameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  nameRef.current.focus();
                 }
 
+                return;
+              }
+
                 const payload = {
-                  name: addStockPointData.name,
-                  description: addStockPointData.description,
-                  status: addStockPointData.status === 'true'  
+                  name: addStockPointData?.name,
+                  description: addStockPointData?.description,
+                  status: addStockPointData?.status === 'true'  
                 };
 
                 try {
                   const response = await stockPointModel.createStockPoint(payload);
-                  console.log("Create response:", response);
 
                   if (response.status === 201 || response.status === 200) {
                     fetchStockPoints();
@@ -121,18 +168,19 @@ const StockPoint = () => {
                     toast.success('Stock Point created successfully!');
                   }
                 } catch (error) {
-                  console.error("Create error:", error);
-                  toast.error('Failed to create stock point!');
-                  handleCloseModal();
-
+                  const message =
+                  error?.response?.data?.errors?.name?.[0] ||
+                  error?.response?.data?.message ||
+                  "Failed to create Adress Type!";
+                  toast.error(message);
                   if (error.response?.data?.errors) {
-                    setErrors((prev) => ({
+                     setErrors(prev => ({
                       ...prev,
                       ...error.response.data.errors,
-                    }));
-                  }
-                }
-              };
+                     }));
+                   }
+                     }
+                 };
 
 
 
@@ -149,24 +197,24 @@ const StockPoint = () => {
                   ...prev,
                   [name]: name === 'status' ? (value === 'true') : value,
                 }));
+                setEditErrors((prev)=>({
+                  ...prev,
+                  [name]:''
+                   
+                }))
               };
 
 
               const validateEditForm = () => {
-                let valid = true;
-                const newErrors = { name: '', };
+                const newErrors = {};
 
                 if (!editingStockPoint?.name?.trim()) {
                   newErrors.name = 'Stock Point name is required';
-                  valid = false;
                 } else if (editingStockPoint.name.length < 2) {
                   newErrors.name = 'Must be at least 2 characters';
-                  valid = false;
                 }
 
-
-                setEditErrors(newErrors);
-                return valid;
+                 return newErrors
               };
 
 
@@ -176,8 +224,19 @@ const StockPoint = () => {
                   toast.error("Invalid stock point.");
                   return;
                 }
+                const validationErrors = validateEditForm()
 
-                if (!validateEditForm()) return  
+                if (Object.keys(validationErrors).length > 0) {
+                setEditErrors(validationErrors);
+
+                
+                if (validationErrors.name && nameEditRef.current) {
+                  nameEditRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  nameEditRef.current.focus();
+                }
+
+                return;
+              } 
 
                 setIsSubmitting(true);
                 try {
@@ -190,28 +249,31 @@ const StockPoint = () => {
                     }
                   );
 
-                  if (response.status === 200) {
+                
                     fetchStockPoints(); 
                     toast.success('Stock point updated successfully!');
                     handleEditCloseModal();
-                  }
+                  
                 } catch (error) {
-                  console.error(error);
-                  toast.error('Failed to update stock point!');
-                  if (error.response?.data?.errors) {
-                    setErrors(prev => ({
+                    const message =
+                      error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Adress Type!";
+                    toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
                       ...prev,
                       ...error.response.data.errors,
-                    }));
+                     }));
                   }
-                } finally {
+                    } finally {
                   setIsSubmitting(false);
                 }
               };
 
 
                 const handleDeleteStockPoint = async (id) => {
-                  console.log("Deleting stock point with ID:", id);
+                
                   if (!id) return;
 
                   try {
@@ -231,9 +293,6 @@ const StockPoint = () => {
                   }
                 };
 
-                useEffect(() => {
-                  fetchStockPoints(); 
-                }, []);
 
      
                 // Handle close modal
@@ -268,11 +327,11 @@ const StockPoint = () => {
                         mx-auto overflow-auto  custom-scrollbar"
                       style={{ fontFamily: 'Open Sans',overflow:'auto'}}
                                                             >
-             <CreateButton
-              buttoncontent="+ New Stock Point"
-              onClick={() => setModal(true)}  // This will now work!
-              />                 
-              <ItemsPerPageSelector items={limit} setItems={setLimit} />
+                      <CreateButton
+                      buttoncontent="+ New Stock Point"
+                      onClick={() => setModal(true)}  // This will now work!
+                      />                 
+                      <ItemsPerPageSelector items={limit} setItems={setLimit} />
               
                     
               
@@ -358,6 +417,7 @@ const StockPoint = () => {
                                     <div>
                                     <input
                                       type="text"
+                                      ref={nameRef}
                                       name="name"
                                       placeholder="Type here"
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
@@ -436,6 +496,7 @@ const StockPoint = () => {
                                        <div>
                                       <input type="text" 
                                         placeholder="Type here" 
+                                        ref={nameEditRef}
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"                                       
                                         style={{paddingLeft:'12px'}}
                                         value={editingStockPoint?.name || ''} 

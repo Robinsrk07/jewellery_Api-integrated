@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -48,6 +48,30 @@ const [errors, setErrors] = useState({
   country: '',
   state: '',
 });
+
+const codeRef = useRef(null);
+const nameRef = useRef(null);
+const countryRef = useRef(null);
+const stateRef = useRef(null);
+
+const refFeilds = {
+  code: codeRef,
+  name: nameRef,
+  country: countryRef,
+  state: stateRef
+};
+
+const editcodeRef = useRef(null);
+const editnameRef = useRef(null);
+const editcountryRef = useRef(null);
+const editstateRef = useRef(null);
+
+const refEditFeilds = {
+   code:editcodeRef,
+  name:editnameRef,
+  country:editcountryRef,
+  state:editstateRef
+}
 
 const auth = useSelector((state) => state.auth);
 const { login_id, can_manage_user_types } = auth;
@@ -141,6 +165,10 @@ const handleAddDistrictChange = (e) => {
     ...prev,
     [name]: value,
   }));
+  setErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 
@@ -169,10 +197,20 @@ const validateDistrict = () => {
 
 const handleSubmitDistrict = async () => {
   const validationErrors = validateDistrict();
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    return;
-  }
+   if (Object.keys(validationErrors).length > 0) {
+          setErrors(validationErrors);
+
+   const firstErrorKey = Object.keys(validationErrors)[0];
+   const firstErrorRef = refFeilds[firstErrorKey];
+
+if (firstErrorRef && firstErrorRef.current) {
+  firstErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  firstErrorRef.current.focus();
+}
+
+
+         return;
+     }
 
   const payload = {
     code: addDistrictData.code.trim(),
@@ -182,11 +220,11 @@ const handleSubmitDistrict = async () => {
     status: Boolean(addDistrictData.status),
   };
 
-  console.log("District Payload being sent:", payload);
+ 
 
   try {
     const response = await DistrictModel.createDistrict(payload);
-    console.log("Create District response:", response);
+   
 
     if (response.status === 201 || response.status === 200) {
       toast.success("District created successfully!");
@@ -203,51 +241,46 @@ const handleSubmitDistrict = async () => {
 
       setErrors({});
     }
-  } catch (error) {
-    console.error("Create District error:", error);
-    console.log("Error response:", error.response?.data);
-    toast.error("Failed to create district!");
+  }catch (error) {
+  console.error("Create District error:", error);
+  const backendErrors = error?.response?.data?.errors;
 
-    handleCloseModal();
+  const message =
+    backendErrors?.name?.[0] || // check if name field has error
+    backendErrors?.code?.[0] || // check if code field has error
+    error?.response?.data?.message || // fallback to general message
+    "Failed to create district!"; // final fallback
 
-    if (error.response?.data?.errors) {
-      setErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  }
+  toast.error(message);
+  handleCloseModal();
+}
 };
 
 
 const [editDistrictErrors, setEditDistrictErrors] = useState({});
+
 const validateEditDistrict = () => {
-  let valid = true;
   const errors = {};
 
   if (!editingDistrict?.country) {
     errors.country = 'Country is required';
-    valid = false;
   }
 
   if (!editingDistrict?.state) {
     errors.state = 'State is required';
-    valid = false;
   }
 
   if (!editingDistrict?.code?.trim()) {
     errors.code = 'Code is required';
-    valid = false;
   }
 
   if (!editingDistrict?.name?.trim()) {
     errors.name = 'Name is required';
-    valid = false;
   }
 
-  setEditDistrictErrors(errors);
-  return valid;
+  return errors;
 };
+
 
 
 const handleEditClickDistrict = (districtObj) => {
@@ -282,8 +315,22 @@ const handleEditSubmitDistrict = async () => {
     toast.error("Invalid district selected for editing.");
     return;
   }
+  const validationErrors = validateEditDistrict();
 
-  if (!validateEditDistrict()) return;
+  if (Object.keys(validationErrors).length > 0) {
+    setEditDistrictErrors(validationErrors);
+
+    const firstErrorKey = Object.keys(validationErrors)[0];
+const firstErrorRef = refEditFeilds[firstErrorKey];
+
+    if (firstErrorRef && firstErrorRef.current) {
+  firstErrorRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  firstErrorRef.current.focus();
+}
+
+    return;
+  }
+
 
   setIsSubmitting(true);
 
@@ -472,6 +519,7 @@ const handleDeleteDistrict = async (id) => {
                                       </label>
                                       <input
                                         type="text"
+                                         ref={codeRef}
                                         placeholder="Type here"
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
@@ -495,6 +543,7 @@ const handleDeleteDistrict = async (id) => {
                                      <input
                                       type="text"
                                       placeholder="Type here"
+                                       ref={nameRef}
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
                                       name="name"
@@ -516,6 +565,7 @@ const handleDeleteDistrict = async (id) => {
                                     <select
                                         name="country"
                                         value={addDistrictData.country}
+                                         ref={countryRef}
                                         onChange={handleAddDistrictChange}
                                         className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
                                         style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -539,6 +589,7 @@ const handleDeleteDistrict = async (id) => {
                                     <select
                                         name="state"
                                         value={addDistrictData.state}
+                                         ref={stateRef}
                                         onChange={handleAddDistrictChange}
                                         className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
                                         style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -594,6 +645,7 @@ const handleDeleteDistrict = async (id) => {
           </label>
           <input
             type="text"
+             ref={refEditFeilds.code}
             name="code"
             placeholder="Type here"
             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
@@ -613,6 +665,7 @@ const handleDeleteDistrict = async (id) => {
           </label>
           <input
             type="text"
+             ref={refEditFeilds.name}
             placeholder="Type here"
             name="name"
             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
@@ -631,6 +684,7 @@ const handleDeleteDistrict = async (id) => {
             </label>
             <select
                 name="country"
+                 ref={refEditFeilds.country}
                 value={editingDistrict.country}
                 onChange={handleEditDistrictChange}
                 className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
@@ -654,6 +708,7 @@ const handleDeleteDistrict = async (id) => {
             <select
                 name="state"
                 value={editingDistrict.state}
+                 ref={refEditFeilds.state}
                 onChange={handleEditDistrictChange}
                 className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none border-gray-300"
                 style={{ paddingLeft: '12px', fontSize: '11px' }}

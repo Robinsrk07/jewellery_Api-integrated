@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef } from "react";
 import CustomScrollbar from "../../components/CustomScrollbar";
 import EditButton from '../../components/EditButton';
 import DeleteButton from '../../components/DeleteButton';
@@ -6,16 +6,18 @@ import CreateButton from '../../components/CreateButton';
 import Pagination from '../../components/Pagination';
 import ItemsPerPageSelector from '../../components/ItemsPerPageSelector';
 import JewelleryTypeModel from "../../models/jewelleryTypeModel";
+import TableSkelton from "../../components/tableSkelton";
 import ItemTypeModel from "../../models/itemTypeModel";
 import { useSelector } from "react-redux";
 import { toast } from 'react-toastify';
 
   const JewelleryType = () => {
   // State
-  const [items, setItems] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
   const [modal, setModal] = useState(false);
   const [editModal, setEditModal] = useState(false);
   const [jewelleryTypeData, setJewelleryTypeData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);  
   const [deletingId, setDeletingId] = useState(null);
   const [jewelleryTypeToDelete, setJewelleryTypeToDelete] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -24,13 +26,13 @@ import { toast } from 'react-toastify';
     code: '',
     name: '',
     item_type: '',
-  });
+  })
   const [errors, setErrors] = useState({
     code: '',
     name: '',
     item_type: '',
     status: ''
-  });
+  })
   const [itemTypeOptions, setItemTypeOptions] = useState([]);
 
   // Redux
@@ -45,8 +47,17 @@ import { toast } from 'react-toastify';
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('');
 
+  const codeRef = useRef(null);
+  const nameRef = useRef(null);
+  const itemTypeRef = useRef(null);
+
+  const editCodeRef = useRef(null);
+  const editNameRef = useRef(null);
+  const editItemTypeRef = useRef(null);
+
   // Fetch jewellery types
   const FetchJewelleryType = async () => {
+    setIsLoading(true)
     try {
       const response = await JewelleryTypeModel.getJewelleryType(
         user_id,
@@ -58,18 +69,22 @@ import { toast } from 'react-toastify';
       );
       if (response.data && response.data.data) {
         setJewelleryTypeData(response.data.data);
+         setTotalPages(response.data.pagination.pages);
+      
       }
     } catch (error) {
       console.error("Error fetching jewellery type data:", error);
+    }finally{
+      setIsLoading(false)
     }
   };
 
   // Fetch item types
   useEffect(() => {
-    FetchJewelleryType();
+   
     const fetchItemTypes = async () => {
       try {
-        const response = await ItemTypeModel.getItemTypes(user_id, user_types);
+        const response = await ItemTypeModel.getItemTypes(user_id, user_types,1000,1,"",'True');
         if (response.data && response.data.data) {
           setItemTypeOptions(response.data.data);
         }
@@ -80,10 +95,19 @@ import { toast } from 'react-toastify';
     fetchItemTypes();
   }, []);
 
+
+  useEffect(()=>{
+   FetchJewelleryType();
+  },[limit,page,status,search])
+
   // Form handlers
   const handleChange = (e) => {
     const { name, value } = e.target;
     setaddJewelleryTypeData(prev => ({ ...prev, [name]: value }));
+    setErrors((prev)=>({
+      ...prev,
+      [name]:''
+    }))
   };
 
   const handleSubmit = async () => {
@@ -101,15 +125,19 @@ import { toast } from 'react-toastify';
         toast.success('Jewellery type created successfully!');
       }
     } catch (error) {
-      toast.error('Failed to create jewellery type!');
-      handleCloseModal();
-      if (error.response?.data?.errors) {
-        setErrors(prev => ({
-          ...prev,
-          ...error.response.data.errors
-        }));
-      }
-    }
+          const message =
+              error?.response?.data?.errors?.name?.[0] ||
+              error?.response?.data?.errors?.code?.[0] ||
+              error?.response?.data?.message ||
+             "Failed to create Jewellery Type!";
+             toast.error(message);
+             if (error.response?.data?.errors) {
+             setErrors(prev => ({
+             ...prev,
+             ...error.response.data.errors,
+                            }));
+                          }
+                    } 
   };
 
   const handleEditSubmit = async () => {
@@ -131,74 +159,105 @@ import { toast } from 'react-toastify';
         handleEditCloseModal();
       }
     } catch (error) {
-      toast.error('Failed to update jewellery type!');
-      if (error.response?.data?.errors) {
-        setErrors(prev => ({
-          ...prev,
-          ...error.response.data.errors
-        }));
-      }
-    } finally {
+                            const message =
+                            error?.response?.data?.errors?.name?.[0] ||
+                            error?.response?.data?.errors?.code?.[0] ||
+                            error?.response?.data?.message ||
+                            "Failed to create Jewellery Type!";
+                            toast.error(message);
+                            if (error.response?.data?.errors) {
+                              setErrors(prev => ({
+                              ...prev,
+                              ...error.response.data.errors,
+                            }));
+                          }
+                    } finally {
       setIsSubmitting(false);
     }
   };
 
   // Validation
-  const validateForm = () => {
-    let valid = true;
-    const newErrors = { code: '', name: '', item_type: '' };
+const validateForm = () => {
+  let valid = true;
+  const newErrors = { code: '', name: '', item_type: '' };
+  let firstInvalidRef = null;
 
-    if (!addJewelleryTypeData.code) {
-      newErrors.code = 'Jewellery type code is required';
-      valid = false;
-    } else if (addJewelleryTypeData.code.length < 2) {
-      newErrors.code = 'Must be at least 2 characters';
-      valid = false;
-    }
-    if (!addJewelleryTypeData.name) {
-      newErrors.name = 'Jewellery type name is required';
-      valid = false;
-    } else if (addJewelleryTypeData.name.length < 2) {
-      newErrors.name = 'Must be at least 2 characters';
-      valid = false;
-    }
-    if (!addJewelleryTypeData.item_type) {
-      newErrors.item_type = 'Please select an item type';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  if (!addJewelleryTypeData.code) {
+    newErrors.code = 'Jewellery type code is required';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = codeRef;
+  } else if (addJewelleryTypeData.code.length < 2) {
+    newErrors.code = 'Must be at least 2 characters';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = codeRef;
+  }
 
-  const validateEditForm = () => {
-    let valid = true;
-    const newErrors = { code: '', name: '', item_type: '', status: '' };
+  if (!addJewelleryTypeData.name) {
+    newErrors.name = 'Jewellery type name is required';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = nameRef;
+  } else if (addJewelleryTypeData.name.length < 2) {
+    newErrors.name = 'Must be at least 2 characters';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = nameRef;
+  }
 
-    if (!editingjewelleryType?.code) {
-      newErrors.code = 'Jewellery type code is required';
-      valid = false;
-    } else if (editingjewelleryType.code.length < 2) {
-      newErrors.code = 'Must be 2-3 letters or valid item type code';
-      valid = false;
-    }
-    if (!editingjewelleryType?.name) {
-      newErrors.name = 'Item type name is required';
-      valid = false;
-    } else if (editingjewelleryType.name.length < 2) {
-      newErrors.name = 'Must be at least 2 characters';
-      valid = false;
-    }
-    if (!editingjewelleryType?.item_type) {
-      newErrors.item_type = 'Please select an item type';
-      valid = false;
-    }
-    if (editingjewelleryType?.status === undefined || editingjewelleryType.status === '') {
-      newErrors.status = 'Status is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+  if (!addJewelleryTypeData.item_type) {
+    newErrors.item_type = 'Please select an item type';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = itemTypeRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef) firstInvalidRef.current?.focus();
+  return valid;
+};
+
+
+
+const validateEditForm = () => {
+  let valid = true;
+  const newErrors = { code: '', name: '', item_type: '', status: '' };
+  let firstInvalidRef = null;
+
+  if (!editingjewelleryType?.code) {
+    newErrors.code = 'Jewellery type code is required';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = editCodeRef;
+  } else if (editingjewelleryType.code.length < 2) {
+    newErrors.code = 'Must be 2-3 letters or valid item type code';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = editCodeRef;
+  }
+
+  if (!editingjewelleryType?.name) {
+    newErrors.name = 'Item type name is required';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = editNameRef;
+  } else if (editingjewelleryType.name.length < 2) {
+    newErrors.name = 'Must be at least 2 characters';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = editNameRef;
+  }
+
+  if (!editingjewelleryType?.item_type) {
+    newErrors.item_type = 'Please select an item type';
+    valid = false;
+    if (!firstInvalidRef) firstInvalidRef = editItemTypeRef;
+  }
+
+  if (editingjewelleryType?.status === undefined || editingjewelleryType.status === '') {
+    newErrors.status = 'Status is required';
+    valid = false;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef) firstInvalidRef.current?.focus();
+  return valid;
+};
+
 
   // Delete handler
   const handleDeleteJewelleryType = async (id) => {
@@ -219,9 +278,10 @@ import { toast } from 'react-toastify';
   // Modal close handlers
   const handleCloseModal = () => {
     setaddJewelleryTypeData({ code: '', name: '', item_type: '' });
+    setErrors({})
     setModal(false);
   };
-  const handleEditCloseModal = () => setEditModal(false);
+  const handleEditCloseModal = () => {setEditModal(false),setErrors({})}
 
   // Render
   return (
@@ -229,7 +289,7 @@ import { toast } from 'react-toastify';
       <CustomScrollbar />
       <div className="bg-white w-full max-w-[95vw] xl:max-w-[90vw] 2xl:max-w-[95vw] h-auto max-h-[80vh] rounded-xl px-4 md:px-8 lg:px-12 mx-auto overflow-auto custom-scrollbar" style={{ fontFamily: 'Open Sans', overflow: 'auto' }}>
         <CreateButton buttoncontent="+ New Jewellery Type" onClick={() => setModal(true)} />
-        <ItemsPerPageSelector items={items} setItems={setItems} />
+        <ItemsPerPageSelector items={limit} setItems={setLimit} />
 
         {/* Table */}
         <table className="w-full text-sm text-left text-gray-500 border-collapse overflow-x-auto" style={{ borderSpacing: '0 12px', borderCollapse: 'separate', minWidth: '700px' }}>
@@ -244,8 +304,16 @@ import { toast } from 'react-toastify';
             </tr>
           </thead>
           <tbody>
-            {jewelleryTypeData.map((jewellerytype, index) => (
-              <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
+            {isLoading ? (
+                      <TableSkelton />
+                    ) : jewelleryTypeData.length === 0 ? (
+                      <tr >
+                        <td colSpan={17} className="text-center py-4 text-gray-500 text-sm">
+                          No data available
+                        </td>
+                      </tr>
+                    ) :jewelleryTypeData.map((jewellerytype, index) => (
+                <tr key={index} className="bg-white hover:bg-gray-50 h-[44px] text-gray-400">
                 <td className="py-4 border-b border-gray-200 text-xs" style={{ paddingLeft: '30px' }}>{index + 1}</td>
                 <td className="py-4 border-b border-gray-200 text-xs">{jewellerytype.code}</td>
                 <td className="py-4 border-b border-gray-200 text-xs">{jewellerytype.name}</td>
@@ -280,7 +348,8 @@ import { toast } from 'react-toastify';
           </tbody>
         </table>
 
-        <Pagination />
+                                  <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
+
       </div>
 
       {/* Create Modal */}
@@ -298,6 +367,7 @@ import { toast } from 'react-toastify';
                 <input
                   type="text"
                   placeholder="Type here"
+                    ref={codeRef}
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                   style={{ paddingLeft: '12px' }}
                   name="code"
@@ -314,6 +384,7 @@ import { toast } from 'react-toastify';
                 <input
                   type="text"
                   placeholder="Type here"
+                   ref={nameRef}
                   className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                   style={{ paddingLeft: '12px' }}
                   name="name"
@@ -329,6 +400,7 @@ import { toast } from 'react-toastify';
                 </label>
                 <select
                   name="item_type"
+                  ref={itemTypeRef}
                   value={addJewelleryTypeData.item_type}
                   onChange={handleChange}
                   className="select w-[100%] bg-white border border-gray-300 text-gray-500 rounded-lg focus:outline-none focus:border-b-2 focus:border-blue-500"
@@ -379,7 +451,8 @@ import { toast } from 'react-toastify';
                 <input
                   type="text"
                   placeholder="Type here"
-                  className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${errors.code ? 'border-red-500' : 'border-gray-300'} focus:border-b-2 focus:border-blue-500`}
+                   ref={editCodeRef}
+                  className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border border-gray-300 focus:border-b-2 focus:border-blue-500`}
                   style={{ paddingLeft: '12px' }}
                   name="code"
                   value={editingjewelleryType?.code || ''}
@@ -398,9 +471,10 @@ import { toast } from 'react-toastify';
                 <input
                   type="text"
                   placeholder="Type here"
-                  className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border ${errors.name ? 'border-red-500' : 'border-gray-300'} focus:border-b-2 focus:border-blue-500`}
+                  className={`input w-[100%] rounded-lg focus:outline-none text-gray-500 bg-white border border-gray-300 focus:border-b-2 focus:border-blue-500`}
                   style={{ paddingLeft: '12px' }}
                   name="name"
+                  ref={editNameRef}
                   value={editingjewelleryType?.name || ''}
                   onChange={e => {
                     setEditingJewelleryType({ ...editingjewelleryType, name: e.target.value });
@@ -416,6 +490,7 @@ import { toast } from 'react-toastify';
                   </label>
                 <select
                   name="item_type"
+                    ref={editItemTypeRef}
                   value={editingjewelleryType?.item_type || ''}
                   onChange={e => {
                     setEditingJewelleryType({ ...editingjewelleryType, item_type: e.target.value });

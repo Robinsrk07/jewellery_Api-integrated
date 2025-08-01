@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState ,useRef } from "react";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import taxCategoryModel from "../../models/taxCategoryModel";
@@ -36,6 +36,10 @@ const Tax = () => {
     status: '',
   });
 
+  const nameRef = useRef(null)
+  const taxRef = useRef(null)
+  const EditnameRef = useRef(null)
+  const EditTaxRef = useRef(null)
   const auth = useSelector((state) => state.auth);
   const { login_id, can_manage_user_types } = auth;
   const user_id = login_id;
@@ -64,12 +68,30 @@ const Tax = () => {
     fetchTaxCategories();
   }, [limit, page]);
 
-  const validateTaxCategory = () => {
-    const newErrors = {};
-    if (!addTaxCategoryData.name.trim()) newErrors.name = 'Please enter name';
-    if (!addTaxCategoryData.tax || isNaN(addTaxCategoryData.tax)) newErrors.tax = 'Please enter a valid tax rate';
-    return newErrors;
-  };
+const validateTaxCategory = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!addTaxCategoryData.name.trim()) {
+    newErrors.name = 'Please enter name';
+    if (!firstInvalidRef) firstInvalidRef = nameRef;
+  }
+
+  if (!addTaxCategoryData.tax || isNaN(addTaxCategoryData.tax)) {
+    newErrors.tax = 'Please enter a valid tax rate';
+    if (!firstInvalidRef) firstInvalidRef = taxRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
+
 
   const handleAddTaxCategoryChange = (e) => {
     const { name, value } = e.target;
@@ -78,16 +100,12 @@ const Tax = () => {
   };
 
   const handleSubmitTaxCategory = async () => {
-    const validationErrors = validateTaxCategory();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
+   if (!validateTaxCategory()) return;
+
     const payload = {
       name: addTaxCategoryData.name,
       tax: addTaxCategoryData.tax,
       description: addTaxCategoryData.description,
-      status: addTaxCategoryData.status === 'true',
     };
     try {
       const response = await taxCategoryModel.createTaxCategory(payload);
@@ -97,27 +115,43 @@ const Tax = () => {
         toast.success('Tax category created successfully!');
       }
     } catch (error) {
-      toast.error('Failed to create tax category!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    }
+        const message =
+        error?.response?.data?.errors?.name?.[0] ||
+        error?.response?.data?.message ||
+        "Failed to create Supplier Group!";
+        toast.error(message);
+        if (error.response?.data?.errors) {
+        setErrors(prev => ({
+        ...prev,
+        ...error.response.data.errors,
+                 }));
+              }
+        }
   };
 
-  const validateEditTaxCategory = () => {
-    const newErrors = { name: '', tax: '', description: '', status: '' };
-    let valid = true;
-    if (!editingTaxCategory?.name?.trim()) {
-      newErrors.name = 'Tax category name is required';
-      valid = false;
-    }
-    if (!editingTaxCategory?.tax || isNaN(editingTaxCategory.tax)) {
-      newErrors.tax = 'A valid tax rate is required';
-      valid = false;
-    }
-    setErrors(newErrors);
-    return valid;
-  };
+const validateEditTaxCategory = () => {
+  const newErrors = {};
+  let firstInvalidRef = null;
+
+  if (!editingTaxCategory?.name?.trim()) {
+    newErrors.name = 'Tax category name is required';
+    if (!firstInvalidRef) firstInvalidRef = EditnameRef;
+  }
+
+  if (!editingTaxCategory?.tax || isNaN(editingTaxCategory.tax)) {
+    newErrors.tax = 'A valid tax rate is required';
+    if (!firstInvalidRef) firstInvalidRef = EditTaxRef;
+  }
+
+  setErrors(newErrors);
+
+  if (firstInvalidRef?.current) {
+    firstInvalidRef.current.focus();
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const handleEditClickTaxCategory = (taxObj) => {
     if (!taxObj || typeof taxObj !== 'object' || !taxObj.id) {
@@ -157,11 +191,18 @@ const Tax = () => {
         setEditModal(false);
       }
     } catch (error) {
-      toast.error('Failed to update tax category!');
-      if (error.response?.data?.errors) {
-        setErrors((prev) => ({ ...prev, ...error.response.data.errors }));
-      }
-    } finally {
+        const message =
+        error?.response?.data?.errors?.name?.[0] ||
+        error?.response?.data?.message ||
+        "Failed to create Supplier Group!";
+        toast.error(message);
+        if (error.response?.data?.errors) {
+        setErrors(prev => ({
+        ...prev,
+        ...error.response.data.errors,
+                 }));
+              }
+        } finally {
       setIsSubmitting(false);
     }
   };
@@ -263,12 +304,12 @@ const Tax = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.name} onChange={handleAddTaxCategoryChange} name="name" />
+                <input type="text" placeholder="Type here" ref={nameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.name} onChange={handleAddTaxCategoryChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Tax: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.tax} onChange={handleAddTaxCategoryChange} name="tax" />
+                <input type="text" placeholder="Type here" ref={taxRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={addTaxCategoryData.tax} onChange={handleAddTaxCategoryChange} name="tax" />
                 {errors.tax && (<p className="text-red-500 text-xs mt-1">{errors.tax}</p>)}
               </div>
               <div>
@@ -299,12 +340,12 @@ const Tax = () => {
             <div className="flex flex-col gap-4 flex-grow">
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Name: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.name || ''} onChange={handleEditTaxCategoryChange} name="name" />
+                <input type="text" placeholder="Type here" ref={EditnameRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.name || ''} onChange={handleEditTaxCategoryChange} name="name" />
                 {errors.name && (<p className="text-red-500 text-xs mt-1">{errors.name}</p>)}
               </div>
               <div>
                 <label className="font-semibold text-xs text-[#344767] w-[80%]">Tax: <span className="text-red-500 text-[14px]">*</span></label>
-                <input type="text" placeholder="Type here" className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.tax || ''} onChange={handleEditTaxCategoryChange} name="tax" />
+                <input type="text" placeholder="Type here" ref={EditTaxRef} className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500" style={{ paddingLeft: '12px' }} value={editingTaxCategory?.tax || ''} onChange={handleEditTaxCategoryChange} name="tax" />
                 {errors.tax && (<p className="text-red-500 text-xs mt-1">{errors.tax}</p>)}
               </div>
               <div>

@@ -28,7 +28,7 @@ const ViewPurchase = () => {
   
   const {id}= useParams()
   const [purchaseData,setPurchaseData] =useState([])
-  console.log(purchaseData);
+  
   
   const FetchPurchaseData =async()=>{
    try{
@@ -128,7 +128,7 @@ const ViewPurchase = () => {
                  <th className="px-6 py-3 " >TOTAL VALUE</th>
                  <th className="px-6 py-3 " >TAX AMOUNT</th>
                  <th className="px-6 py-3 " >DEFAULT TAX</th>
-                 <th className="px-6 py-3 " >DISCOUNT</th>
+                 {/* <th className="px-6 py-3 " >DISCOUNT</th> */}
                  <th className="px-6 py-3 " >TOTAL STONE VALUE</th>
                  <th className="px-6 py-3 " >BARCODE</th>
                  <th className="px-6 py-3 " >TAGLINE1</th>
@@ -229,9 +229,9 @@ const ViewPurchase = () => {
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       {purchase.adjusted_tax_amount || 'N/A'}
                     </td>
-                    <td className="px-6 py-5 border-b border-gray-200 text-xs">
+                    {/* <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       {purchase.default_tax || 'N/A'}
-                    </td>
+                    </td> */}
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       {purchase.discount || 'N/A'}
                     </td>
@@ -244,19 +244,19 @@ const ViewPurchase = () => {
 
 
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                      {purchase.tagline1 || 'N/A'}
+                      {purchase.tagline_1 || 'N/A'}
                     </td>
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                      {purchase.tagline2 || 'N/A'}
+                      {purchase.tagline_2 || 'N/A'}
                     </td>
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                      {purchase.tagline3 || 'N/A'}
+                      {purchase.tagline_3 || 'N/A'}
                     </td>
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                      {purchase.tagline4 || 'N/A'}
+                      {purchase.tagline_4 || 'N/A'}
                     </td>
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
-                      {purchase.tag_defenition || 'N/A'}
+                      {purchase.tag_definition || 'N/A'}
                     </td>
                     <td className="px-6 py-5 border-b border-gray-200 text-xs">
                       {purchase.description || 'N/A'}

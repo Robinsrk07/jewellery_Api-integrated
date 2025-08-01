@@ -4,17 +4,17 @@
 import axiosInstance from "../Data/server/axiosinstance";
 
 const settingsTaxModel = {
-  getTaxes: (user_id, ) => {
+  getTaxes: (user_id, user_types, limit, page, search, status ) => {
     const params = new URLSearchParams({
-      user_id: user_id,
+      user_id: user_id, user_types, limit, page, search, status
   
     });
     return axiosInstance.get(`/settings-tax/?${params.toString()}`);
   },
 
-  getBranches: (user_id, ) => {
+  getBranches: (user_id, user_types, limit, page, search, status ) => {
     const params = new URLSearchParams({
-      user_id,
+      user_id, user_types, limit, page, search, status
       
     });
 

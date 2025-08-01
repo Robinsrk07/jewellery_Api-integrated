@@ -2,7 +2,11 @@ import { useEffect, useState } from "react";
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import { toast } from "react-toastify";
 import PurchaseModel from "../../../models/PurchaseModel";
+import CountryModel from "../../../models/countryModel";
+import useFieldRefs from "../../../hooks/useFieldRef";
 import { useNavigate } from "react-router";
+import BackButton from "../../../components/BackButton";
+import { useSelector } from "react-redux";
 const CreateGoldPurchase = () => {
   const [data, setData] = useState({
     purchase_type: '',
@@ -36,7 +40,7 @@ const CreateGoldPurchase = () => {
     stock_point: '',//
     supplier_currency: "",// dont know about it 
     buyer_currency: '',//
-    document_currency: 1,//
+    document_currency: '',//
     making_rate: '',//
     stone_rate: '',//
     stone_weight: '',//
@@ -44,6 +48,7 @@ const CreateGoldPurchase = () => {
     address: '',
     
   });
+   const [country,setCountry]= useState([])
 
   const cleanData = (obj) => {
   return Object.fromEntries(
@@ -52,6 +57,22 @@ const CreateGoldPurchase = () => {
     )
   );
 };
+
+    const auth= useSelector((state) => state.auth);
+    const { login_id ,can_manage_user_types,} = auth;  
+    const user_id = login_id;
+    const user_types = Object.keys(can_manage_user_types).join(','); 
+useEffect(()=>{
+ const fetchCounty = async()=>{
+  try{
+  const res = await CountryModel.getCountries(user_id,user_types,1000,1,"",'True')
+  setCountry(res?.data?.data)
+  }catch(error){
+  console.error(error)
+  }
+ }
+ fetchCounty()
+},[])
 
 const cleanedData = cleanData(data);
 const navigate =useNavigate()
@@ -62,7 +83,7 @@ const navigate =useNavigate()
     try {
       const response = await PurchaseUtils.getPurchaseUtils();
       setUtilsData(response.data);
-      console.log("Utils Data fetched successfully:", response.data);
+     
     } catch (error) {
       console.error("Error fetching utils data:", error);
     }
@@ -76,30 +97,67 @@ const navigate =useNavigate()
     const item = UtilsData.data.find(item => item[key] !== undefined);
     return item ? item[key] : [];
   };
+const fieldRefs = useFieldRefs([
+  'items',
+  'making_rate',
+  'stone_rate',
+  'stone_weight',
+  'gross_weight',
+  'supplier',
+  'stock_point',
+  'multi_stone_rate',
+  'multi_stone_weight',
+  'discount',
+  'document_currency',
+]);
+
+
+
 const validateForm = () => {
-  const newErrors = {};
   const requiredFields = [
-    'items', 
+    'document_currency',
+    'supplier',
+    'stock_point',
+    'items',
     'making_rate',
-    'stone_rate', 
+    'stone_rate',
     'stone_weight',
-    'gross_weight', 
-    'supplier', 
-    'stock_point', 
-    'document_currency'
+    'gross_weight',
   ];
-  requiredFields.forEach(field => {
+
+  const newErrors = {};
+  let firstInvalidField = null;
+
+  for (const field of requiredFields) {
     if (!data[field]?.toString().trim()) {
       newErrors[field] = 'This field is required';
+      if (!firstInvalidField) firstInvalidField = field;
     }
-  });
+  }
+
   setErrors(newErrors);
+
+  if (firstInvalidField && fieldRefs[firstInvalidField]?.current) {
+    setTimeout(() => {
+      fieldRefs[firstInvalidField].current.focus();
+      fieldRefs[firstInvalidField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 0);
+  }
+
   return Object.keys(newErrors).length === 0;
 };
+
  
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
+    if (errors[name]) {
+    setErrors(prevErrors => {
+      const newErrors = { ...prevErrors };
+      delete newErrors[name];
+      return newErrors;
+    });
+  }
     if (type === 'file') {
       setData({
         ...data,
@@ -112,6 +170,7 @@ const validateForm = () => {
       });
     }
   };
+
   const handleSubmit = async(shouldRedirect) => {
   if(!validateForm()){
     toast.error('Please fill all required fields');
@@ -152,7 +211,7 @@ const validateForm = () => {
         stock_point: '',
         supplier_currency: '',
         buyer_currency: '',
-        document_currency: 1,
+        document_currency: '',
         making_rate: '',
         stone_rate: '',
         stone_weight: '',
@@ -164,9 +223,65 @@ const validateForm = () => {
     }
       toast.success("Purchase created successfully!");
     }
-  } catch(error){
-    toast.error("Unable to Create Purchase, Please try again later.");
+  } catch (error) {
+  console.log(error);
+  let message = "Unable to Create Purchase, Please try again later.";
+  const errorData = error.response?.data;
+
+  if (errorData?.errors) {
+    const serverErrors = errorData.errors;
+    const fieldErrors = {};
+    let firstErrorField = null;
+    let firstErrorMessage = "";
+
+    if (typeof serverErrors === 'string') {
+      // 🔥 Server returned a newline-separated string
+      const errorLines = serverErrors.split('\n').filter(Boolean);
+      
+      errorLines.forEach(line => {
+        const [field, ...msgParts] = line.split(':');
+        if (field && msgParts.length) {
+          const fieldKey = field.trim();
+          const errorMsg = msgParts.join(':').trim();
+          fieldErrors[fieldKey] = errorMsg;
+
+          if (!firstErrorField) {
+            firstErrorField = fieldKey;
+            firstErrorMessage = errorMsg;
+          }
+        }
+      });
+
+      message = firstErrorMessage || errorData.errors|| "Validation error.";
+    } else if (typeof serverErrors === 'object') {
+      for (let key in serverErrors) {
+        fieldErrors[key] = Array.isArray(serverErrors[key]) ? serverErrors[key][0] : serverErrors[key];
+        if (!firstErrorField) {
+          firstErrorField = key;
+          firstErrorMessage = fieldErrors[key];
+        }
+      }     
+      message = firstErrorMessage || errorData.message || "Validation error.";
+    }
+
+    setErrors(fieldErrors);
+    
+    // 🔍 Focus the first error field if ref exists
+    if (firstErrorField && fieldRefs[firstErrorField]?.current) {
+      setTimeout(() => {
+        fieldRefs[firstErrorField].current.focus();
+        fieldRefs[firstErrorField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
+  } else if (errorData?.message) {
+    message = errorData.message;
   }
+
+  toast.error(message);
+}
+
+
+
 };
  
 
@@ -185,7 +300,9 @@ const validateForm = () => {
         rounded-xl px-4 md:px-8 lg:px-12
         mx-auto overflow-auto custom-scrollbar"
       style={{ fontFamily: 'Open Sans' }}
-    >
+    >  
+     <div  className="flex justify-end" style={{paddingTop:'20px',paddingRight:'20px'}}><BackButton to='/dashboard/purchase'/></div>
+    
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-7" style={{ padding:"20px"}}>
         
         {/* Item Type */}
@@ -196,11 +313,9 @@ const validateForm = () => {
             value={data.item_type}
             onChange={handleChange}
             style={{paddingLeft:'20px'}}
-            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.item_type ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
-            <option value="" disabled>Select Item Type</option>
+            <option value=""  className="text-xs">--Select Item Type --</option>
             {getUtilsData('item_type') && (
               <option value={getUtilsData('item_type').id}>
                 {getUtilsData('item_type').name}
@@ -218,13 +333,14 @@ const validateForm = () => {
           <select 
             name="document_currency"
             value={data.document_currency}
+            ref={fieldRefs.document_currency}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
+            className={`select select-bordered select-sm w-full bg-gray-200 text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
               errors.document_currency ? 'border-red-500' : ''
             }`}
           >
-            <option value="" disabled>Select Document Currency</option>
+            <option value="" > -- Select Document Currency --</option>
             {getUtilsData('default_currency') && (
               <option value={getUtilsData('default_currency').id}>
                 {getUtilsData('default_currency').name} ({getUtilsData('default_currency').code})
@@ -249,9 +365,7 @@ const validateForm = () => {
             value={data.terms_of_payment}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select bg-white select-bordered select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.terms_of_payment ? 'border-red-500' : ''
-            }`}
+            className={`select bg-white select-bordered select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Terms of Payment</option>
             {getUtilsData('terms_of_payment').map(term => (
@@ -287,11 +401,10 @@ const validateForm = () => {
           <select 
             name="supplier"
             value={data.supplier}
+            ref={fieldRefs.supplier}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.supplier ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Supplier</option>
             {getUtilsData('supplier_list').map(supplier => (
@@ -315,7 +428,7 @@ const validateForm = () => {
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Type here"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -324,12 +437,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Stock Point<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="stock_point"
+             ref={fieldRefs.stock_point}
             value={data.stock_point}
+            
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.stock_point ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 `}
           >
             <option value="" disabled>Select Stock Point</option>
             {getUtilsData('stock_point').map(point => (
@@ -355,7 +468,29 @@ const validateForm = () => {
               errors.buyer_currency ? 'border-red-500' : ''
             }`}
           >
-            <option value="" disabled>Select Buyer Currency</option>
+            <option value="" >--Select Buyer Currency--</option>
+            {getUtilsData('buyer_currency') && (
+              <option value={getUtilsData('buyer_currency').id}>
+                {getUtilsData('buyer_currency').name} ({getUtilsData('buyer_currency').code})
+              </option>
+            )}
+          </select>
+          {errors.buyer_currency && (
+            <p className="text-red-500 text-xs mt-1">{errors.buyer_currency}</p>
+          )}
+        </div>
+        <div className="w-full">
+          <label className="text-xs font-bold text-[#344767]">Supplier Currency</label>
+          <select 
+            name="supplier_currency"
+            value={data.supplier_currency}
+            onChange={handleChange}
+                 style={{paddingLeft:'20px'}}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
+              errors.supplier_currency ? 'border-red-500' : ''
+            }`}
+          >
+            <option value="" >--Select Supplier Currency--</option>
             {getUtilsData('buyer_currency') && (
               <option value={getUtilsData('buyer_currency').id}>
                 {getUtilsData('buyer_currency').name} ({getUtilsData('buyer_currency').code})
@@ -372,20 +507,16 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Currency Rate</label>
           <input
             type="number"
-            name="supplier_currency"
-            value={data.supplier_currency}
-            onChange={handleChange}
+            // name="supplier_currency"
+            // value={data.supplier_currency}
+            // onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             className={`input input-bordered bg-white input-sm w-full text-gray-900 rounded-lg 
                     focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
-                    [&::-webkit-calendar-picker-indicator]:opacity-50 ${
-                      errors.supplier_currency ? 'border-red-500' : ''
-                    }`}
-            placeholder="$1.00000@3.6725000"
+                    [&::-webkit-calendar-picker-indicator]:opacity-50 `}
+            placeholder=""
           />
-          {errors.supplier_currency && (
-            <p className="text-red-500 text-xs mt-1">{errors.supplier_currency}</p>
-          )}
+        
         </div>
       </div>
 
@@ -404,7 +535,7 @@ const validateForm = () => {
             value={data.purchase_type}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
               errors.purchase_type ? 'border-red-500' : ''
             }`}
           >
@@ -425,12 +556,11 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Items<span className="text-red-500 text-[14px]">*</span></label>
           <select 
             name="items"
+            ref={fieldRefs.items}
             value={data.items}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className={`select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 ${
-              errors.items ? 'border-red-500' : ''
-            }`}
+            className={`select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300`}
           >
             <option value="" disabled>Select an item</option>
             {getUtilsData('inventory_items').map(item => (
@@ -452,7 +582,7 @@ const validateForm = () => {
             value={data.design}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Design</option>
             {getUtilsData('product_design').map(design => (
@@ -471,7 +601,7 @@ const validateForm = () => {
             value={data.brand}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered select-sm w-full bg-white text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered select-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Brand</option>
             {getUtilsData('product_brand').map(brand => (
@@ -490,11 +620,13 @@ const validateForm = () => {
             value={data.made_in}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option value="" disabled>Select Country</option>
-             <option className="text-sm text-gray-500" value="17">Bolivia</option>
-              <option className="text-sm text-gray-500" value="18">Brazil</option>
+                           <option className="text-sm text-gray-500" value=''>-- Select a Country --</option>
+
+              {country.map((c)=>
+               <option className="text-sm text-gray-500" value={c.id}>{c.name}</option>
+              )}
           </select>
         </div>
 
@@ -506,7 +638,7 @@ const validateForm = () => {
             value={data.size}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Size</option>
             {getUtilsData('product_size').map(size => (
@@ -525,7 +657,7 @@ const validateForm = () => {
             value={data.style}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Style</option>
             {getUtilsData('product_style').map(style => (
@@ -544,7 +676,7 @@ const validateForm = () => {
             value={data.occasion}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Occasion</option>
             {getUtilsData('occasion').map(occasion => (
@@ -563,7 +695,7 @@ const validateForm = () => {
             value={data.metal_color}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Metal Color</option>
             {getUtilsData('product_color').map(color => (
@@ -582,7 +714,7 @@ const validateForm = () => {
             value={data.gender}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Gender</option>
             {getUtilsData('product_gender').map(gender => (
@@ -601,7 +733,7 @@ const validateForm = () => {
             value={data.stone_type}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered bg-white select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered bg-white select-sm w-full text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Stone Type</option>
             {getUtilsData('stone_type').map(stone => (
@@ -618,13 +750,15 @@ const validateForm = () => {
           <input
             type="number"
             name="making_rate"
+            ref={fieldRefs.making_rate}
             value={data.making_rate}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Making rate"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+            <p className="text-red-500 text-xs mt-1">{errors.making_rate}</p>
         </div>
 
         {/* Stone Rate */}
@@ -635,11 +769,13 @@ const validateForm = () => {
             name="stone_rate"
             value={data.stone_rate}
             onChange={handleChange}
+            ref={fieldRefs.stone_rate}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Stone rate"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+            <p className="text-red-500 text-xs mt-1">{errors.stone_rate}</p>
         </div>
 
         {/* Multi Stone Rate */}
@@ -648,13 +784,16 @@ const validateForm = () => {
           <input
             type="number"
             name="multi_stone_rate"
+            ref={fieldRefs.multi_stone_rate}
             value={data.multi_stone_rate}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Multi stone rate"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+         <p className="text-red-500 text-xs mt-1">{errors.multi_stone_rate}</p>
+
         </div>
 
         {/* Stone Weight */}
@@ -665,11 +804,14 @@ const validateForm = () => {
             name="stone_weight"
             value={data.stone_weight}
             onChange={handleChange}
+            ref={fieldRefs.stone_weight}
                  style={{paddingLeft:'20px'}}
             min="0"
+            step='.1'
             placeholder="Stone weight"
-            className="input input-bordered input-sm bg-white text-gray-300 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm bg-white text-gray-500 w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          <p className="text-red-500 text-xs mt-1">{errors.stone_weight}</p>
         </div>
 
         {/* Multi Stone Weight */}
@@ -679,12 +821,16 @@ const validateForm = () => {
             type="number"
             name="multi_stone_weight"
             value={data.multi_stone_weight}
+            ref={fieldRefs.multi_stone_weight}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
+            step='.1'
             placeholder="Multi Stone weight"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+                    <p className="text-red-500 text-xs mt-1">{errors.multi_stone_weight}</p>
+
         </div>
 
         {/* Gross Weight */}
@@ -695,11 +841,15 @@ const validateForm = () => {
             name="gross_weight"
             value={data.gross_weight}
             onChange={handleChange}
+                        ref={fieldRefs.gross_weight}
+
                  style={{paddingLeft:'20px'}}
             min="0"
+            step='.1'
             placeholder="Gross Weight"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          <p className="text-red-500 text-xs mt-1">{errors.gross_weight}</p>
         </div>
 
         {/* Discount */}
@@ -709,12 +859,15 @@ const validateForm = () => {
             type="number"
             name="discount"
             value={data.discount}
+            ref={fieldRefs.discount}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             min="0"
             placeholder="Discount"
-            className="input input-bordered bg-white text-gray-300 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+         <p className="text-red-500 text-xs mt-1">{errors.discount}</p>
+
         </div>
 
         {/* Tagline 1 */}
@@ -722,12 +875,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 1</label>
           <input
             type="text"
-            name="tag_line_1"
-            value={data.tag_line_1}
+            name="tagline_1"
+            value={data.tagline_1}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 1"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -736,12 +889,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 2</label>
           <input
             type="text"
-            name="tag_line_2"
-            value={data.tag_line_2}
+            name="tagline_2"
+            value={data.tagline_2}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 2"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -750,12 +903,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 3</label>
           <input
             type="text"
-            name="tag_line_3"
-            value={data.tag_line_3}
+            name="tagline_3"
+            value={data.tagline_3}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 3"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -764,12 +917,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tagline 4</label>
           <input
             type="text"
-            name="tag_line_4"
-            value={data.tag_line_4}
+            name="tagline_4"
+            value={data.tagline_4}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tagline 4"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -778,12 +931,12 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Tag Definition</label>
           <input
             type="text"
-            name="tag_defenition"
-            value={data.tag_defenition}
+            name="tag_definition"
+            value={data.tag_definition}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Tag Definition"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -797,7 +950,7 @@ const validateForm = () => {
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
             placeholder="Alias"
-            className="input input-bordered input-sm w-full bg-white text-gray-300 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
         </div>
 
@@ -809,7 +962,7 @@ const validateForm = () => {
             value={data.status}
             onChange={handleChange}
                  style={{paddingLeft:'20px'}}
-            className="select select-bordered select-sm w-full bg-white text-gray-300 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            className="select select-bordered select-sm w-full bg-white text-gray-500 text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="">-- Select Status --</option>
             <option value="True">Active</option>
@@ -822,11 +975,11 @@ const validateForm = () => {
           <label className="text-xs font-bold text-[#344767]">Description</label>
           <textarea 
             name="description"
-            value={data.address}
+            value={data.description}
             onChange={handleChange}
-                 style={{paddingLeft:'20px'}}
-            className="textarea textarea-gray rounded-lg bg-white text-gray-300 border-gray-300" 
-            placeholder="Address"
+           style={{padding:'20px'}}
+            className="textarea textarea-gray rounded-lg bg-white text-gray-500 border-gray-300" 
+            placeholder="description"
           />
         </div>
       </div>

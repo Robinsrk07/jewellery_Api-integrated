@@ -101,10 +101,7 @@ const [employeeForm, setEmployeeForm] = useState({
                   });
 
 
-console.log(branchEmployee)
-console.log(assignedEmployee)
-console.log(mapEmployees)
-console.log(employees)
+
 
   // Dummy employee data
 const handleAssignEmployee = async () => {
@@ -117,11 +114,7 @@ const handleAssignEmployee = async () => {
       formData.append("user_ids", item);
     });
 
-    // Optional: log form data for debug
-    console.log("Submitting employee assignment with:");
-    for (let pair of formData.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }
+    
 
     // Send request
     const res = await BranchModel.assignEmployee(formData);
@@ -131,7 +124,7 @@ await fetchEmployees();
      await refreshBranch(); 
      await fetchRefreshEmployees()   
       setModal(false)
-     console.log("Success:", res);
+    
     // Optionally show toast or reset state here
 
   } catch (error) {
@@ -242,7 +235,7 @@ const handleSubmit = async (e) => {
       e.preventDefault();
       const validationErrors = validateForm(employeeForm);
 
-      console.log(validationErrors)
+     
       if (Object.keys(validationErrors).length > 0) {
         setFormErrors(validationErrors);
         const firstInvalidField = Object.keys(validationErrors)[0];
@@ -332,13 +325,13 @@ const filteredEmployees = mapEmployees.filter(emp =>
                   );
 
 
-console.log(filteredEmployees)
+
 
 const branchEmployees = async () =>{
   try{
      const res = await BranchModel.getEmployeeAssign()
      const allBranchData = res?.data?.data
-     console.log(allBranchData)
+    
      const filteredData = allBranchData.filter((item)=>item.branch_id == id)
      setAssignedEmployee(filteredData)
   }catch(error){
@@ -385,7 +378,7 @@ const fetchEmployees = async () => {
       !assignedUserIds.includes(Number(employee.id))
     );
 
-    console.log('Unassigned employees:', unassignedEmployees);
+    
 
  
     setMapEmployees(unassignedEmployees);
@@ -822,8 +815,7 @@ useEffect(() => {
     const numericId = Number(userId?.toString().trim());
     const emp = mapEmployees.find((e) => e.id === numericId);
     
-    console.log(' Employee:', employees); // 👈 This logs each matched employee
-    console.log('Mapped Employee:', emp); // 👈 This logs each matched employee
+
 
     return (
       <div

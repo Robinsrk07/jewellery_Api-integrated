@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef} from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -44,6 +44,16 @@ const State =()=>{
    
   });
 
+const refFeild =useRef({
+  code:useRef(null),
+  name:useRef(null)
+})
+
+const refEditFeild = useRef({
+  code:useRef(null),
+  name:useRef(null)
+})
+
 
   const auth = useSelector((state) => state.auth);
   const { login_id, can_manage_user_types } = auth;
@@ -85,6 +95,11 @@ const handleAddStateChange = (e) => {
     ...prev,
     [name]: value,
   }));
+
+  setErrors((prev)=>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 const validateState = () => {
@@ -105,8 +120,18 @@ const validateState = () => {
 
 const handleSubmitState = async () => {
   const validationErrors = validateState();
+  
   if (Object.keys(validationErrors).length > 0) {
     setErrors(validationErrors);
+
+    const firstErrorKey = Object.keys(validationErrors)[0];
+    const firstErrorRef = refFeild.current[firstErrorKey];
+
+    if (firstErrorRef && firstErrorRef.current) {
+      firstErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstErrorRef.current.focus();
+    }
+
     return;
   }
 
@@ -116,82 +141,67 @@ const handleSubmitState = async () => {
     status: Boolean(addStateData.status),
   };
 
-  console.log("State Payload being sent:", payload);
-
   try {
     const response = await StateModel.createState(payload);
-    console.log("Create State response:", response);
 
     if (response.status === 201 || response.status === 200) {
       toast.success("State created successfully!");
       fetchStateData(); 
       handleCloseModal();
 
-      
-      setAddStateData({
-        code: '',
-        name: '',
-        status: false,
-      });
-
+      setAddStateData({ code: '', name: '', status: false });
       setErrors({});
     }
-  } catch (error) {
-    console.error("Create State error:", error);
-    console.log("Error response:", error.response?.data);
-    console.log("Field errors:", error.response?.data?.errors);
-    toast.error("Failed to create state!");
-    handleCloseModal();
-
-    if (error.response?.data?.errors) {
-      setErrors((prev) => ({
-        ...prev,
-        ...error.response.data.errors,
-      }));
-    }
-  }
+  }  catch (error) {
+      const message =
+       error?.response?.data?.errors?.code?.[0] ||
+       error?.response?.data?.errors?.name?.[0] ||
+       error?.response?.data?.message ||
+      "Failed to create State!";
+    
+      toast.error(message);
+                  }
 };
+
 
 
 const [editStateErrors, setEditStateErrors] = useState({});
 
 const validateEditState = () => {
-  let valid = true;
   const errors = {};
 
   if (!editingState?.code?.trim()) {
     errors.code = 'Code is required';
-    valid = false;
   }
 
   if (!editingState?.name?.trim()) {
     errors.name = 'Name is required';
-    valid = false;
   }
 
-  setEditStateErrors(errors);
-  return valid;
+ 
+  return errors;
 };
 
 
-const handleEditClickState = (stateObj) => {
-  if (!stateObj || typeof stateObj !== 'object' || !stateObj.id) {
-    console.warn("Invalid state object passed:", stateObj);
-    toast.error("Invalid state selected.");
-    return;
-  }
 
-  console.log("Editing State:", stateObj);
+// const handleEditClickState = (stateObj) => {
+//   if (!stateObj || typeof stateObj !== 'object' || !stateObj.id) {
+//     console.warn("Invalid state object passed:", stateObj);
+//     toast.error("Invalid state selected.");
+//     return;
+//   }
 
-  setEditingState({
-    id: stateObj.id,
-    code: stateObj.code,
-    name: stateObj.name,
-    status: stateObj.status?.toString(),
-  });
+//   console.log("Editing State:", stateObj);
 
-  setEditModal(true);
-};
+//   setEditingState({
+//     id: stateObj.id,
+//     code: stateObj.code,
+//     name: stateObj.name,
+//     status: stateObj.status?.toString(),
+//   });
+
+//   setEditModal(true);
+// };
 
 
 const handleEditStateChange = (e) => {
@@ -201,6 +211,10 @@ const handleEditStateChange = (e) => {
     ...prev,
     [name]: name === 'status' ? (value === 'true') : value,
   }));
+  setEditStateErrors((prev) =>({
+    ...prev,
+    [name]:''
+  }))
 };
 
 
@@ -210,8 +224,23 @@ const handleEditSubmitState = async () => {
     return;
   }
 
-  if (!validateEditState()) return;
+ 
+ 
+  const validationErrors = validateEditState();
 
+  if (Object.keys(validationErrors).length > 0) {
+    setEditStateErrors(validationErrors); // ✅ FIXED
+
+    const firstErrorKey = Object.keys(validationErrors)[0];
+    const firstErrorRef = refEditFeild.current[firstErrorKey]; // ✅ FIXED
+
+    if (firstErrorRef && firstErrorRef.current) {
+      firstErrorRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstErrorRef.current.focus();
+    }
+
+    return;
+  }
   setIsSubmitting(true);
 
   const payload = {
@@ -396,6 +425,7 @@ const handleDeleteState = async (id) => {
                                       </label>
                                       <input
                                         type="text"
+                                        ref={refFeild.current.code}
                                         placeholder="Type here"
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
@@ -418,6 +448,7 @@ const handleDeleteState = async (id) => {
                                       </label>
                                      <input
                                       type="text"
+                                      ref={refFeild.current.name}
                                       placeholder="Type here"
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
@@ -476,6 +507,7 @@ const handleDeleteState = async (id) => {
             type="text"
             name="code"
             placeholder="Type here"
+             ref={refEditFeild.current.code}
             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
             style={{paddingLeft:'12px'}}
             value={editingState?.code || ''}
@@ -494,6 +526,7 @@ const handleDeleteState = async (id) => {
           <input
             type="text"
             placeholder="Type here"
+            ref={refEditFeild.current.name}
             name="name"
             className="input w-[100%] bg-white text-xs text-gray-500 rounded-lg border border-gray-300 focus:outline-none  focus:border-b-2 focus:border-blue-500"
             style={{paddingLeft:'12px'}}

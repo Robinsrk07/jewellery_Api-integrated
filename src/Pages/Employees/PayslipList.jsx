@@ -33,7 +33,7 @@ const PayslipList = () => {
     const [deletingId, setDeletingId] = useState(null);
     const [itemToDelete, setItemToDelete] = useState(null);
     const {id} = useParams()
-    console.log(itemToDelete)
+    //console.log(itemToDelete)
     const user_id = login_id 
     const user_types = Object.keys(can_manage_user_types).join(',');
 

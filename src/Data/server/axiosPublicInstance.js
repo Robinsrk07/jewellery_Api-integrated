@@ -4,7 +4,7 @@ const baseUrl = import.meta.env.VITE_API_BASE_URL
 
 
 const axiosPublicInstance = axios.create({
-    baseURL: baseUrl, // ✅ Correct key
+    baseURL: baseUrl,
 });
 
 

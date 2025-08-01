@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import CustomScrollbar from "../../components/CustomScrollbar";
 import EditButton from '../../components/EditButton';
 import DeleteButton from '../../components/DeleteButton';
@@ -13,7 +13,6 @@ import TableSkelton from "../../components/tableSkelton";
 
 
 const ItemType =()=>{
-                    const [items, setItems] = useState(10);
                     const [modal, setModal] = useState(false)   
                     const [editModal,setEditModal]= useState(false)
                     const [itemTypeData, setItemTypeData] = useState([]);
@@ -41,7 +40,14 @@ const ItemType =()=>{
                      const user_id = login_id;
                      const user_types = Object.keys(can_manage_user_types).join(',');
 
+                     
+                      const nameRef = useRef(null);        // For Create modal
+                      const nameEditRef = useRef(null);    // For Edit modal
+                      const codeRef = useRef(null);         // For Create modal - Code field
+                      const codeEditRef = useRef(null); 
+
                      const FetchItemType = async () => {
+                       setIsLoading(true)
                         try {
                           const response = await ItemTypeModel.getItemTypes(
                             user_id,          
@@ -67,7 +73,10 @@ const ItemType =()=>{
                     const handleChange = (e) => {
                         const { name, value } = e.target;
                         setaddItemTypeData(prev => ({ ...prev, [name]: value }));
+                        setErrors(prev => ({...prev,[name]:''}))
                       };
+
+
                     const handleSubmit = async () => {
                     // Validate before submission
                     if (!validateForm()) {
@@ -90,12 +99,17 @@ const ItemType =()=>{
                                         
 
                     }catch (error) {
-
-                       toast.error('Failed to create item type!');
-                       handleCloseModal();    
-                      if (error.response?.data?.errors) {
-                        console.log(error.response?.data?.errors)
-                      }
+                    const message =
+                      error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Adress Type!";
+                    toast.error(message);
+                    if (error.response?.data?.errors) {
+                     setErrors(prev => ({
+                      ...prev,
+                      ...error.response.data.errors,
+                     }));
+                  }
                     }
                   };
 
@@ -120,83 +134,129 @@ const ItemType =()=>{
                       handleEditCloseModal();
                     }
                   } catch (error) {
-                      console.log(error);
-                      
-                       toast.error('Failed to update item type!');
+                    const message =
+                      error?.response?.data?.errors?.name?.[0] ||
+                    error?.response?.data?.message ||
+                    "Failed to create Adress Type!";
+                    toast.error(message);
                     if (error.response?.data?.errors) {
-                      setErrors(prev => ({
-                        ...prev,
-                        ...error.response.data.errors
-                      }));
-                    }
-                  } finally {
+                     setErrors(prev => ({
+                      ...prev,
+                      ...error.response.data.errors,
+                     }));
+                  }
+                    } finally {
                     setIsSubmitting(false);
                   }
                 };
 
-              const validateForm = () => {
-              let valid = true;
-              const newErrors = { code: '', name: '' };
+            const validateForm = () => {
+            let valid = true;
+            const newErrors = { code: '', name: '' };
 
-              // Updated country code validation
-              if (!addItemTypeData.code) {
-                newErrors.code = 'Item type code is required';
-                valid = false;
-              } else if (addItemTypeData.code.length < 2) {
-                newErrors.code = 'Must be 2-3 letters or valid item type code';
-                valid = false;
-              }
+            const name = addItemTypeData.name.trim();
+            const code = addItemTypeData.code.trim();
 
-              // Name validation remains same
-              if (!addItemTypeData.name) {
-                newErrors.name = 'Item type name is required';
+            if (!code) {
+              newErrors.code = 'Item type code is required';
+              valid = false;
+            } else if (code.length < 2) {
+              newErrors.code = 'Must be 2–3 characters';
+              valid = false;
+            }
+
+            if (!name) {
+              newErrors.name = 'Item type name is required';
+              valid = false;
+            } else {
+              const nameRegex = /^[A-Za-z\s]+$/;
+              if (!nameRegex.test(name)) {
+                newErrors.name = 'Name must contain only letters and spaces';
                 valid = false;
-              } else if (addItemTypeData.name.length < 2) {
+              } else if (name.length < 2) {
                 newErrors.name = 'Must be at least 2 characters';
                 valid = false;
-              }
-
-              setErrors(newErrors);
-              return valid;
-            };
-
-            const validateEditForm = () => {
-              let valid = true;
-              const newErrors = { code: '', name: '',description:'', status: '' };
-
-              // Updated country code validation
-              if (!editingItemType?.code) {
-                newErrors.code = 'Item type code is required';
-                valid = false;
-              } else if (editingItemType.code.length < 2) {
-                newErrors.code = 'Must be 2-3 letters or valid item type code ';
+              } else if (name.length > 50) {
+                newErrors.name = 'Must not exceed 50 characters';
                 valid = false;
               }
+            }
 
-              if (!editingItemType?.name) {
-                newErrors.name = 'Item type name is required';
-                valid = false;
-              } else if (editingItemType.name.length < 2) {
-                newErrors.name = 'Must be at least 2 characters';
-                valid = false;
+            setErrors(newErrors);
+
+            // Focus if error
+            if (!valid) {
+              if (newErrors.code && codeRef.current) {
+                codeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                codeRef.current.focus();
+              } else if (newErrors.name && nameRef.current) {
+                nameRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                nameRef.current.focus();
               }
+            }
 
-              if (!editingItemType?.description) {
-                newErrors.description = 'Item type description is required';
-                valid = false;
-              } else if (editingItemType.description.length < 2) {
-                newErrors.description = 'Must be at least 2 characters';
-                valid = false;
-              }
+            return valid;
+          };
 
-              if (editingItemType?.status === undefined) {
-                newErrors.status = 'Status is required';
-                valid = false;
-              }
 
-              setErrors(newErrors);
-              return valid;
-            };
+          const validateEditForm = () => {
+  let valid = true;
+  const newErrors = { code: '', name: '', description: '', status: '' };
+
+  const name = editingItemType?.name?.trim();
+  const code = editingItemType?.code?.trim();
+
+  if (!code) {
+    newErrors.code = 'Item type code is required';
+    valid = false;
+  } else if (code.length < 2) {
+    newErrors.code = 'Must be 2–3 characters';
+    valid = false;
+  }
+
+  if (!name) {
+    newErrors.name = 'Item type name is required';
+    valid = false;
+  } else {
+    const nameRegex = /^[A-Za-z\s]+$/;
+    if (!nameRegex.test(name)) {
+      newErrors.name = 'Name must contain only letters and spaces';
+      valid = false;
+    } else if (name.length < 2) {
+      newErrors.name = 'Must be at least 2 characters';
+      valid = false;
+    } else if (name.length > 50) {
+      newErrors.name = 'Must not exceed 50 characters';
+      valid = false;
+    }
+  }
+
+  if (!editingItemType?.description || editingItemType.description.length < 2) {
+    newErrors.description = 'Description must be at least 2 characters';
+    valid = false;
+  }
+
+  if (editingItemType?.status === undefined) {
+    newErrors.status = 'Status is required';
+    valid = false;
+  }
+
+  setErrors(newErrors);
+
+  // Focus if error
+  if (!valid) {
+  if (newErrors.code && codeEditRef.current) {
+    codeEditRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    codeEditRef.current.focus();
+  } else if (newErrors.name && nameEditRef.current) {
+    nameEditRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    nameEditRef.current.focus();
+  }
+}
+
+  return valid;
+};
+
 
             const handleDeleteItemType = async (id) => {
               if (!id) return toast.error("No item selected for deletion");
@@ -245,7 +305,7 @@ const ItemType =()=>{
                   
                   useEffect(() => {
                     FetchItemType(); 
-                  },[])
+                  },[limit,page,search,status])
                   
                   
                     return (
@@ -353,6 +413,7 @@ const ItemType =()=>{
                                       </label>
                                       <input
                                         type="text"
+                                          ref={codeRef}
                                         placeholder="Type here"
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
@@ -375,6 +436,7 @@ const ItemType =()=>{
                                      <input
                                       type="text"
                                       placeholder="Type here"
+                                         ref={nameRef}
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
                                       name="name"
@@ -396,6 +458,7 @@ const ItemType =()=>{
 
                                       <textarea
                                         name="description"
+                                      
                                         value={addItemTypeData.description}
                                         onChange={handleChange}
                                         placeholder="Description"
@@ -475,6 +538,8 @@ const ItemType =()=>{
           <input
             type="text"
             placeholder="Type here"
+
+            ref={codeEditRef}
             className={`input w-[100%] rounded-lg focus:outline-none border-gray-300 text-gray-500 bg-white border focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="code"
@@ -497,6 +562,7 @@ const ItemType =()=>{
           <input
             type="text"
             placeholder="Type here"
+            ref={nameEditRef}
             className={`input w-[100%] rounded-lg focus:outline-none border-gray-300 text-gray-500 bg-white border focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="name"

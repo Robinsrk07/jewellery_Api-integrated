@@ -23,9 +23,9 @@ const  Purchase = () => {
                    const [purchaseData, setPurchaseData] = useState([]);
                    const [totalPages, setTotalPages] = useState(1);
                    const [isLoading, setIsLoading] = useState(true);
-                   console.log(purchaseData);
                       
                   const FetchPurchaseData =async()=>{
+                    setIsLoading(true)
                     try{
                       const response = await PurchaseModel.getPurchases(login_id,login_type,limit,page,search,status)
                       setPurchaseData(response.data.data);
@@ -110,7 +110,7 @@ const  Purchase = () => {
       }}
     >
 
-                              <Link to="/dashboard/creategoldpurchase">
+    <Link to="/dashboard/create_gold_purchase">
 <button
         className="text-xs font-bold"
         style={{
@@ -129,7 +129,7 @@ const  Purchase = () => {
       </button>
                               </Link> 
 
-      <Link to="/dashboard/ListPurchase">
+      <Link to="/dashboard/create_list_purchase">
       <button
         className="text-xs font-bold"
         style={{
@@ -149,7 +149,7 @@ const  Purchase = () => {
                             
                          
                  
-                       <ItemsPerPageSelector items={items} setItems={setItems} />
+                       <ItemsPerPageSelector items={limit} setItems={setLimit} />
                  
                        
                  

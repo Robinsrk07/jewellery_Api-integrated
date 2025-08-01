@@ -1,17 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import DiamondModel from "../../../models/DiamondModel";
-import { useLocation } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import PurchaseUtils from "../../../models/PurchaseUtils";
 import UtilsGetModel from "../../../models/Utils_getModel";
 import TaxModel from "../../../models/TaxModel";
+import BranchModel from "../../../models/branchModel";
+import BackButton from "../../../components/BackButton";
 const EditDiamondItem = () => {
-
+    const {uuid} = useParams()
     const location = useLocation();
     const {item}= location.state || {}
-
-
+    const [errors, setErrors] = useState({});
+    const [diamondItems,setDiamondItems] = useState([])
+    const selectedItem = diamondItems.filter((item)=>item.uuid == uuid)
     const [data, setData] = useState({
         item_type: item?.item_type || '',
         supplier: item?.supplier || '',
@@ -33,43 +36,107 @@ const EditDiamondItem = () => {
         item_code: item?.item_code || ''
     });
 
+
+     const fetchDiamondItems = async () => {
+     try {
+    const response = await DiamondModel.getDiamondItems(
+      user_types,
+      user_id,
+      1000,
+      1,
+      "",
+      "",
+    );
+    if (response) {
+      setDiamondItems(response?.data?.data);
+    }
+  } catch (err) {
+    console.log(err)
+  } 
+};
+
+
+
     
+                 const itemTypeRef = useRef(null);
+                  const supplierRef = useRef(null);
+                  const noOfPiecesRef = useRef(null);
+                  const saleMarkupRef = useRef(null);
+                  const itemNameRef = useRef(null);
+                  const totalAmountRef = useRef(null);
+                  const netAmountRef = useRef(null);
+                  const prefixRef = useRef(null);
+                  const itemCodeRef = useRef(null);
     
-    
-const utils = [
-            {
-            'item_type':[{'id':12,'name':'Gold'},{'id':14,'name':'Diamond'}]
-            },{
-            'default_tax':[{'id':1,'name':'Gold- default-Input-Tax:1.000000% -output_tax:1.00000%'},{'id':2,'name':'Gold- default-Input-Tax:1.000000% -output_tax:1.00000%'}]
-            },{
-            'supplier':[{'id':1,'name':'GOLD_SUPPLIER_DUBAI'},{'id':2,'name':'GOLD_SUPPLIER_DUBAI_001'}]
-            },{
-            'terms_of_payment':[{'id':1,'name':'bhjbhj'},{'id':2,'name':'FGSGS'}]
-            },{
-            'stock_point':[{'id':18,'name':"Reserved Stock"},{'id':19,'name':'Low Stock Alert'},{'id':20,'name':'Warehouse Stock'},{'id':21,'name':'In-Store Stock'},{'id':22,'name':'Transit Stock'},]
-            },{
-           ' branch':[{'id':1,'name':'Dubai'},{'id':2,'name':'AbhuDhabi'}]
-            }
-            ]
+
           const [purchaseUtils,setPurchaseUtils] =useState([])
              const [goldUtils,setGoldUtils] =useState([])
              const [allUtils,setAllUtils]=useState([])
              const [DiamondUtils,setDiamondUtils] = useState([])
-             
+            const [branch,setBranch] = useState([])
+            const navigate = useNavigate()
              const[tax,setTax] = useState([])
              const auth = useSelector((state) => state.auth);
              const { login_id  } = auth
              const user_id = login_id;
-             console.log(tax)
-             console.log(allUtils)
+             const user_types=''
+            
             const item_type =  DiamondUtils.find(item=>item.item_type)?.item_type || []
-             console.log(item_type)
+         
              const supplier =  allUtils.find(item=>item.supplier_list)?.supplier_list || []
              const terms_of_payment =  DiamondUtils.find(item=>item.terms_of_payment)?.terms_of_payment || []
              const stock_point =  DiamondUtils.find(item=>item.stock_point)?.stock_point || []
-             console.log(supplier)
-             console.log(terms_of_payment)
-             console.log(stock_point)
+           
+
+             const requiredFields = [
+              'item_type',
+              'supplier',
+              'no_of_pieces',
+              'sale_markup',
+              'item_name',
+              'total_amount',
+              'net_amount',
+              'prefix',
+              'item_code'
+            ];
+
+
+          const validateForm = () => {
+          const newErrors = {};
+
+  requiredFields.forEach(field => {
+    const value = data[field];
+    if (!value || value.toString().trim() === '') {
+      newErrors[field] = 'This field is required';
+    }
+  });
+
+  if (data.prefix && !/^[A-Z]{2,5}$/.test(data.prefix)) {
+    newErrors.prefix = 'Prefix must be 2-5 uppercase letters';
+  }
+
+  if (data.item_name && !/^[a-zA-Z0-9\s]{3,50}$/.test(data.item_name)) {
+    newErrors.item_name = 'Item name must be 3-50 characters, letters/numbers only';
+  }
+
+  if (data.item_code && !/^[A-Z0-9-]{3,20}$/.test(data.item_code)) {
+    newErrors.item_code = 'Item code must be 3-20 characters, A-Z, 0-9, or -';
+  }
+
+  setErrors(newErrors);
+
+  if (newErrors.item_type) return itemTypeRef.current?.focus(), false;
+  if (newErrors.supplier) return supplierRef.current?.focus(), false;
+  if (newErrors.no_of_pieces) return noOfPiecesRef.current?.focus(), false;
+  if (newErrors.sale_markup) return saleMarkupRef.current?.focus(), false;
+  if (newErrors.item_name) return itemNameRef.current?.focus(), false;
+  if (newErrors.total_amount) return totalAmountRef.current?.focus(), false;
+  if (newErrors.net_amount) return netAmountRef.current?.focus(), false;
+  if (newErrors.prefix) return prefixRef.current?.focus(), false;
+  if (newErrors.item_code) return itemCodeRef.current?.focus(), false;
+
+  return Object.keys(newErrors).length === 0;
+};
 
            const handleChange = (e) => {
               const { name, value } = e.target;
@@ -77,9 +144,18 @@ const utils = [
                 ...prevData,
                 [name]: value
               }));
+              setErrors(prevErrors => {
+                const updatedErrors = { ...prevErrors };
+                delete updatedErrors[name];
+                return updatedErrors;
+              });
             };
            const handleSubmit = async() => {
-            console.log(data)
+
+            if (!validateForm()) {
+                          toast.error("Please fill all required fields.");
+                          return;
+              }
             // Filter out empty strings, null, and undefined values
             const validData = Object.fromEntries(
               Object.entries(data).filter(([key, value]) => 
@@ -89,73 +165,109 @@ const utils = [
             try{
             const response = await DiamondModel.EditDiamondItem(validData,item.uuid)
             toast.success("Diamond Updated  Succesfully")
+             navigate('/dashboard/diamond-items')
+            }catch (error) {
+                console.log(error);
 
-            }catch(error){
-                toast.error('Please Try Again,failed to Create Diamond Item')
-            }
-            
+                let message = "Please try again, failed to create Diamond Item.";
+
+                if (error.response?.data?.errors) {
+                  const errors = error.response.data.errors;
+
+                  if (typeof errors === 'object') {
+                    message = Object.entries(errors)
+                      .map(([field, msgs]) => {
+                        // Format field: replace _ with space and capitalize first letter
+                        const formattedField = field.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase());
+                        const text = Array.isArray(msgs) ? msgs.join(', ') : msgs;
+                        return `${formattedField}: ${text}`;
+                      })
+                      .join('\n');
+                  }
+                } else if (error.response?.data?.message) {
+                  message = error.response.data.message;
+                }
+
+                toast.error(message);
+              }
+                          
 
 
           };
 
           
-                      const fetchPurchaseUtils = async()=>{
-                                          try{
-                                            const response = await PurchaseUtils.getPurchaseUtils()
-                                            if(response){
-                                              setPurchaseUtils(response?.data?.data)
-                                            }
-                                          }catch(error){
-                                             console.error(error)
-                                          }
-                                        }
+         const fetchPurchaseUtils = async()=>{
+                   try{
+                          const response = await PurchaseUtils.getPurchaseUtils()
+                          if(response){
+                           setPurchaseUtils(response?.data?.data)
+                             }
+                                 }catch(error){
+                                   console.error(error)
+                                }
+                      }
                     
-                               const fetchGoldUtils =async ()=>{
-                                       try{
-                                            const response = await UtilsGetModel.getUtilsData()
-                                             if(response){
-                                             setGoldUtils(response?.data?.data)
-                                             }
-                                          }catch(error){
-                                             console.error(error)
-                                          }
-                                        }
+        const fetchGoldUtils =async ()=>{
+                    try{
+                        const response = await UtilsGetModel.getUtilsData()
+                            if(response){
+                            setGoldUtils(response?.data?.data)
+                                }
+                           }catch(error){
+                              console.error(error)
+                                    }
+                       }
                     
-                                  const fetchTax = async()=>{
+                     const fetchTax = async()=>{
                     
-                                  try{
-                                  const response = await TaxModel.getTax(user_id)
-                                    if(response){
+                            try{
+                              const response = await TaxModel.getTax(user_id)
+                                  if(response){
                                       setTax(response.data.data)
                                     }
                                   }catch(error){
                                    console.error(error)
                                   }
-                               }     
+                         }     
                                
-                                  const fetchDiamondUtils =async () =>{
-                                         try{
-                                            const response = await DiamondModel.GetDiamondUtils()
-                                             console.log(response?.data?.data)
-                                               setDiamondUtils(response?.data?.data)
-                                               }catch(error){
-                                                 console.log(error)
-                                         }
-                                  }
+                      const fetchDiamondUtils =async () =>{
+                                    try{
+                                      const response = await DiamondModel.GetDiamondUtils()
+                                    
+                                       setDiamondUtils(response?.data?.data)
+                                         }catch(error){
+                                           console.log(error)
+                                   }
+                           }
 
                                                
-                           useEffect(()=>{
-                                 fetchTax()
-                                 fetchGoldUtils()
-                                 fetchPurchaseUtils()
-                                 fetchDiamondUtils()            
-                                 },[])
+                      useEffect(()=>{
+                           fetchTax()
+                           fetchGoldUtils()
+                           fetchPurchaseUtils()
+                           fetchDiamondUtils()            
+                         },[])
                     
-                             useEffect(() => {
-                              if (purchaseUtils.length && goldUtils.length) {
-                                setAllUtils([...purchaseUtils, ...goldUtils]);
-                                 }
-                              }, [purchaseUtils, goldUtils]);
+                     useEffect(() => {
+                      if (purchaseUtils.length && goldUtils.length) {
+                             setAllUtils([...purchaseUtils, ...goldUtils]);
+                               }
+                         }, [purchaseUtils, goldUtils]);
+            useEffect(()=>{
+                        const fetchBranch  = async ()=>{
+                          try{
+                            const res = await BranchModel.getBranches(user_id,user_types,1000)
+                            setBranch(res?.data?.data)
+                          }catch(error){
+                            console.error(error)
+                          }
+                        }
+                        fetchBranch()
+                    },[])
+
+        useEffect(()=>{
+          fetchDiamondItems()
+        },[])            
 
     return (
       <div 
@@ -169,6 +281,7 @@ const utils = [
           mx-auto overflow-auto custom-scrollbar text-gray-500"
         style={{ fontFamily: 'Open Sans' }}
       >
+        <div style={{paddingTop:'20px',paddingRight:'20px'}}><BackButton to='/dashboard/diamond-items'/></div>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4  gap-4" style={{padding:'20px'}}>
         {/* code */}
         
@@ -177,13 +290,18 @@ const utils = [
           {/* item type */}
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]">Item Type <span className="text-red-500 text-[14px]">*</span></label>
-            <select name="item_type" value={data.item_type} style={{paddingLeft:'12px'}} onChange={handleChange}  className="select select-bordered select-sm w-full bg-white text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
-                            <option value =''>--select option --</option>
+            <select name="item_type"
+             value={data.item_type} style={{paddingLeft:'12px'}} 
+             onChange={handleChange}  
+              ref={itemTypeRef}
+             className="select select-bordered select-sm w-full bg-white text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
+             <option value =''>--select option --</option>
 
               <option value={item_type.id} className="text-black">
                 {item_type.name}
               </option>
             </select>
+             {errors.item_type && <p className="text-red-500 text-xs mt-1">{errors.item_type}</p>}
           </div>
 
           
@@ -211,6 +329,7 @@ const utils = [
   <select
     style={{ paddingLeft: '12px' }}
      onChange={handleChange}
+      ref={supplierRef}
      name="supplier" value={data.supplier}
     className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
   >
@@ -221,6 +340,7 @@ const utils = [
                           </option>
                         ))}
   </select>
+   {errors.supplier && <p className="text-red-500 text-xs mt-1">{errors.supplier}</p>}
 </div>
 <div className="w-full">
   <label className="text-xs font-bold text-[#344767]">Terms Of Payment</label>
@@ -254,6 +374,7 @@ const utils = [
             <input
             type="number"
             min="0"
+            ref={noOfPiecesRef }
             name='no_of_pieces'
             value={data.no_of_pieces}
             placeholder="no of piece"
@@ -263,6 +384,7 @@ const utils = [
             focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+         {errors.no_of_pieces && <p className="text-red-500 text-xs mt-1">{errors.no_of_pieces}</p>}
         </div>
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]">Sale Mark up <span className="text-red-500 text-[14px]">*</span></label>
@@ -270,6 +392,7 @@ const utils = [
             type="number"
             min="0"
             name="sale_markup"
+              ref={saleMarkupRef}
             value={data.sale_markup}
              style={{paddingLeft:'12px'}}
               onChange={handleChange}
@@ -278,6 +401,7 @@ const utils = [
             focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+          {errors.sale_markup && <p className="text-red-500 text-xs mt-1">{errors.sale_markup}</p>}
         </div>
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]">name  <span className="text-red-500 text-[14px]">*</span></label>
@@ -285,6 +409,7 @@ const utils = [
             type="text"
             placeholder="name"
              onChange={handleChange}
+             ref={itemNameRef }
                  name="item_name"
             value={data.item_name}
             style={{paddingLeft:'12px'}}
@@ -292,6 +417,7 @@ const utils = [
             focus:outline-none bg-white focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+         {errors.item_name && <p className="text-red-500 text-xs mt-1">{errors.item_name}</p>}
         </div>
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]">Total Amount <span className="text-red-500 text-[14px]">*</span></label>
@@ -299,6 +425,7 @@ const utils = [
             type="number"
             min="0"
             placeholder="total amount"
+               ref={totalAmountRef}
              onChange={handleChange}
              name="total_amount"
              value={data.total_amount}
@@ -307,6 +434,7 @@ const utils = [
             focus:outline-none bg-white focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+         {errors.total_amount && <p className="text-red-500 text-xs mt-1">{errors.total_amount}</p>}
         </div>
           
          
@@ -316,6 +444,7 @@ const utils = [
             type="number"
             min="0"
             placeholder="Net amount"
+             ref={netAmountRef}
             name='net_amount'
             value={data.net_amount}
              onChange={handleChange}
@@ -324,12 +453,14 @@ const utils = [
             focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+         {errors.net_amount && <p className="text-red-500 text-xs mt-1">{errors.net_amount}</p>}
         </div>
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]"> Pre Fix <span className="text-red-500 text-[14px]">*</span></label>
             <input
             type="text"
             placeholder="total amount"
+              ref={prefixRef}
              name='prefix'
             value={data.prefix}
              onChange={handleChange}
@@ -338,6 +469,7 @@ const utils = [
             focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+          {errors.prefix && <p className="text-red-500 text-xs mt-1">{errors.prefix}</p>}
         </div>
        
          <div className="w-full">
@@ -371,14 +503,24 @@ const utils = [
         />
         </div>
 
-         <div className="full">
-          <label className="text-xs font-bold  text-[#344767]"> Branch</label>
-          <select style={{paddingLeft:'12px'}} className="select select-bordered bg-white select-sm w-full  rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300">
-              <option value =''>--select option --</option>
-          <option className="text-sm text-gray-500">Active</option>
-          <option  className="text-sm text-gray-500">Inactive</option>
+        <div className="w-full">
+          <label className="text-xs font-bold text-[#344767]">Branch</label>
+          <select
+            name="branch"
+            value={data.branch}
+            onChange={handleChange}
+            style={{ paddingLeft: '12px' }}
+            className="select select-bordered bg-white select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+          >
+            <option value=''>--select option--</option>
+            {branch.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
+              </option>
+            ))}
           </select>
-          </div>
+        </div>
+
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]"> Item code <span className="text-red-500 text-[14px]">*</span></label>
             <input
@@ -387,11 +529,13 @@ const utils = [
             style={{paddingLeft:'12px'}}
              onChange={handleChange}
              name='item_code'
+             ref={itemCodeRef}
              value={data.item_code}
             className="input input-bordered bg-white input-sm w-full rounded-lg 
             focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300
             appearance-auto"
         />
+         {errors.item_code && <p className="text-red-500 text-xs mt-1">{errors.item_code}</p>}
         </div>
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]"> Reference Number</label>
@@ -424,19 +568,13 @@ const utils = [
         </div>
           <div className="w-full">
             <label className="text-xs font-bold text-[#344767]"> notes</label>
-            <textarea name="notes" value={data.notes} className="w-full border border-gray-200 rounded-lg"></textarea>
+            <textarea name="notes"             onChange={handleChange} placeholder="notes"
+            value={data.notes} className="w-full text-xs  border border-gray-200 rounded-lg" style={{padding:'12px'}}></textarea>
         </div>
-           
-
-
-
-
-          
-       {/* --------------- */}
-          
+             
       
         </div>
-        <div className="flex  w-full justify-end " style={{padding:'20px'}}>  {/* Container div */}
+        <div className="flex  w-full justify-end " style={{padding:'20px'}}>  
         <button onClick={handleSubmit} className="btn border-none bg-[#666DE4] text-white font-semibold   w-full lg:w-[150px]  rounded-lg">
         Update Changes
         </button>

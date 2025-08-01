@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useRef } from "react";
 import CustomScrollbar from "../../../components/CustomScrollbar";
 import EditButton from '../../../components/EditButton';
 import DeleteButton from '../../../components/DeleteButton';
@@ -17,7 +17,6 @@ import { toast } from 'react-toastify';
 
 const Country =()=>{
    
-                     const [items, setItems] = useState(10);
                      const [modal, setModal] = useState(false)   
                      const [editModal,setEditModal]= useState(false)
                      const [countryData, setCountryData] = useState([]);
@@ -45,6 +44,16 @@ const Country =()=>{
                      const user_id = login_id;
                      const user_types = Object.keys(can_manage_user_types).join(','); 
                    
+                    const refFeilds ={
+                      name:useRef(null),
+                      code:useRef(null)
+                    }
+                    const refEditFeilds ={
+                      name:useRef(null),
+                      code:useRef(null)
+                    }
+
+
                       const FetchCountry = async () => {
                         try {
                           const response = await CountryModel.getCountries(
@@ -57,7 +66,7 @@ const Country =()=>{
                           );
 
                           if (response.data && response.data.data) {
-                            console.log(response)
+                          
                             setCountryData(response?.data?.data);
                              setTotalPages(response?.data?.pagination?.pages);
                           }
@@ -72,13 +81,25 @@ const Country =()=>{
                   const handleChange = (e) => {
                         const { name, value } = e.target;
                         setaddCountryData(prev => ({ ...prev, [name]: value }));
+
+                        setErrors(prev =>({...prev,[name]:""}))
                       };
 
                  const handleSubmit = async () => {
-                    // Validate before submission
-                    if (!validateForm()) {
-                      return;
-                    }
+                    
+                    const validationErrors = validateForm();
+                      if (Object.keys(validationErrors).length > 0) {
+                        setErrors(validationErrors);
+
+                        const firstErrorKey = Object.keys(validationErrors)[0];
+                        if (refFeilds[firstErrorKey]?.current) {
+                          refFeilds[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+                          refFeilds[firstErrorKey].current.focus();
+                        }
+
+                        return;
+                      }
+
 
                     const formData = new FormData();
                     formData.append('code', addCountryData.code);
@@ -86,7 +107,7 @@ const Country =()=>{
 
                     try {
                       const response = await CountryModel.CreateCountry(formData);
-                      console.log("Update response:", response);  
+                     
                       if (response.status === 201) {
                         FetchCountry(); // Refresh the list
                         handleCloseModal();    
@@ -95,21 +116,31 @@ const Country =()=>{
                       }
                                         
 
-                    } catch (error) {
+                    }  catch (error) {
+                        const message =
+                          error?.response?.data?.message?.code?.[0] ||
+                          error?.response?.data?.message?.name?.[0] ||
+                          error?.response?.data?.message ||
+                          "Failed to create country!";
 
-                       toast.error('Failed to create country!');
-                       handleCloseModal();    
-                      if (error.response?.data?.errors) {
-                        setErrors(prev => ({
-                          ...prev,
-                          ...error.response.data.errors
-                        }));
+                        toast.error(message);
                       }
-                    }
+
                   };
 
                   const handleEditSubmit = async () => {
-                  if (!validateEditForm()) return;
+                    const validationEditErrors = validateEditForm();
+                      if (Object.keys(validationEditErrors).length > 0) {
+                        setErrors(validationEditErrors);
+
+                        const firstErrorKey = Object.keys(validationEditErrors)[0];
+                        if (refEditFeilds[firstErrorKey]?.current) {
+                          refEditFeilds[firstErrorKey].current.scrollIntoView({ behavior: "smooth", block: "center" });
+                          refEditFeilds[firstErrorKey].current.focus();
+                        }
+
+                        return;
+                      }
                   
                   setIsSubmitting(true);
                   try {
@@ -128,74 +159,56 @@ const Country =()=>{
                       handleEditCloseModal();
                     }
                   } catch (error) {
-                      console.log(error);
-                      
-                       toast.error('Failed to update country!');
-                    if (error.response?.data?.errors) {
-                      setErrors(prev => ({
-                        ...prev,
-                        ...error.response.data.errors
-                      }));
-                    }
+                    const message =
+                      error?.response?.data?.message?.code?.[0] ||
+                      error?.response?.data?.message?.name?.[0] ||
+                      error?.response?.data?.message ||
+                      "Failed to create country!";
+
+                    toast.error(message);
                   } finally {
                     setIsSubmitting(false);
                   }
                 };
 
-              const validateForm = () => {
-              let valid = true;
-              const newErrors = { code: '', name: '' };
+            const validateForm = () => {
+            const newErrors = {};
+            
+            if (!addCountryData.code) {
+              newErrors.code = 'Country code is required';
+            } else if (!/^\+?\d{1,4}$/.test(addCountryData.code)) {
+              newErrors.code = 'Must be digits only, optionally starting with + (e.g. +1, 91)';
+            }
 
-              // Updated country code validation
-              if (!addCountryData.code) {
-                newErrors.code = 'Country code is required';
-                valid = false;
-              } else if (!/^(\+?\d{1,3}|[A-Za-z]{2,3})$/.test(addCountryData.code)) {
-                newErrors.code = 'Must be 2-3 letters or valid country code (e.g. +34, +1)';
-                valid = false;
-              }
+            if (!addCountryData.name) {
+              newErrors.name = 'Country name is required';
+            } else if (addCountryData.name.length < 2) {
+              newErrors.name = 'Must be at least 2 characters';
+            }
 
-              // Name validation remains same
-              if (!addCountryData.name) {
-                newErrors.name = 'Country name is required';
-                valid = false;
-              } else if (addCountryData.name.length < 2) {
-                newErrors.name = 'Must be at least 2 characters';
-                valid = false;
-              }
+            return newErrors;
+};
 
-              setErrors(newErrors);
-              return valid;
-            };
 
             const validateEditForm = () => {
-              let valid = true;
-              const newErrors = { code: '', name: '', status: '' };
+              const newErrors = { };
 
               // Updated country code validation
               if (!editingCountry?.code) {
                 newErrors.code = 'Country code is required';
-                valid = false;
-              } else if (!/^(\+?\d{1,3}|[A-Za-z]{2,3})$/.test(editingCountry.code)) {
-                newErrors.code = 'Must be 2-3 letters or valid country code (e.g. +34, +1)';
-                valid = false;
-              }
-
+               
+              }  else if (!/^\+?\d{1,4}$/.test(editingCountry.code)) {
+              newErrors.code = 'Must be digits only, optionally starting with + (e.g. +1, 91)';
+               }
               if (!editingCountry?.name) {
                 newErrors.name = 'Country name is required';
-                valid = false;
               } else if (editingCountry.name.length < 2) {
                 newErrors.name = 'Must be at least 2 characters';
-                valid = false;
               }
 
-              if (editingCountry?.status === undefined) {
-                newErrors.status = 'Status is required';
-                valid = false;
-              }
+             
 
-              setErrors(newErrors);
-              return valid;
+            return newErrors;
             };
            
            
@@ -223,7 +236,9 @@ const Country =()=>{
                         name: '',
                         
                       });
+                      setErrors({ code: '', name: ''})
                       setModal(false);
+
                     };
 
                   
@@ -348,6 +363,7 @@ const Country =()=>{
                                       </label>
                                       <input
                                         type="text"
+                                          ref={refFeilds.code}
                                         placeholder="Type here"
                                         className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                         style={{ paddingLeft: '12px' }}
@@ -369,6 +385,7 @@ const Country =()=>{
                                       </label>
                                      <input
                                       type="text"
+                                       ref={refFeilds.name}
                                       placeholder="Type here"
                                       className="input w-[100%] rounded-lg focus:outline-none bg-white text-gray-500 border-gray-300 focus:border-b-2 focus:border-blue-500"
                                       style={{ paddingLeft: '12px' }}
@@ -424,6 +441,7 @@ const Country =()=>{
           <input
             type="text"
             placeholder="Type here"
+             ref={refEditFeilds.code}
             className={`input w-[100%] rounded-lg text-gray-500 border-gray-300 focus:outline-none bg-white border focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="code"
@@ -446,6 +464,7 @@ const Country =()=>{
           <input
             type="text"
             placeholder="Type here"
+            ref={refEditFeilds.name}
             className={`input w-[100%] rounded-lg text-gray-500 border-gray-300 focus:outline-none bg-white border focus:border-b-2 focus:border-blue-500`}
             style={{paddingLeft:'12px'}}
             name="name"

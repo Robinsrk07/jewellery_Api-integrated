@@ -3,9 +3,13 @@ import UtilsGetModel from "../../models/Utils_getModel";
 import { toast } from "react-toastify";
 import GoldItemModel from "../../models/GoldItem";
 import CountryModel from "../../models/countryModel";
+import settingsTaxModel from "../../models/settingsTaxModel";
 import { useNavigate } from "react-router";
 import { useSelector } from "react-redux";
+import { useRef } from "react";
+import BackButton from "../../components/BackButton";
 const CreateItem = () => {
+  
   const navigate = useNavigate()
   const [data, setData] = useState({
     code: '',
@@ -38,6 +42,9 @@ const CreateItem = () => {
 
   const [UtilsData,setUtilsData] = useState([]);
   const [country,setCountry]= useState([])
+  const [tax,setTax]= useState([])
+  const [errors, setErrors] = useState({});
+
   
 const FetUtilsdata = async() => {
   try {
@@ -52,14 +59,58 @@ const FetUtilsdata = async() => {
     const auth= useSelector((state) => state.auth);
     const { login_id ,can_manage_user_types,} = auth;  
     const user_id = login_id;
-     const user_types = Object.keys(can_manage_user_types).join(','); 
+    const user_types = Object.keys(can_manage_user_types).join(','); 
+
+
+
+     const refs ={
+      code:useRef(null),
+      name:useRef(null),
+      item_type:useRef(null),
+      uom:useRef(null),
+      category: useRef(null),         
+      subcategory:useRef(null),
+      jewellery_type:useRef(null),
+      making_calculation_on:useRef(null),
+      is_serialized:useRef(null),
+      status:useRef(null),
+      hsn_code:useRef(null),
+      prefix:useRef(null),
+      making_buffer_value: useRef(null),
+      stone_buffer_value:useRef(null),
+      stone_sale_markup: useRef(null),
+      
+     }
+
 const validateForm = () => {
   const newErrors = {};
+  let firstInvalidField = null;
+
+  if (data.code && !/^[A-Z0-9]{3,10}$/.test(data.code)) {
+   newErrors.code = 'Code must be 3–10 uppercase letters or numbers (A–Z, 0–9)';
+    firstInvalidField = 'code';
+  }
+  if (data.hsn_code && !/^\d{4}(\d{2})?(\d{2})?$/.test(data.hsn_code)) {
+    newErrors.hsn_code = 'HSN must be 4, 6, or 8 digits';
+    if (!firstInvalidField) firstInvalidField = 'hsn_code';
+  }
+
+  if (data.prefix && !/^[A-Z]{1,5}$/.test(data.prefix)) {
+    newErrors.prefix = 'Prefix must be 1–5 uppercase letters';
+    if (!firstInvalidField) firstInvalidField = 'prefix';
+  }
+
+  
+
+  if (data.name && !/^[A-Za-z0-9\s]{3,50}$/.test(data.name)) {
+    newErrors.name = 'Name must be 3–50 alphanumeric characters';
+    if (!firstInvalidField) firstInvalidField = 'name';
+  }
 
   const requiredFields = [
     'code',
     'item_type',
-     'uom',
+    'uom',
     'category',
     'subcategory',
     'jewellery_type',
@@ -68,21 +119,33 @@ const validateForm = () => {
     'status',
   ];
 
-  requiredFields.forEach(field => {
+  for (const field of requiredFields) {
     if (!data[field]?.toString().trim()) {
       newErrors[field] = 'This field is required';
+      if (!firstInvalidField) firstInvalidField = field;
     }
-  });
+  }
 
-  
+  setErrors(newErrors);
+
+  if (firstInvalidField && refs[firstInvalidField]?.current) {
+    refs[firstInvalidField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      refs[firstInvalidField].current?.focus();
+    }, 0); 
+  }
 
   return Object.keys(newErrors).length === 0;
 };
 
+
+
+
+
  const cleanData = (obj) => {
   return Object.fromEntries(
     Object.entries(obj).filter(
-      ([_, value]) => value !== '' && value !== null
+      ([, value]) => value !== '' && value !== null
     )
   );
 };
@@ -91,7 +154,6 @@ const cleanedData = cleanData(data);
 
 
  const getUtilsData = (key) => {
-  // Add safety check
   if (!UtilsData?.data) return [];
   
   const item = UtilsData.data.find(item => item[key] !== undefined);
@@ -113,6 +175,10 @@ const cleanedData = cleanData(data);
         [name]: value
       });
     }
+     setErrors(prevErrors => ({
+    ...prevErrors,
+    [name]: undefined
+  }));
   };
 
 const handleSubmit = async (e) => {
@@ -124,7 +190,6 @@ const handleSubmit = async (e) => {
   }
 
   try {
-    // Convert cleanedData to FormData
     const formData = new FormData();
     Object.entries(cleanedData).forEach(([key, value]) => {
       if (value !== null && value !== undefined && value !== '') {
@@ -137,33 +202,60 @@ const handleSubmit = async (e) => {
     if (response.data) {
       toast.success(response.data.message || "Item created successfully!");
     } else {
-      console.warn("Unexpected response structure:", response);
       toast.success("Item created ");
     }
   } catch (error) {
-    toast.error('failed to Create Gold Item Please Try again')
-    // if (error.response) {
-    //   const { message, errors } = error.response.data;
+    console.error(error);
+    const errorData = error.response?.data;
 
-    //   if (errors && typeof errors === 'object') {
-    //     Object.entries(errors).forEach(([field, messages]) => {
-    //       if (Array.isArray(messages)) {
-    //         messages.forEach(msg => toast.error(`${msg}`));
-    //       } else {
-    //         toast.error(`${field}: ${messages}`);
-    //       }
-    //     });
-    //   } else {
-    //     toast.error(message || "Creation failed");
-    //   }
-    // } else {
-    //   toast.error(error.message || "Something went wrong");
-    // }
+    let fieldErrors = {};
+    let message = "Unable to create item. Please try again later.";
+
+    if (errorData?.errors) {
+      const errors = errorData.errors;
+
+      // Handle non_field_errors (toast only)
+      if (errors.non_field_errors && Array.isArray(errors.non_field_errors)) {
+        message = errors.non_field_errors.join(' ');
+      }
+
+      // Handle field-level errors (add to state)
+      const validFieldKeys = Object.keys(refs);
+      const serverFieldErrors = Object.entries(errors).filter(
+        ([field]) => validFieldKeys.includes(field)
+      );
+
+      if (serverFieldErrors.length > 0) {
+        fieldErrors = Object.fromEntries(
+          serverFieldErrors.map(([field, msgs]) => [field, Array.isArray(msgs) ? msgs[0] : msgs])
+        );
+
+        // Set errors to state
+        setErrors(prev => ({ ...prev, ...fieldErrors }));
+
+        // Focus first invalid field
+        const firstField = serverFieldErrors[0][0];
+        if (firstField && refs[firstField]?.current) {
+          refs[firstField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            refs[firstField].current?.focus();
+          }, 0);
+        }
+
+        const firstError = Object.values(fieldErrors)[0];
+        message = firstError || message;
+      }
+    }
+
+    // Always show a toast
+    toast.error(message);
   }
+
+
+
 };
 
 
-  // Get subcategories based on selected category
   const getSubcategories = () => {
     if (!data.category) return [];
     const categories = getUtilsData('categories');
@@ -176,10 +268,12 @@ const handleSubmit = async (e) => {
   useEffect(() => {
     FetUtilsdata()
   },[])
+
+
   useEffect(()=>{
  const fetchCounty = async()=>{
   try{
-  const res = await CountryModel.getCountries(user_id,user_types,1000)
+  const res = await CountryModel.getCountries(user_id,user_types,1000,1,"",'True')
   setCountry(res?.data?.data)
   }catch(error){
   console.error(error)
@@ -187,6 +281,19 @@ const handleSubmit = async (e) => {
  }
  fetchCounty()
   },[])
+  
+  useEffect(()=>{
+   const fetchTax = async()=>{
+  try{
+  const res = await settingsTaxModel.getTaxes(user_id,user_types,1000,1,'',"True")
+  setTax(res?.data?.data)
+  }catch(error){
+  console.error(error)
+  }
+ }
+ fetchTax()
+  },[])
+
 
 
   return (
@@ -200,30 +307,38 @@ const handleSubmit = async (e) => {
         rounded-xl px-4 md:px-8 lg:px-12
         mx-auto overflow-auto custom-scrollbar"
       style={{ fontFamily: 'Open Sans' }}
-    >
+    > 
+    <div style={{paddingTop:'20px',paddingRight:'20px'}} >  <BackButton to="/dashboard/item" />
+</div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-10" style={{padding:'30px'}}>
         {/* code */}
         <div className="w-full flex flex-col gap-2"> 
           <label className="text-xs font-bold text-[#344767]">Code    <span className="text-red-500 text-[14px]">*</span>
-</label>
+</label> 
+<div className="flex flex-col">
           <input
             type="text"
             name='code'
             required
+             ref={refs.code}
             value={data.code}
             placeholder="Type here"
             style={{ paddingLeft: '10px' }}
             onChange={handleChange}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.code && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.code}</span>}
+</div>
         </div>
 
         {/* name */}
         <div className="w-full flex flex-col gap-2"> 
           <label className="text-xs font-bold text-[#344767]">Name</label>
+          <div>
           <input
             type="text"
             name='name'
+             ref={refs.name}
             required
             value={data.name}
             onChange={handleChange}
@@ -231,20 +346,25 @@ const handleSubmit = async (e) => {
             style={{ paddingLeft: '10px' }}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+           {errors.name && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.name}</span>}
+           </div>
         </div>
 
         {/* item type */}
         <div className="w-full flex flex-col gap-2"> 
           <label className="text-xs font-bold text-[#344767]">Item Type    <span className="text-red-500 text-[14px]">*</span>
 </label>
+<div>
           <select  
             name="item_type"
+             ref={refs.item_type}
+
             onChange={handleChange}
             value={data.item_type}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option disabled value="">Item Type</option>
+            <option  className="text-xs text-gray-400" value="">-- Select Item Type --</option>
             {Array.isArray(getUtilsData('item_type'))
               ? getUtilsData('item_type').map(type => (
                   <option key={type.id} value={type.id}>{type.name}</option>
@@ -256,14 +376,18 @@ const handleSubmit = async (e) => {
                 )
             }
           </select>
+          {errors.item_type && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.item_type}</span>}
+          </div>
         </div>
 
         {/* uom */}
         <div className="w-full flex flex-col gap-2"> 
           <label className="text-xs font-bold text-[#344767]">UOM    <span className="text-red-500 text-[14px]">*</span>
 </label>
+<div>
           <select
             name="uom"
+            ref={refs.uom}
             onChange={handleChange}
             value={data.uom}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -278,15 +402,19 @@ const handleSubmit = async (e) => {
               ))
             }
           </select>
+          {errors.uom && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.uom}</span>}
+          </div>
         </div>
 
         {/* category */}
         <div className="w-full flex flex-col gap-2"> 
           <label className="text-xs font-bold text-[#344767]">Category    <span className="text-red-500 text-[14px]">*</span>
 </label>
+<div>
           <select
             name="category"
             onChange={handleChange}
+            ref={refs.category}
             value={data.category}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -302,6 +430,8 @@ const handleSubmit = async (e) => {
               </option>
             ))}
           </select>
+          {errors.category && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.category}</span>}
+          </div>
         </div>
 
         {/* sub Category */}
@@ -311,6 +441,7 @@ const handleSubmit = async (e) => {
           <select
             name="subcategory"
             value={data.subcategory}
+            ref={refs.subcategory}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -322,6 +453,7 @@ const handleSubmit = async (e) => {
               </option>
             ))}
           </select>
+           {errors.subcategory && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.subcategory}</span>}
         </div>
 
         {/* jewellery type */}
@@ -332,6 +464,7 @@ const handleSubmit = async (e) => {
             name="jewellery_type"
             value={data.jewellery_type}
             onChange={handleChange}
+            ref={refs.jewellery_type}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full text-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
@@ -344,6 +477,7 @@ const handleSubmit = async (e) => {
               ))}
             
           </select>
+          {errors.jewellery_type && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.jewellery_type}</span>}
         </div>
 
         {/* brand */}
@@ -370,6 +504,7 @@ const handleSubmit = async (e) => {
           <label className="text-xs font-bold text-[#344767]">Making Calculation On    <span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="making_calculation_on"
+            ref={refs.making_calculation_on}
             value={data.making_calculation_on}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -384,6 +519,7 @@ const handleSubmit = async (e) => {
               ))
             )}
           </select>
+          {errors.making_calculation_on && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.making_calculation_on}</span>}
 </div>
 
         {/* is scrap item */}
@@ -408,6 +544,7 @@ const handleSubmit = async (e) => {
 </label>
           <select
             name="is_serialized"
+            ref={refs.is_serialized}
             value={data.is_serialized}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -417,6 +554,8 @@ const handleSubmit = async (e) => {
             <option value="True" className="text-sm text-gray-500">Yes</option>
             <option value="False" className="text-sm text-gray-500">No</option>
           </select>
+                    {errors.is_serialized && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.is_serialized}</span>}
+
         </div>
 
         {/* is gift item */}
@@ -518,26 +657,14 @@ const handleSubmit = async (e) => {
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             >
-              <option disabled value="">Default Input Tax</option>
+              <option className="text-xs text-gray-500" value=""> -- Default Input Tax --</option>
               {/* TODO: Replace with mapped tax IDs when API provides them */}
-              <option className="text-sm text-gray-500" value="1">
-                Gold- default-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="2">
-                Gold- Making-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="3">
-                Gold- Stone-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="4">
-                Diamond- default-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="5">
-                Diamond- Making-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="6">
-                Diamond- Stone-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
+             
+              {tax.map((c) => (
+                <option key={c.id} value={c.id} className="text-xs text-gray-500">
+                  {c.tax_name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -547,19 +674,19 @@ const handleSubmit = async (e) => {
             <div className="w-full flex flex-col gap-2"> 
             <label className="text-xs font-bold text-[#344767]">Made in</label>
            <select
-  name="made_in"
-  value={data.made_in}
-  onChange={handleChange}
-  style={{ paddingLeft: '12px', fontSize: '11px' }}
-  className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
->
-  <option disabled value="">-----------</option>
-  {country.map((c) => (
-    <option key={c.id} value={c.id} className="text-sm text-gray-500">
-      {c.name}
-    </option>
-  ))}
-</select>
+              name="made_in"
+              value={data.made_in}
+              onChange={handleChange}
+              style={{ paddingLeft: '12px', fontSize: '11px' }}
+              className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
+            >
+              <option  value="">-- select country --</option>
+              {country.map((c) => (
+                <option key={c.id} value={c.id} className="text-xs text-gray-500">
+                  {c.name}
+                </option>
+              ))}
+            </select>
 
           </div>
 
@@ -572,13 +699,16 @@ const handleSubmit = async (e) => {
                 type="number"
                 min="0"
                 name="making_buffer_value"
+                ref={refs.making_buffer_value}
                 value={data.making_buffer_value}
                 onChange={handleChange}
-                placeholder="Making buffer value"
+                placeholder="0.00"
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
                           focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
               />
+               {errors.making_buffer_value && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.making_buffer_value}</span>}
+
             </div>
 
 
@@ -590,12 +720,16 @@ const handleSubmit = async (e) => {
               min="0"
               name="stone_buffer_value"
               value={data.stone_buffer_value}
+              ref={refs.stone_buffer_value}
+
               onChange={handleChange}
-              placeholder="     Stone buffer value"
+              placeholder="0.00"
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
                         focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
             />
+          {errors.stone_buffer_value && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.stone_buffer_value}</span>}
+
           </div>
 
 
@@ -605,13 +739,16 @@ const handleSubmit = async (e) => {
             type="number"
             min="0"
             name="stone_sale_markup"
+            ref={refs.stone_sale_markup}
             value={data.stone_sale_markup}
             onChange={handleChange}
-            placeholder="    Stone Sale Markup"
+            placeholder="0.00"
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
                       focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
           />
+          {errors.stone_sale_markup && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.stone_sale_markup}</span>}
+
         </div>
 
 
@@ -621,9 +758,10 @@ const handleSubmit = async (e) => {
               type="number"
               min="0"
               name="making_sale_markup"
+              placeholder="0.00"
               value={data.making_sale_markup}
               onChange={handleChange}
-              placeholder="    Making Sale Markup"
+        
               style={{ paddingLeft: '12px', fontSize: '11px' }}
              className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg
            focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -640,7 +778,7 @@ const handleSubmit = async (e) => {
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option disabled value="">--------</option>
+            <option className="text-xs-400" value="">-- Select an option --</option>
             <option className="text-sm text-gray-500" value="True">Consider</option>
             <option className="text-sm text-gray-500" value="False">Not Consider</option>
           </select>
@@ -652,12 +790,16 @@ const handleSubmit = async (e) => {
               <input
                 type="text"
                 name="hsn_code"
+                  ref={refs.hsn_code}
+
                 value={data.hsn_code}
                 onChange={handleChange}
                 placeholder="Code"
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
               />
+                                  {errors.hsn_code && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.hsn_code}</span>}
+
             </div>
 
             <div className="w-full flex flex-col gap-2"> 
@@ -665,14 +807,18 @@ const handleSubmit = async (e) => {
               <select
                 name="status"
                 value={data.status}
+              ref={refs.status}
+
                 onChange={handleChange}
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
               >
-                <option disabled value="">------</option>
+                <option disabled value=""> -- Select status --</option>
                 <option className="text-sm text-gray-500" value="True">Active</option>
                 <option className="text-sm text-gray-500" value="False">Inactive</option>
               </select>
+                 {errors.status && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.status}</span>}
+
             </div>
 
  
@@ -681,12 +827,15 @@ const handleSubmit = async (e) => {
             <input
               type="text"
               name="prefix"
+              ref={refs.prefix}
               value={data.prefix}
               onChange={handleChange}
               placeholder="Prefix"
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+            {errors.prefix && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.prefix}</span>}
+
           </div>
 
 
@@ -695,14 +844,17 @@ const handleSubmit = async (e) => {
               <input
                 type="number"
                 name="id_length"
+                ref={refs.id_length}
                 value={data.id_length}
                 onChange={handleChange}
                 min="0"
                 placeholder="Id length"
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
-                          focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
+                focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
               />
+               {errors.id_length && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.id_length}</span>}
+
             </div>
 
       </div>

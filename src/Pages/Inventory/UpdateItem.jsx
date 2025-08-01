@@ -4,8 +4,13 @@ import UtilsGetModel from "../../models/Utils_getModel";
 import { toast } from "react-toastify";
 import GoldItemModel from "../../models/GoldItem";
 import { useParams } from "react-router";
+import TaxModel from "../../models/TaxModel";
+import TableSkelton from "../../components/tableSkelton";
+import CountryModel from "../../models/countryModel";
+import Loader from "../../components/Loader";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router";
+import { useRef } from "react";
 
 const UpdateItem = () => {
   const [data, setData] = useState({
@@ -40,13 +45,18 @@ const UpdateItem = () => {
   const [goldItemData, setGoldItemData] = useState([]);
   const navigate = useNavigate()
   const [selectedItem, setItem] = useState([]);
+  const [country,setCountry]= useState([])
+  const [tax,setTax]= useState([])
   const { id } = useParams();
   const auth = useSelector((state) => state.auth);
   const { login_type, login_id } = auth;
   const [limit] = useState(10);
   const [page] = useState(1);
   const [search] = useState('');
+  const [loading,setIsLoading] = useState(false)
   const [status] = useState('');
+  const [errors, setErrors] = useState({});
+const toBoolString = (val) => val === true ? "True" : val === false ? "False" : "";
 
   // Fetch utils data
   useEffect(() => {
@@ -86,25 +96,27 @@ const UpdateItem = () => {
 
   // Fetch item details and update form data
   useEffect(() => {
+    setIsLoading(true)
     const fetchItemDetials = async (uuid) => {
       try {
         const response = await GoldItemModel.getSingleItem(uuid);
         const itemTomap = response?.data?.data || {};
+        
         setData({
           code: itemTomap.code || '',
           name: itemTomap.name || '',
           item_type: itemTomap.item_type || '',
           uom: itemTomap.uom || '',
           category: itemTomap.category || '',
-          subcategory: itemTomap.subcategory || '',
+          subcategory: itemTomap.subcategory?.toString() || '',
           jewellery_type: itemTomap.jewellery_type || '',
           brand: itemTomap.brand || '',
           making_calculation_on: itemTomap.making_calculation_on || '',
-          is_scrap_item: itemTomap.is_scrap_item || '',
-          is_serialized: itemTomap.is_serialized || '',
-          is_gift_item: itemTomap.is_gift_item || '',
+           is_scrap_item: toBoolString(itemTomap.is_scrap_item),
+          is_serialized: toBoolString(itemTomap.is_serialized),
+          is_gift_item: toBoolString(itemTomap.is_gift_item),
           return_as: itemTomap.return_as || '',
-          is_repair_item: itemTomap.is_repair_item || '',
+          is_repair_item: toBoolString(itemTomap.is_repair_item),
           item_image: itemTomap.item_image || null,
           default_tax: itemTomap.default_tax || '',
           made_in: itemTomap.made_in || '',
@@ -112,21 +124,42 @@ const UpdateItem = () => {
           stone_buffer_value: itemTomap.stone_buffer_value || '',
           stone_sale_markup: itemTomap.stone_sale_markup || '',
           making_sale_markup: itemTomap.making_sale_markup || '',
-          buffer_consider_type: itemTomap.buffer_consider_type || '',
-          hsn_code: itemTomap.hsn_code || '',
-          status: itemTomap.status || '',
+          buffer_consider_type: toBoolString(itemTomap.buffer_consider_type),
+          status: toBoolString(itemTomap.status),
           prefix: itemTomap.prefix || '',
           id_length: itemTomap.id_length || ''
         });
       } catch (error) {
         console.error(error);
-      }
+      } finally {
+       setIsLoading(false); // <--- put here
+    }
     };
     if (selectedItem && selectedItem.uuid) {
       fetchItemDetials(selectedItem.uuid);
     }
-  }, [selectedItem]);
- console.log(data)
+  }, [selectedItem,UtilsData]);
+
+  const refs ={
+       code:useRef(null),
+       name:useRef(null),
+       item_type:useRef(null),
+       uom:useRef(null),
+       category: useRef(null),          // ✅ ADD THIS
+       subcategory:useRef(null),
+       jewellery_type:useRef(null),
+       making_calculation_on:useRef(null),
+       is_serialized:useRef(null),
+       status:useRef(null),
+       hsn_code:useRef(null),
+       prefix:useRef(null),
+       making_buffer_value: useRef(null),
+       stone_buffer_value:useRef(null),
+       stone_sale_markup: useRef(null),
+       
+      }
+
+
   const handleSubmit = async (e) => {
   e.preventDefault(); // Prevent default form submission behavior
 
@@ -137,7 +170,7 @@ const UpdateItem = () => {
     )
   );
 
-  console.log("Cleaned Data:", cleanedData);
+ 
 
   if (!validateForm()) {
     toast.error("Please fix form errors");
@@ -146,58 +179,120 @@ const UpdateItem = () => {
 
   try {
     const response = await GoldItemModel.updateGoldItem(cleanedData, id);
-navigate('/dashboard/item')
+    navigate('/dashboard/item')
     if (response.data) {
       toast.success(response.data.message || "Item updated successfully!");
     } else {
       console.warn("Unexpected response structure:", response);
       toast.success("Item updated (check console for details)");
     }
-  } catch (error) {
-    if (error.response) {
-      const { message, errors } = error.response.data;
+    } catch (error) {
+    console.error(error);
+    const errorData = error.response?.data;
 
-      // Show field-specific errors (like code already exists)
-      if (errors && typeof errors === 'object') {
-        Object.entries(errors).forEach(([field, messages]) => {
-          if (Array.isArray(messages)) {
-            messages.forEach(msg => toast.error(` ${msg}`));
-          } else {
-            toast.error(`${field}: ${messages}`);
-          }
-        });
-      } else {
-        toast.error(message || "Update failed");
+    let fieldErrors = {};
+    let message = "Unable to create item. Please try again later.";
+
+    if (errorData?.errors) {
+      const errors = errorData.errors;
+
+      // Handle non_field_errors (toast only)
+      if (errors.non_field_errors && Array.isArray(errors.non_field_errors)) {
+        message = errors.non_field_errors.join(' ');
       }
-    } else {
-      toast.error(error.message || "Update failed");
+
+      // Handle field-level errors (add to state)
+      const validFieldKeys = Object.keys(refs);
+      const serverFieldErrors = Object.entries(errors).filter(
+        ([field]) => validFieldKeys.includes(field)
+      );
+
+      if (serverFieldErrors.length > 0) {
+        fieldErrors = Object.fromEntries(
+          serverFieldErrors.map(([field, msgs]) => [field, Array.isArray(msgs) ? msgs[0] : msgs])
+        );
+
+        // Set errors to state
+        setErrors(prev => ({ ...prev, ...fieldErrors }));
+
+        // Focus first invalid field
+        const firstField = serverFieldErrors[0][0];
+        if (firstField && refs[firstField]?.current) {
+          refs[firstField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setTimeout(() => {
+            refs[firstField].current?.focus();
+          }, 0);
+        }
+
+        const firstError = Object.values(fieldErrors)[0];
+        message = firstError || message;
+      }
     }
+
+    // Always show a toast
+    toast.error(message);
   }
 };
 
+const validateForm = () => {
+  const newErrors = {};
+  let firstInvalidField = null;
 
-  const validateForm = () => {
-    const newErrors = {};
+  // ✅ Format validation FIRST
+  if (data.code && !/^[A-Z0-9]{3,10}$/.test(data.code)) {
+   newErrors.code = 'Code must be 3–10 uppercase letters or numbers (A–Z, 0–9)';
+    firstInvalidField = 'code';
+  }
+  if (data.hsn_code && !/^\d{4}(\d{2})?(\d{2})?$/.test(data.hsn_code)) {
+    newErrors.hsn_code = 'HSN must be 4, 6, or 8 digits';
+    if (!firstInvalidField) firstInvalidField = 'hsn_code';
+  }
 
-    const requiredFields = [
-      'code',
-      'item_type',
-      'uom',
-      'category',
-      'subcategory',
-      'jewellery_type',
-      'making_calculation_on',
-      'is_serialized'
-    ];
+  if (data.prefix && !/^[A-Z]{1,5}$/.test(data.prefix)) {
+    newErrors.prefix = 'Prefix must be 1–5 uppercase letters';
+    if (!firstInvalidField) firstInvalidField = 'prefix';
+  }
 
-    requiredFields.forEach(field => {
-      if (!data[field]?.toString().trim()) {
-        newErrors[field] = 'This field is required';
-      }
-    });
+  
 
-    return Object.keys(newErrors).length === 0;
-  };
+  if (data.name && !/^[A-Za-z0-9\s]{3,50}$/.test(data.name)) {
+    newErrors.name = 'Name must be 3–50 alphanumeric characters';
+    if (!firstInvalidField) firstInvalidField = 'name';
+  }
+
+  // ✅ Required field validation NEXT
+  const requiredFields = [
+    'code',
+    'item_type',
+    'uom',
+    'category',
+    'subcategory',
+    'jewellery_type',
+    'making_calculation_on',
+    'is_serialized',
+    'status',
+  ];
+
+  for (const field of requiredFields) {
+    if (!data[field]?.toString().trim()) {
+      newErrors[field] = 'This field is required';
+      if (!firstInvalidField) firstInvalidField = field;
+    }
+  }
+
+  setErrors(newErrors);
+
+  // ✅ Focus after validation is complete
+  if (firstInvalidField && refs[firstInvalidField]?.current) {
+    refs[firstInvalidField].current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      refs[firstInvalidField].current?.focus();
+    }, 0); // prevents occasional "element not focusable" issues
+  }
+
+  return Object.keys(newErrors).length === 0;
+};
+
 
   const getUtilsData = (key) => {
     if (!UtilsData?.data) return [];
@@ -206,14 +301,16 @@ navigate('/dashboard/item')
     return item ? item[key] : [];
   };
 
-  const getSubcategories = () => {
-    if (!data.category) return [];
-    const categories = getUtilsData('categories');
-    const selectedCategory = categories.find(cat => 
-      cat.category_name === data.category || cat.category_id.toString() === data.category
-    );
-    return selectedCategory ? selectedCategory.sub_cat : [];
-  };
+const getSubcategories = () => {
+  if (!data.category) return [];
+  const categories = getUtilsData('categories');
+  const selectedCategory = categories.find(cat => 
+    cat.category_id == data.category || // Try with ==
+    cat.id == data.category ||          // Try with id property
+    cat.category_id === parseInt(data.category) // Try converting to number
+  );
+  return selectedCategory ? selectedCategory.sub_cat : [];
+};
 
   const handleChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -228,7 +325,63 @@ navigate('/dashboard/item')
         [name]: value
       });
     }
+    setErrors(prevErrors => ({
+    ...prevErrors,
+    [name]: undefined
+  }));
   };
+  useEffect(()=>{
+ const fetchCounty = async()=>{
+  try{
+  const res = await CountryModel.getCountries(login_id,login_type, 1000, page, search, status)
+  setCountry(res?.data?.data)
+  }catch(error){
+  console.error(error)
+  }
+ }
+ fetchCounty()
+},[])
+  useEffect(()=>{
+   const fetchTax = async()=>{
+  try{
+  const res = await TaxModel.getTax(login_id,login_type, 1000, page, search, status)
+  setTax(res?.data?.data)
+  }catch(error){
+  console.error(error)
+  }
+ }
+ fetchTax()
+  },[])
+
+//   console.log("Categories from utils:", getUtilsData('categories'));
+// console.log("Looking for category ID:", data.category);
+
+// const categories = getUtilsData('categories');
+// console.log("All categories:", categories);
+// categories.forEach((cat, index) => {
+//   console.log(`Category ${index}:`, {
+//     category_id: cat.category_id,
+//     category_name: cat.category_name,
+//     type_of_category_id: typeof cat.category_id
+//   });
+// });
+
+if (loading) {
+  return (  <div 
+      className="bg-white w-full
+        max-w-[99vw] 
+        xl:max-w-[90vw] 
+        2xl:max-w-[95vw] 
+        h-auto max-h-[85vh] 
+        min-h-[80vh]
+        rounded-xl px-4 md:px-8 lg:px-12
+        mx-auto overflow-auto custom-scrollbar flex items-center justify-center"
+      style={{ fontFamily: 'Open Sans' }}
+    >
+<TableSkelton/>
+
+    </div>)
+}
 
   return (
     <div 
@@ -254,6 +407,7 @@ navigate('/dashboard/item')
           <input
             type="text"
             name='code'
+            ref={refs.code}
             required
             value={data.code}
             placeholder="Type here"
@@ -261,6 +415,7 @@ navigate('/dashboard/item')
             onChange={handleChange}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.code && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.code}</span>}
         </div>
       
         <div className="w-full flex flex-col gap-2"> 
@@ -269,12 +424,14 @@ navigate('/dashboard/item')
             type="text"
             name='name'
             required
+             ref={refs.name}
             value={data.name }
             onChange={handleChange}
             placeholder="Type here"
             style={{ paddingLeft: '10px' }}
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           />
+          {errors.name && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.name}</span>}
         </div>
 
 
@@ -284,11 +441,12 @@ navigate('/dashboard/item')
           <select  
             name="item_type"
             onChange={handleChange}
+            ref={refs.item_type}
             value={data.item_type}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option disabled value="">Item Type</option>
+            <option  className="text-xs text-gray-400" value=""> --Select Item Type--</option>
             {Array.isArray(getUtilsData('item_type'))
               ? getUtilsData('item_type').map(type => (
                   <option key={type.id} value={type.id}>{type.name}</option>
@@ -300,6 +458,8 @@ navigate('/dashboard/item')
                 )
             }
           </select>
+                    {errors.item_type && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.item_type}</span>}
+
         </div>
         {/* uom */}
 
@@ -307,6 +467,7 @@ navigate('/dashboard/item')
           <label className="text-xs font-bold text-[#344767]">UOM<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="uom"
+            ref={refs.uom}
             onChange={handleChange}
             value={data.uom}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
@@ -321,6 +482,7 @@ navigate('/dashboard/item')
               ))
             }
           </select>
+          {errors.uom && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.uom}</span>}
         </div>
 
         {/* category */}
@@ -329,6 +491,7 @@ navigate('/dashboard/item')
           <select
             name="category"
             onChange={handleChange}
+            ref={refs.category}
             value={data.category}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full text-gray-400 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -344,6 +507,8 @@ navigate('/dashboard/item')
               </option>
             ))}
           </select>
+                    {errors.category && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.category}</span>}
+
         </div>
   
        {/* sub Category */}
@@ -351,18 +516,21 @@ navigate('/dashboard/item')
           <label className="text-xs font-bold text-[#344767]">Sub Category<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="subcategory"
-            value={data.subcategory}
+            value={ data.subcategory}
+            ref={refs.subcategory}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
             <option value="" disabled>Select Subcategory</option>
             {getSubcategories().map(subCat => (
-              <option key={subCat.id} value={subCat.id} className="text-sm text-gray-500">
+              <option key={subCat.id}  value={subCat.id.toString()} className="text-sm text-gray-500">
                 {subCat.name}
               </option>
             ))}
           </select>
+                              {errors.subcategory && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.subcategory}</span>}
+
         </div>
             {/* jewellery type */}
          <div className="w-full flex flex-col gap-2"> 
@@ -370,6 +538,7 @@ navigate('/dashboard/item')
           <select
             name="jewellery_type"
             value={data.jewellery_type}
+            ref={refs.jewellery_type}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full text-gray-600 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -383,6 +552,8 @@ navigate('/dashboard/item')
               ))}
             
           </select>
+         {errors.jewellery_type && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.jewellery_type}</span>}
+
         </div>
                 {/* brand */}
       <div className="w-full flex flex-col gap-2"> 
@@ -410,8 +581,9 @@ navigate('/dashboard/item')
           <label className="text-xs font-bold text-[#344767]">Making Calculation On<span className="text-red-500 text-[14px]">*</span></label>
           <select
             name="making_calculation_on"
-            value={selectedItem.making_calculation_on}
+            value={data.making_calculation_on}
             onChange={handleChange}
+            ref={refs.making_calculation_on}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
@@ -424,10 +596,11 @@ navigate('/dashboard/item')
               ))
             )}
           </select>
+          {errors.making_calculation_on && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.making_calculation_on}</span>}
 </div>
     {/* --------------- */}
         <div className="w-full flex flex-col gap-2"> 
-          <label className="text-xs font-bold text-[#344767]">Is Scrap Item</label>
+          <label className="text-xs font-bold text-[#344767]">--Is Scrap Item--</label>
           <select
             name="is_scrap_item"
             value={data.is_scrap_item}
@@ -435,7 +608,7 @@ navigate('/dashboard/item')
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option value="" disabled>Select Option</option>
+            <option value="" >--Select Option--</option>
             <option value="True" className="text-sm text-gray-500">Yes</option>
             <option value="False" className="text-sm text-gray-500">No</option>
           </select>
@@ -446,14 +619,16 @@ navigate('/dashboard/item')
           <select
             name="is_serialized"
             value={data.is_serialized}
+            ref={refs.is_serialized}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option value="" disabled>Select Option</option>
+            <option value="" >--Select Option--</option>
             <option value="True" className="text-sm text-gray-500">Yes</option>
             <option value="False" className="text-sm text-gray-500">No</option>
           </select>
+          {errors.is_serialized && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.is_serialized}</span>}
         </div>
 
         
@@ -466,12 +641,13 @@ navigate('/dashboard/item')
           <label className="text-xs font-bold text-[#344767]">Is Gift Item</label>
           <select
             name="is_gift_item"
+          
             value={data.is_gift_item}
             onChange={handleChange}
             style={{ paddingLeft: '12px', fontSize: '11px' }}
             className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
           >
-            <option value="" disabled>Select Option</option>
+            <option value="" >--Select Option--</option>
             <option value="True" className="text-sm text-gray-500">Yes</option>
             <option value="False" className="text-sm text-gray-500">No</option>
           </select>
@@ -541,26 +717,13 @@ navigate('/dashboard/item')
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             >
-              <option disabled value="">Default Input Tax</option>
-              {/* TODO: Replace with mapped tax IDs when API provides them */}
-              <option className="text-sm text-gray-500" value="1">
-                Gold- default-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="2">
-                Gold- Making-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="3">
-                Gold- Stone-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="4">
-                Diamond- default-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="5">
-                Diamond- Making-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
-              <option className="text-sm text-gray-500" value="6">
-                Diamond- Stone-Input-Tax:1.000000% -output_tax:1.00000%
-              </option>
+              
+              <option  value="">-- select tax --</option>
+              {tax.map((c) => (
+                <option key={c.id} value={c.id} className="text-xs text-gray-500">
+                  {c.tax_name}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -576,10 +739,13 @@ navigate('/dashboard/item')
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             >
-              <option disabled value="">-----------</option>
-              {/* TODO: Replace with mapped country IDs when API provides them */}
-              <option className="text-sm text-gray-500" value="17">Bolivia</option>
-              <option className="text-sm text-gray-500" value="18">Brazil</option>
+              <option  value="">-- select country --</option>
+              {country.map((c) => (
+                <option key={c.id} value={c.id} className="text-xs text-gray-500">
+                  {c.name}
+                </option>
+              ))}
+              
             </select>
           </div>
 
@@ -593,12 +759,15 @@ navigate('/dashboard/item')
                 min="0"
                 name="making_buffer_value"
                 value={data.making_buffer_value}
+                 ref={refs.making_buffer_value}
                 onChange={handleChange}
                 placeholder="Making buffer value"
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
                           focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
               />
+              {errors.making_buffer_value && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.making_buffer_value}</span>}
+
             </div>
 
            {/* --------------- */}
@@ -608,6 +777,8 @@ navigate('/dashboard/item')
               type="number"
               min="0"
               name="stone_buffer_value"
+              ref={refs.stone_buffer_value}
+
               value={data.stone_buffer_value}
               onChange={handleChange}
               placeholder="     Stone buffer value"
@@ -615,6 +786,8 @@ navigate('/dashboard/item')
               className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
                         focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
             />
+                      {errors.stone_buffer_value && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.stone_buffer_value}</span>}
+
           </div>
 {/* --------------- */}
          <div className="w-full flex flex-col gap-2"> 
@@ -623,6 +796,7 @@ navigate('/dashboard/item')
             type="number"
             min="0"
             name="stone_sale_markup"
+               ref={refs.stone_sale_markup}
             value={data.stone_sale_markup}
             onChange={handleChange}
             placeholder="    Stone Sale Markup"
@@ -630,6 +804,8 @@ navigate('/dashboard/item')
             className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg 
                       focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300 appearance-auto"
           />
+                    {errors.stone_sale_markup && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.stone_sale_markup}</span>}
+
         </div>
 {/* --------------- */}
         <div className="w-full flex flex-col gap-2"> 
@@ -668,18 +844,21 @@ navigate('/dashboard/item')
               <input
                 type="text"
                 name="hsn_code"
+                ref={refs.hsn_code}
                 value={data.hsn_code}
                 onChange={handleChange}
                 placeholder="Code"
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="input input-bordered bg-white text-gray-500 input-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
               />
+              {errors.hsn_code && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.hsn_code}</span>}
             </div>
       <div className="w-full flex flex-col gap-2"> 
               <label className="text-xs font-bold text-[#344767]">Status</label>
               <select
                 name="status"
                 value={data.status}
+                ref={refs.status}
                 onChange={handleChange}
                 style={{ paddingLeft: '12px', fontSize: '11px' }}
                 className="select select-bordered bg-white text-gray-500 select-sm w-full rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
@@ -688,6 +867,8 @@ navigate('/dashboard/item')
                 <option className="text-sm text-gray-500" value="True">Active</option>
                 <option className="text-sm text-gray-500" value="False">Inactive</option>
               </select>
+               {errors.status && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.status}</span>}
+
             </div>
  {/* --------------- */}
        <div className="w-full flex flex-col gap-2"> 
@@ -695,12 +876,15 @@ navigate('/dashboard/item')
             <input
               type="text"
               name="prefix"
+              ref={refs.prefix}
               value={data.prefix}
               onChange={handleChange}
               placeholder="Prefix"
               style={{ paddingLeft: '12px', fontSize: '11px' }}
               className="input input-bordered input-sm w-full bg-white text-gray-500 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-0 border-gray-300"
             />
+                          {errors.prefix && <span className="text-red-400 text-xs" style={{paddingLeft:'5px'}}>{errors.prefix}</span>}
+
           </div>
 
      <div className="w-full flex flex-col gap-2"> 
